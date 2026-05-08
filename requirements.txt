@@ -1,0 +1,23 @@
+# ========================================
+# LUMINA FLOW - PYTHON DEPENDENCIES
+# ========================================
+
+# Flask Framework
+Flask
+Werkzeug
+
+# Environment Variables
+python-dotenv
+
+# Supabase Client
+supabase
+
+# Stripe SDK
+stripe
+
+# Security
+Flask-Talisman
+
+# Development
+pytest
+pytest-flask

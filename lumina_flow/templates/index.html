@@ -1,0 +1,292 @@
+{% extends "base.html" %}
+
+{% block title %}Lumina Flow - Transform Your Workflow{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/landing.css') }}">
+{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero">
+    <div class="hero-background">
+        <div class="hero-gradient"></div>
+        <div class="hero-pattern"></div>
+    </div>
+    
+    <div class="container">
+        <div class="hero-content">
+            <div class="hero-text">
+                <div class="badge badge-indigo mb-md" data-i18n="hero.new_badge">New</div>
+                <h1 data-i18n="hero.headline">Transforme seu fluxo de trabalho com inteligência</h1>
+                <p class="hero-subtitle" data-i18n="hero.subheadline">A plataforma tudo-em-um para otimizar sua produtividade e escalar seu negócio.</p>
+                <div class="hero-cta">
+                    <a href="#pricing" class="btn btn-primary btn-lg" data-i18n="hero.cta_primary">Começar Gratuitamente</a>
+                    <a href="#features" class="btn btn-secondary btn-lg" data-i18n="hero.cta_secondary">Ver Demonstração</a>
+                </div>
+                <div class="hero-trust">
+                    <p style="color: var(--color-slate-medium); font-size: var(--font-size-sm);">Trusted by 10,000+ teams worldwide</p>
+                    <div class="hero-logos">
+                        <div class="logo-placeholder">Company 1</div>
+                        <div class="logo-placeholder">Company 2</div>
+                        <div class="logo-placeholder">Company 3</div>
+                        <div class="logo-placeholder">Company 4</div>
+                    </div>
+                </div>
+            </div>
+            <div class="hero-visual">
+                <div class="glass-card">
+                    <div class="card-header">
+                        <div class="card-dots">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="stat-row">
+                            <div class="stat-item">
+                                <div class="stat-value">+45%</div>
+                                <div class="stat-label" data-i18n="hero.productivity">Produtividade</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value">-60%</div>
+                                <div class="stat-label" data-i18n="hero.time_saved">Tempo Economizado</div>
+                            </div>
+                        </div>
+                        <div class="chart-placeholder">
+                            <div class="chart-bar" style="height: 40%;"></div>
+                            <div class="chart-bar" style="height: 60%;"></div>
+                            <div class="chart-bar" style="height: 80%;"></div>
+                            <div class="chart-bar" style="height: 100%;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Social Proof -->
+<section class="social-proof">
+    <div class="container">
+        <div class="social-proof-logos">
+            <div class="logo-item">
+                <svg width="120" height="40" viewBox="0 0 120 40" fill="currentColor" style="color: var(--color-slate-light);">
+                    <rect x="10" y="10" width="30" height="20" rx="4"/>
+                    <text x="50" y="25" font-size="14" fill="currentColor">Stripe</text>
+                </svg>
+            </div>
+            <div class="logo-item">
+                <svg width="120" height="40" viewBox="0 0 120 40" fill="currentColor" style="color: var(--color-slate-light);">
+                    <rect x="10" y="10" width="30" height="20" rx="4"/>
+                    <text x="50" y="25" font-size="14" fill="currentColor">Notion</text>
+                </svg>
+            </div>
+            <div class="logo-item">
+                <svg width="120" height="40" viewBox="0 0 120 40" fill="currentColor" style="color: var(--color-slate-light);">
+                    <rect x="10" y="10" width="30" height="20" rx="4"/>
+                    <text x="50" y="25" font-size="14" fill="currentColor">Figma</text>
+                </svg>
+            </div>
+            <div class="logo-item">
+                <svg width="120" height="40" viewBox="0 0 120 40" fill="currentColor" style="color: var(--color-slate-light);">
+                    <rect x="10" y="10" width="30" height="20" rx="4"/>
+                    <text x="50" y="25" font-size="14" fill="currentColor">Slack</text>
+                </svg>
+            </div>
+            <div class="logo-item">
+                <svg width="120" height="40" viewBox="0 0 120 40" fill="currentColor" style="color: var(--color-slate-light);">
+                    <rect x="10" y="10" width="30" height="20" rx="4"/>
+                    <text x="50" y="25" font-size="14" fill="currentColor">Linear</text>
+                </svg>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Features Section -->
+<section id="features" class="features">
+    <div class="container">
+        <div class="section-header text-center">
+            <h2 data-i18n="features.title">Recursos Poderosos</h2>
+            <p class="section-subtitle" data-i18n="features.subtitle">Tudo o que você precisa para ter sucesso</p>
+        </div>
+        
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2v20M2 12h20"/>
+                    </svg>
+                </div>
+                <h3 data-i18n="features.feature_1_title">Automação Inteligente</h3>
+                <p data-i18n="features.feature_1_desc">Automatize tarefas repetitivas e foque no que realmente importa.</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/>
+                    </svg>
+                </div>
+                <h3 data-i18n="features.feature_2_title">Análise em Tempo Real</h3>
+                <p data-i18n="features.feature_2_desc">Acompanhe métricas importantes com dashboards interativos.</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                    </svg>
+                </div>
+                <h3 data-i18n="features.feature_3_title">Integração Perfeita</h3>
+                <p data-i18n="features.feature_3_desc">Conecte-se com suas ferramentas favoritas em segundos.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Pricing Section -->
+<section id="pricing" class="pricing">
+    <div class="container">
+        <div class="section-header text-center">
+            <h2 data-i18n="pricing.title">Planos Flexíveis</h2>
+            <p class="section-subtitle" data-i18n="pricing.subtitle">Escolha o plano ideal para você</p>
+            
+            <!-- Billing Toggle -->
+            <div class="billing-toggle">
+                <button class="toggle-btn active" data-billing="monthly" data-i18n="pricing.monthly">Mensal</button>
+                <button class="toggle-btn" data-billing="annual" data-i18n="pricing.annual">Anual</button>
+                <span class="toggle-badge" data-i18n="pricing.save">Economize 20%</span>
+            </div>
+        </div>
+        
+        <div class="pricing-grid">
+            <!-- Free Plan -->
+            <div class="pricing-card">
+                <div class="pricing-header">
+                    <h3 data-i18n="pricing.free_plan">Grátis</h3>
+                    <div class="pricing-price">
+                        <span class="price-amount" data-price data-price-br-monthly="{{ pricing.free.br_monthly }}" data-price-uk-monthly="{{ pricing.free.uk_monthly }}" data-price-br-annual="{{ pricing.free.br_annual }}" data-price-uk-annual="{{ pricing.free.uk_annual }}">{{ pricing.free.br_monthly }}</span>
+                        <span class="price-period" data-i18n="pricing.per_month">/mês</span>
+                    </div>
+                </div>
+                <div class="pricing-features">
+                    <div class="feature-item">
+                        <svg class="check-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M5 13l4 4L19 7"/>
+                        </svg>
+                        <span data-i18n="pricing.free_feat_1">3 orçamentos</span>
+                    </div>
+                    <div class="feature-item">
+                        <svg class="check-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M5 13l4 4L19 7"/>
+                        </svg>
+                        <span data-i18n="pricing.free_feat_2">Análise básica</span>
+                    </div>
+                    <div class="feature-item">
+                        <svg class="check-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M5 13l4 4L19 7"/>
+                        </svg>
+                        <span data-i18n="pricing.free_feat_3">Suporte por e-mail</span>
+                    </div>
+                </div>
+                <a href="{{ url_for('auth.login_page') }}?signup=true" class="btn btn-secondary btn-lg" style="width: 100%;" data-i18n="common.get_started">Começar</a>
+            </div>
+            
+            <!-- Pro Plan -->
+            <div class="pricing-card pricing-card-popular">
+                <div class="popular-badge" data-i18n="pricing.popular">Mais Popular</div>
+                <div class="pricing-header">
+                    <h3 data-i18n="pricing.pro_plan">Pro</h3>
+                    <div class="pricing-price">
+                        <span class="price-amount" data-price data-price-br-monthly="{{ pricing.pro.br_monthly }}" data-price-uk-monthly="{{ pricing.pro.uk_monthly }}" data-price-br-annual="{{ pricing.pro.br_annual }}" data-price-uk-annual="{{ pricing.pro.uk_annual }}">{{ pricing.pro.br_monthly }}</span>
+                        <span class="price-period" data-period data-i18n="pricing.per_month">/mês</span>
+                    </div>
+                </div>
+                <div class="pricing-features">
+                    <div class="feature-item">
+                        <svg class="check-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M5 13l4 4L19 7"/>
+                        </svg>
+                        <span data-i18n="pricing.pro_feat_1">Orçamentos ilimitados</span>
+                    </div>
+                    <div class="feature-item">
+                        <svg class="check-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M5 13l4 4L19 7"/>
+                        </svg>
+                        <span data-i18n="pricing.pro_feat_2">Análise avançada</span>
+                    </div>
+                    <div class="feature-item">
+                        <svg class="check-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M5 13l4 4L19 7"/>
+                        </svg>
+                        <span data-i18n="pricing.pro_feat_3">Suporte prioritário</span>
+                    </div>
+                    <div class="feature-item">
+                        <svg class="check-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M5 13l4 4L19 7"/>
+                        </svg>
+                        <span data-i18n="pricing.pro_feat_4">Acesso à API</span>
+                    </div>
+                </div>
+                <button class="btn btn-primary btn-lg" style="width: 100%;" data-checkout data-price-id-br-monthly="{{ pricing.pro.price_id_br_monthly }}" data-price-id-uk-monthly="{{ pricing.pro.price_id_uk_monthly }}" data-price-id-br-annual="{{ pricing.pro.price_id_br_annual }}" data-price-id-uk-annual="{{ pricing.pro.price_id_uk_annual }}" data-i18n="common.get_started">Começar</button>
+            </div>
+            
+            <!-- Enterprise Plan -->
+            <div class="pricing-card">
+                <div class="pricing-header">
+                    <h3 data-i18n="pricing.enterprise_plan">Enterprise</h3>
+                    <div class="pricing-price">
+                        <span class="price-amount" data-price data-price-br-monthly="{{ pricing.enterprise.br_monthly }}" data-price-uk-monthly="{{ pricing.enterprise.uk_monthly }}" data-price-br-annual="{{ pricing.enterprise.br_annual }}" data-price-uk-annual="{{ pricing.enterprise.uk_annual }}">{{ pricing.enterprise.br_monthly }}</span>
+                        <span class="price-period" data-period data-i18n="pricing.per_month">/mês</span>
+                    </div>
+                </div>
+                <div class="pricing-features">
+                    <div class="feature-item">
+                        <svg class="check-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M5 13l4 4L19 7"/>
+                        </svg>
+                        <span data-i18n="pricing.ent_feat_1">Tudo do Pro</span>
+                    </div>
+                    <div class="feature-item">
+                        <svg class="check-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M5 13l4 4L19 7"/>
+                        </svg>
+                        <span data-i18n="pricing.ent_feat_2">Integrações personalizadas</span>
+                    </div>
+                    <div class="feature-item">
+                        <svg class="check-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M5 13l4 4L19 7"/>
+                        </svg>
+                        <span data-i18n="pricing.ent_feat_3">Suporte dedicado</span>
+                    </div>
+                    <div class="feature-item">
+                        <svg class="check-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M5 13l4 4L19 7"/>
+                        </svg>
+                        <span data-i18n="pricing.ent_feat_4">Garantia SLA</span>
+                    </div>
+                </div>
+                <a href="mailto:sales@luminaflow.com" class="btn btn-secondary btn-lg" style="width: 100%;" data-i18n="common.contact_us">Fale Conosco</a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA Section -->
+<section class="cta-section">
+    <div class="container">
+        <div class="cta-content">
+            <h2 data-i18n="hero.headline">Pronto para transformar seu fluxo de trabalho?</h2>
+            <p data-i18n="hero.subheadline">Junte-se a milhares de equipes que já estão usando Lumina Flow.</p>
+            <a href="#pricing" class="btn btn-primary btn-lg" data-i18n="hero.cta_primary">Começar Gratuitamente</a>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/stripe_client.js') }}"></script>
+{% endblock %}

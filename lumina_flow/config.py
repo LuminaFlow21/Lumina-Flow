@@ -1,0 +1,83 @@
+"""
+Lumina Flow - Configuration
+Central configuration management for environment variables and app settings
+"""
+
+import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+
+
+class Config:
+    """Base configuration class"""
+    
+    # Flask
+    SECRET_KEY = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
+    DEBUG = os.getenv('DEBUG', 'True').lower() == 'true'
+    TESTING = os.getenv('TESTING', 'False').lower() == 'true'
+    
+    # App
+    APP_NAME = 'Lumina Flow'
+    APP_VERSION = '1.0.0'
+    
+    # Supabase
+    SUPABASE_URL = os.getenv('SUPABASE_URL')
+    SUPABASE_KEY = os.getenv('SUPABASE_KEY')
+    SUPABASE_SERVICE_ROLE_KEY = os.getenv('SUPABASE_SERVICE_ROLE_KEY')
+    
+    # Stripe
+    STRIPE_PUBLIC_KEY = os.getenv('STRIPE_PUBLIC_KEY')
+    STRIPE_SECRET_KEY = os.getenv('STRIPE_SECRET_KEY')
+    STRIPE_WEBHOOK_SECRET = os.getenv('STRIPE_WEBHOOK_SECRET')
+    
+    # Stripe Price IDs
+    STRIPE_PRICE_ID_BR_MONTHLY = os.getenv('STRIPE_PRICE_ID_BR_MONTHLY')
+    STRIPE_PRICE_ID_BR_YEARLY = os.getenv('STRIPE_PRICE_ID_BR_YEARLY')
+    STRIPE_PRICE_ID_UK_MONTHLY = os.getenv('STRIPE_PRICE_ID_UK_MONTHLY')
+    STRIPE_PRICE_ID_UK_YEARLY = os.getenv('STRIPE_PRICE_ID_UK_YEARLY')
+    
+    # URLs
+    BASE_URL = os.getenv('BASE_URL', 'http://localhost:5000')
+    SUCCESS_URL = f'{BASE_URL}/dashboard?session_id={{CHECKOUT_SESSION_ID}}'
+    CANCEL_URL = f'{BASE_URL}/pricing'
+    
+    # Session
+    SESSION_COOKIE_SECURE = os.getenv('SESSION_COOKIE_SECURE', 'False').lower() == 'true'
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = 'Lax'
+    PERMANENT_SESSION_LIFETIME = 86400  # 24 hours
+
+
+class DevelopmentConfig(Config):
+    """Development configuration"""
+    DEBUG = True
+
+
+class ProductionConfig(Config):
+    """Production configuration"""
+    DEBUG = False
+    SESSION_COOKIE_SECURE = True
+
+
+class TestingConfig(Config):
+    """Testing configuration"""
+    TESTING = True
+    WTF_CSRF_ENABLED = False
+
+
+# Configuration dictionary
+config = {
+    'development': DevelopmentConfig,
+    'production': ProductionConfig,
+    'testing': TestingConfig,
+    'default': DevelopmentConfig
+}
+
+
+def get_config(env=None):
+    """Get configuration based on environment"""
+    if env is None:
+        env = os.getenv('FLASK_ENV', 'development')
+    return config.get(env, DevelopmentConfig)
