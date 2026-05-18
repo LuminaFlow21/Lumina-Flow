@@ -3,8 +3,8 @@
 ## Arquivos de Configuração Criados
 
 1. **runtime.txt** - Especifica a versão do Python (3.11.0)
-2. **Procfile** - Comando para iniciar a aplicação (`web: python run.py`)
-3. **requirements.txt** - Dependências do Python (já atualizado)
+2. **Procfile** - Comando para iniciar a aplicação (`web: gunicorn run:app`)
+3. **requirements.txt** - Dependências do Python (já atualizado com gunicorn)
 
 ## Variáveis de Ambiente Necessárias no Render
 
@@ -59,7 +59,7 @@ No painel do Render, adicione as seguintes variáveis de ambiente:
      - **Branch**: main
      - **Runtime**: Python 3
      - **Build Command**: `pip install -r requirements.txt`
-     - **Start Command**: `python run.py`
+     - **Start Command**: `gunicorn run:app`
 
 4. **Configurar Variáveis de Ambiente**
    - Vá para a seção "Environment" na configuração do serviço

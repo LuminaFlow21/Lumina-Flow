@@ -8,6 +8,9 @@ Werkzeug
 Flask-Login
 Flask-Talisman
 
+# Production Server
+gunicorn
+
 # Environment Variables
 python-dotenv
 
