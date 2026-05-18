@@ -1,37 +1,53 @@
-{% extends "base.html" %}
-
+{% extends "dashboard_base.html" %}
 {% block title %}Profile - Lumina Flow{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+<style>
+    .dashboard-main {
+        padding: 2rem;
+        box-sizing: border-box;
+    }
+    .quotation-form-card {
+        max-width: 700px;
+        margin: 20px auto;
+        width: 100%;
+    }
+    .profile-completion-banner {
+        max-width: 700px;
+        margin: 20px auto 40px auto;
+    }
+</style>
 {% endblock %}
 
 {% block content %}
 <div class="dashboard-container">
     <!-- Sidebar -->
     <aside class="dashboard-sidebar">
-        <div class="sidebar-header">
-            <div class="sidebar-logo">
-                <div style="width: 36px; height: 36px; background: linear-gradient(135deg, var(--color-indigo), var(--color-indigo-light)); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center;">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
-                        <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
-                        <path d="M2 17l10 5 10-5"></path>
-                        <path d="M2 12l10 5 10-5"></path>
-                    </svg>
-                </div>
-                <span class="font-bold text-navy">Lumina Flow</span>
-            </div>
-        </div>
-        
         <nav class="sidebar-nav">
+            <!-- Logo -->
+            <div class="sidebar-logo">
+                <a href="/" class="logo-link">
+                    <img class="logo-sidebar" src="{{ url_for('static', filename='images/logo_sidebar.png') }}" alt="Lumina Flow Logo">
+                </a>
+            </div>
+            
+            <!-- Navigation Items -->
             <a href="{{ url_for('dashboard.dashboard_view') }}" class="nav-item">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                    <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                </svg>
+                <span data-i18n="dashboard.quotations">Orçamentos</span>
+            </a>
+            <a href="{{ url_for('dashboard.history') }}" class="nav-item">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                     <polyline points="14 2 14 8 20 8"></polyline>
                     <line x1="16" y1="13" x2="8" y2="13"></line>
                     <line x1="16" y1="17" x2="8" y2="17"></line>
                 </svg>
-                <span data-i18n="dashboard.quotations">Orçamentos</span>
+                <span data-i18n="dashboard.quotation_history">Histórico</span>
             </a>
             <a href="{{ url_for('dashboard.profile') }}" class="nav-item active">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -40,22 +56,121 @@
                 </svg>
                 <span data-i18n="dashboard.profile">Perfil</span>
             </a>
+            
+            <!-- Bottom Controls -->
+            <div class="sidebar-controls">
+                <button class="theme-toggle" id="themeToggle" title="Toggle Theme">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                    <span data-i18n="common.theme">Tema</span>
+                </button>
+                <div class="language-control">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="2" y1="12" x2="22" y2="12"></line>
+                        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                    </svg>
+                    <select id="language-selector" class="language-selector">
+                        <option value="BR" {% if session.get('user_region') == 'BR' %}selected{% endif %}>PT</option>
+                        <option value="UK" {% if session.get('user_region') != 'BR' %}selected{% endif %}>EN</option>
+                    </select>
+                </div>
+                
+                <!-- User Profile Element -->
+                <a href="{{ url_for('dashboard.profile') }}" class="user-profile-element">
+                    <div class="user-profile-avatar">
+                        {% if profile_data.get('profile_photo_url') %}
+                        <img src="{{ profile_data.get('profile_photo_url') }}" alt="Profile Photo">
+                        {% else %}
+                        <span>{{ session.get('user_email', 'U')[0].upper() }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="user-profile-info">
+                        <span class="user-profile-email">{{ session.get('user_email', 'user@luminaflow.com') }}</span>
+                        <span class="user-profile-plan">{{ subscription.plan|capitalize }}</span>
+                    </div>
+                </a>
+                
+                <a href="{{ url_for('auth.handle_logout') }}" class="nav-item-logout">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                        <polyline points="16 17 21 12 16 7"></polyline>
+                        <line x1="21" y1="12" x2="9" y2="12"></line>
+                    </svg>
+                    <span data-i18n="dashboard.logout">Sair</span>
+                </a>
+            </div>
         </nav>
-        
-        <div class="sidebar-footer">
-            <a href="{{ url_for('auth.logout') }}" class="nav-item nav-item-logout">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                    <polyline points="16 17 21 12 16 7"></polyline>
-                    <line x1="21" y1="12" x2="9" y2="12"></line>
-                </svg>
-                <span data-i18n="dashboard.logout">Sair</span>
-            </a>
-        </div>
     </aside>
     
     <!-- Main Content -->
     <main class="dashboard-main">
+        <!-- Mobile Profile Header -->
+        <div class="mobile-profile-header">
+            <div class="mobile-profile-info">
+                <div class="mobile-profile-avatar">
+                    {% if profile_data.get('profile_photo_url') %}
+                    <img src="{{ profile_data.get('profile_photo_url') }}" alt="Profile Photo">
+                    {% else %}
+                    <span>{{ session.get('user_email', 'U')[0].upper() }}</span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="mobile-profile-actions">
+                <button class="theme-toggle-mobile" id="themeToggleMobile" title="Toggle Theme">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+                <button class="language-toggle" data-language-toggle title="Change Language">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="2" y1="12" x2="22" y2="12"></line>
+                        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Profile Completion Banner -->
+        {% if not profile_complete %}
+        <div class="profile-completion-banner">
+            <div class="banner-content">
+                <div class="banner-message">
+                    <h3>Preencha o seu perfil para desbloquear todos os recursos</h3>
+                    <div class="banner-checklist">
+                        <div class="checklist-item {% if profile_data.get('profile_photo_url') %}completed{% endif %}">
+                            <span class="check-icon">{% if profile_data.get('profile_photo_url') %}✓{% else %}○{% endif %}</span>
+                            <span>Coloque uma foto de perfil/logotipo empresa</span>
+                        </div>
+                        <div class="checklist-item {% if profile_data.get('whatsapp') %}completed{% endif %}">
+                            <span class="check-icon">{% if profile_data.get('whatsapp') %}✓{% else %}○{% endif %}</span>
+                            <span>Adicione seu número do WhatsApp</span>
+                        </div>
+                    </div>
+                </div>
+                <button class="banner-btn" onclick="window.scrollTo({top: 0, behavior: 'smooth'})">Preencher Perfil</button>
+            </div>
+            <button class="banner-close" id="bannerClose">×</button>
+        </div>
+        {% endif %}
         <div class="dashboard-header">
             <div>
                 <h1 data-i18n="dashboard.profile">Perfil</h1>
@@ -64,55 +179,236 @@
         </div>
         
         <div class="quotation-form-card">
+            <div class="card-header">
+                <h2 data-i18n="dashboard.edit_profile">Editar Perfil</h2>
+            </div>
             <form id="profileForm" class="quotation-form">
-                <div class="form-group">
-                    <label class="form-label" data-i18n="dashboard.your_name">Seu Nome</label>
-                    <input type="text" name="full_name" class="form-input" data-i18n-placeholder="dashboard.your_name" placeholder="Seu Nome">
+                <div class="form-section">
+                    <h3 class="form-section-title" data-i18n="dashboard.profile_photo">Foto de Perfil</h3>
+                    <div class="profile-photo-section">
+                        <div class="profile-photo-preview" id="profilePhotoPreview">
+                            {% if profile_data.get('profile_photo_url') %}
+                            <img src="{{ profile_data.get('profile_photo_url') }}" alt="Profile Photo">
+                            {% else %}
+                            <div class="profile-photo-placeholder">
+                                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2">
+                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                    <circle cx="12" cy="7" r="4"></circle>
+                                </svg>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="profile-photo-upload">
+                            <input type="file" id="profilePhotoInput" accept="image/*" style="display: none;">
+                            <button type="button" class="btn btn-secondary" id="uploadPhotoBtn">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="17 8 12 3 7 8"></polyline>
+                                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                                </svg>
+                                <span>Carregar Foto</span>
+                            </button>
+                            <p class="photo-hint">A imagem será comprimida automaticamente</p>
+                        </div>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label class="form-label">Email</label>
-                    <input type="email" class="form-input" value="{{ user_email }}" disabled>
+
+                <div class="form-section">
+                    <h3 class="form-section-title" data-i18n="dashboard.contact_info">Informações de Contato</h3>
+                    <div class="form-group">
+                        <label class="form-label" data-i18n="dashboard.your_name">Seu Nome</label>
+                        <input type="text" name="full_name" class="form-input" data-i18n-placeholder="dashboard.your_name" placeholder="Seu Nome" value="{{ profile_data.get('full_name', '') }}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Email</label>
+                        <input type="email" class="form-input" value="{{ user_email }}" disabled>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" data-i18n="dashboard.whatsapp">WhatsApp</label>
+                        <div class="input-with-icon">
+                            <span class="input-icon">📱</span>
+                            <input type="tel" name="whatsapp" class="form-input" data-i18n-placeholder="dashboard.whatsapp" placeholder="+55 11 99999-9999" value="{{ profile_data.get('whatsapp', '') }}">
+                        </div>
+                        <p class="field-hint" data-i18n="dashboard.whatsapp_hint">Adicione seu número para que os clientes possam entrar em contato com você</p>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label class="form-label" data-i18n="dashboard.plan_type">Plano</label>
-                    <input type="text" class="form-input" value="{{ subscription.plan|capitalize }}" disabled>
+
+                <div class="form-section">
+                    <h3 class="form-section-title" data-i18n="dashboard.plan_info">Informações do Plano</h3>
+                    <div class="form-group">
+                        <label class="form-label" data-i18n="dashboard.plan_type">Plano</label>
+                        <input type="text" class="form-input" value="{{ subscription.plan|capitalize }}" disabled>
+                    </div>
                 </div>
+
                 <div class="form-actions">
-                    <button type="submit" class="btn btn-primary" data-i18n="common.save">Salvar</button>
+                    <button type="submit" class="btn btn-primary" id="profileSubmitBtn">
+                        <span data-i18n="common.save">Salvar</span>
+                    </button>
                 </div>
             </form>
         </div>
-    </main>
-</div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('[Profile] DOM loaded');
+    
+    // Theme Toggle - Desktop and Mobile
+    const themeToggle = document.getElementById('themeToggle');
+    const themeToggleMobile = document.getElementById('themeToggleMobile');
+    
+    const handleThemeToggle = () => {
+        const html = document.documentElement;
+        const currentTheme = html.getAttribute('data-theme');
+        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        html.setAttribute('data-theme', newTheme);
+        localStorage.setItem('theme', newTheme);
+    };
+    
+    if (themeToggle) {
+        themeToggle.addEventListener('click', handleThemeToggle);
+    }
+    
+    if (themeToggleMobile) {
+        themeToggleMobile.addEventListener('click', handleThemeToggle);
+    }
+    
+    // Initialize theme from localStorage
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme) {
+        document.documentElement.setAttribute('data-theme', savedTheme);
+    }
+    
+    const bannerClose = document.getElementById('bannerClose');
+    const banner = document.querySelector('.profile-completion-banner');
+    
+    if (bannerClose && banner) {
+        bannerClose.addEventListener('click', function() {
+            banner.style.display = 'none';
+            localStorage.setItem('profileBannerDismissed', 'true');
+        });
+    }
+    
+    if (localStorage.getItem('profileBannerDismissed') === 'true') {
+        const banner = document.querySelector('.profile-completion-banner');
+        if (banner) {
+            banner.style.display = 'none';
+        }
+    }
+});
+
 document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('profileForm');
+    const submitBtn = document.getElementById('profileSubmitBtn');
+    const profilePhotoInput = document.getElementById('profilePhotoInput');
+    const uploadPhotoBtn = document.getElementById('uploadPhotoBtn');
+    const profilePhotoPreview = document.getElementById('profilePhotoPreview');
+    
+    let profilePhotoData = null;
+
+    // Profile photo upload
+    uploadPhotoBtn.addEventListener('click', () => {
+        profilePhotoInput.click();
+    });
+
+    profilePhotoInput.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // Compress and preview image
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                
+                // Resize to max 300x300
+                const maxSize = 300;
+                let width = img.width;
+                let height = img.height;
+                
+                if (width > height) {
+                    if (width > maxSize) {
+                        height *= maxSize / width;
+                        width = maxSize;
+                    }
+                } else {
+                    if (height > maxSize) {
+                        width *= maxSize / height;
+                        height = maxSize;
+                    }
+                }
+                
+                canvas.width = width;
+                canvas.height = height;
+                ctx.drawImage(img, 0, 0, width, height);
+                
+                // Convert to base64
+                profilePhotoData = canvas.toDataURL('image/jpeg', 0.8);
+                
+                // Update preview
+                profilePhotoPreview.innerHTML = `<img src="${profilePhotoData}" alt="Profile Photo">`;
+            };
+            img.src = event.target.result;
+        };
+        reader.readAsDataURL(file);
+    });
+    
     if (form) {
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
+            
+            // Show loading state
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<span data-i18n="common.saving">Salvando...</span>';
+            }
+            
             const formData = new FormData(form);
             const data = Object.fromEntries(formData);
+            
+            // Add profile photo if uploaded
+            if (profilePhotoData) {
+                data.profile_photo = profilePhotoData;
+            }
+            
             try {
-                const response = await fetch('/api/profile', {
+                const response = await fetch('/dashboard/api/profile', {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
                 });
                 const result = await response.json();
+                
                 if (result.success) {
-                    alert('Profile updated');
+                    alert('Profile updated successfully');
+                    // Mark onboarding as complete
+                    localStorage.setItem('onboarding_completed', 'true');
+                    // Redirect to dashboard
+                    window.location.href = '/dashboard';
                 } else {
                     alert(result.error || 'Error');
+                    // Reset button
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = '<span data-i18n="common.save">Salvar</span>';
+                    }
                 }
             } catch (err) {
                 console.error(err);
                 alert('Error');
+                // Reset button
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<span data-i18n="common.save">Salvar</span>';
+                }
             }
         });
     }
 });
 </script>
 {% endblock %}
+

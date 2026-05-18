@@ -1,0 +1,522 @@
+{% extends "dashboard_base.html" %}
+
+{% block title %}Histórico de Orçamentos - Lumina Flow{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+<style>
+    #main-footer {
+        display: none !important;
+    }
+    header {
+        display: none !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+        <!-- Mobile Profile Header -->
+        <div class="mobile-profile-header">
+            <div class="mobile-profile-info">
+                <div class="mobile-profile-avatar">
+                    {% if profile_data.get('profile_photo_url') %}
+                    <img src="{{ profile_data.get('profile_photo_url') }}" alt="Profile Photo">
+                    {% else %}
+                    <span>{{ session.get('user_email', 'U')[0].upper() }}</span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="mobile-profile-actions">
+                <button class="theme-toggle-mobile" id="themeToggleMobile" title="Toggle Theme">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+                <button class="language-toggle" data-language-toggle title="Change Language">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="2" y1="12" x2="22" y2="12"></line>
+                        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        
+        <div class="dashboard-header">
+            <div>
+                <h1 data-i18n="dashboard.quotation_history">Histórico de Orçamentos</h1>
+                <p class="text-slate" data-i18n="dashboard.history_subtitle">Gerencie todos os seus orçamentos</p>
+            </div>
+            <div class="header-actions">
+                <a href="{{ url_for('dashboard.dashboard_view') }}" class="btn btn-primary">
+                    <span data-i18n="dashboard.new_quotation">Novo Orçamento</span>
+                </a>
+            </div>
+        </div>
+        
+        <!-- Status Filter -->
+        <div class="status-filter">
+            <button class="filter-btn active" data-filter="all" data-i18n="dashboard.filter_all">Todos</button>
+            <button class="filter-btn" data-filter="pending" data-i18n="dashboard.filter_pending">Pendentes</button>
+            <button class="filter-btn" data-filter="accepted" data-i18n="dashboard.filter_accepted">Aceitos</button>
+            <button class="filter-btn" data-filter="rejected" data-i18n="dashboard.filter_rejected">Recusados</button>
+            <button class="filter-btn" data-filter="expired" data-i18n="dashboard.filter_expired">Expirados</button>
+        </div>
+        
+        <!-- History Table -->
+        <div class="quotation-history">
+            {% if quotations %}
+            <div class="table-container">
+                <table class="quotation-table">
+                    <thead>
+                        <tr>
+                            <th data-i18n="dashboard.client_name">Cliente</th>
+                            <th data-i18n="dashboard.value">Valor</th>
+                            <th data-i18n="dashboard.expiry_date">Validade</th>
+                            <th data-i18n="dashboard.status">Status</th>
+                            <th data-i18n="dashboard.date">Data</th>
+                            <th data-i18n="dashboard.actions">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for quotation in quotations %}
+                        <tr data-status="{{ quotation.status }}" onclick="viewQuotation('{{ quotation.id }}')" style="cursor: pointer;">
+                            <td class="client-cell" data-label="{{ 'Cliente' }}">
+                                {{ quotation.client_name }}
+                            </td>
+                            <td class="value-cell" data-label="{{ 'Valor' }}">
+                                {{ 'R$' if quotation.currency == 'BRL' else '£' }} {{ quotation.value }}
+                            </td>
+                            <td data-label="{{ 'Validade' }}">
+    {% if quotation.expiry_date %}
+        {{ quotation.expiry_date[:10].split('-')[2] }}/{{ quotation.expiry_date[:10].split('-')[1] }}/{{ quotation.expiry_date[:10].split('-')[0] }}
+    {% else %}
+        -
+    {% endif %}
+</td>
+                            <td data-label="{{ 'Status' }}">
+                                <span class="status-badge status-{{ quotation.status }}" data-i18n="dashboard.{{ quotation.status }}">
+                                </span>
+                            </td>
+                            <td class="date-cell" data-label="{{ 'Data' }}">
+                                {% if quotation.created_at %}
+                                    {{ quotation.created_at[:10].split('-')[2] }}/{{ quotation.created_at[:10].split('-')[1] }}/{{ quotation.created_at[:10].split('-')[0] }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td class="actions-cell" data-label="{{ 'Ações' }}">
+                                {% if quotation.status == 'expired' %}
+                                <button class="btn btn-primary btn-reactivate" data-id="{{ quotation.id }}" data-i18n="dashboard.reactivate">Ativar Orçamento</button>
+                                <button class="icon-btn btn-delete" data-id="{{ quotation.id }}" title="Excluir">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="3 6 5 6 21 6"></polyline>
+                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                    </svg>
+                                </button>
+                                {% else %}
+                                <button class="icon-btn btn-accept" data-id="{{ quotation.id }}" title="Aceitar">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="20 6 9 17 4 12"></polyline>
+                                    </svg>
+                                </button>
+                                <button class="icon-btn btn-reject" data-id="{{ quotation.id }}" title="Recusar">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                                    </svg>
+                                </button>
+                                <button class="icon-btn btn-share" data-id="{{ quotation.id }}" title="Compartilhar">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="18" cy="5" r="3"></circle>
+                                        <circle cx="6" cy="12" r="3"></circle>
+                                        <circle cx="18" cy="19" r="3"></circle>
+                                        <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                                        <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+                                    </svg>
+                                </button>
+                                <button class="icon-btn btn-delete" data-id="{{ quotation.id }}" title="Excluir">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="3 6 5 6 21 6"></polyline>
+                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                    </svg>
+                                </button>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <p data-i18n="dashboard.no_quotations">Nenhum orçamento ainda</p>
+                <p data-i18n="dashboard.start_quotation">Crie seu primeiro orçamento</p>
+                <a href="{{ url_for('dashboard.dashboard_view') }}" class="btn btn-primary" data-i18n="dashboard.new_quotation">Novo Orçamento</a>
+            </div>
+            {% endif %}
+        </div>
+{% endblock %}
+
+<!-- Reactivate Modal -->
+<div id="reactivateModal" class="modal" style="display: none;">
+    <div class="modal-backdrop" onclick="closeReactivateModal()"></div>
+    <div class="modal-content card">
+        <div class="modal-header">
+            <h3 data-i18n="dashboard.reactivate_quotation">Ativar Orçamento</h3>
+            <button class="modal-close" onclick="closeReactivateModal()">×</button>
+        </div>
+        <div class="modal-body">
+            <label data-i18n="dashboard.new_expiry_date">Nova Data de Validade</label>
+            <input type="date" id="newExpiryDate" class="form-input">
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeReactivateModal()" data-i18n="common.cancel">Cancelar</button>
+            <button class="btn btn-primary" id="confirmReactivateBtn" onclick="confirmReactivate()" data-i18n="dashboard.reactivate">Ativar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Share Modal -->
+<div id="shareModal" class="modal" style="display: none;">
+    <div class="modal-backdrop" onclick="closeShareModal()"></div>
+    <div class="modal-content card">
+        <div class="modal-header">
+            <h3 data-i18n="dashboard.share_quotation">Compartilhar Orçamento</h3>
+            <button class="modal-close" onclick="closeShareModal()">×</button>
+        </div>
+        <div class="modal-body">
+            <div class="share-options">
+                <div class="share-option" onclick="copyShareLink()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                    </svg>
+                    <span data-i18n="dashboard.copy_link">Copiar Link</span>
+                </div>
+                <div class="share-option" onclick="downloadShareImage()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                        <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                        <polyline points="21 15 16 10 5 21"></polyline>
+                    </svg>
+                    <span data-i18n="dashboard.download_image">Baixar Imagem</span>
+                </div>
+                <div class="share-option" onclick="downloadSharePDF()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                        <polyline points="10 9 9 9 8 9"></polyline>
+                    </svg>
+                    <span data-i18n="dashboard.download_pdf">Baixar PDF</span>
+                </div>
+                <div class="share-option" onclick="nativeShare()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="18" cy="5" r="3"></circle>
+                        <circle cx="6" cy="12" r="3"></circle>
+                        <circle cx="18" cy="19" r="3"></circle>
+                        <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                        <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+                    </svg>
+                    <span data-i18n="dashboard.share_apps">Compartilhar</span>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeShareModal()" data-i18n="common.close">Fechar</button>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+// Global variables
+let currentReactivateId = null;
+
+// Reactivate Modal Functions
+window.closeReactivateModal = function() {
+    const modal = document.getElementById('reactivateModal');
+    modal.style.display = 'none';
+    currentReactivateId = null;
+};
+
+window.confirmReactivate = async function() {
+    const dateInput = document.getElementById('newExpiryDate');
+    const newExpiryDate = dateInput.value;
+    const confirmButton = document.getElementById('confirmReactivateBtn');
+
+    if (!newExpiryDate) {
+        alert('Por favor, selecione uma nova data de validade');
+        return;
+    }
+
+    confirmButton.disabled = true;
+    confirmButton.textContent = 'Ativando...';
+
+    try {
+        const response = await fetch(`/dashboard/quotation/${currentReactivateId}/reactivate`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ expiry_date: newExpiryDate })
+        });
+        const data = await response.json();
+        if (response.ok && data.success) {
+            closeReactivateModal();
+            window.location.reload();
+        } else {
+            alert('Erro ao ativar orçamento: ' + (data.error || 'Erro desconhecido'));
+            confirmButton.disabled = false;
+            confirmButton.textContent = 'Ativar';
+        }
+    } catch (error) {
+        alert('Erro ao ativar orçamento');
+        confirmButton.disabled = false;
+        confirmButton.textContent = 'Ativar';
+    }
+};
+
+// Share Modal Functions
+window.closeShareModal = function() {
+    const modal = document.getElementById('shareModal');
+    modal.style.display = 'none';
+};
+
+window.copyShareLink = function() {
+    if (window.currentShareUrl) {
+        navigator.clipboard.writeText(window.currentShareUrl);
+        alert('Link copiado para a área de transferência!');
+        closeShareModal();
+    }
+};
+
+window.downloadShareImage = function() {
+    if (window.currentShareId) {
+        window.location.href = `/dashboard/quotation/${window.currentShareId}/download-image`;
+        closeShareModal();
+    }
+};
+
+window.downloadSharePDF = function() {
+    if (window.currentShareId) {
+        window.location.href = `/dashboard/quotation/${window.currentShareId}/download-pdf`;
+        closeShareModal();
+    }
+};
+
+window.nativeShare = function() {
+    if (window.currentShareUrl && navigator.share) {
+        navigator.share({
+            title: 'Orçamento Lumina Flow',
+            text: 'Confira este orçamento',
+            url: window.currentShareUrl
+        }).then(() => {
+            closeShareModal();
+        }).catch(() => {
+            // User cancelled
+        });
+    }
+};
+
+// Quotation Actions
+document.addEventListener('DOMContentLoaded', () => {
+    // View quotation on row click
+    window.viewQuotation = function(quotationId) {
+        window.location.href = `/dashboard/quotation/view/${quotationId}`;
+    };
+
+    // Theme Toggle - Desktop and Mobile
+    const themeToggle = document.getElementById('themeToggle');
+    const themeToggleMobile = document.getElementById('themeToggleMobile');
+    
+    const handleThemeToggle = () => {
+        const html = document.documentElement;
+        const currentTheme = html.getAttribute('data-theme');
+        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        html.setAttribute('data-theme', newTheme);
+        localStorage.setItem('theme', newTheme);
+    };
+    
+    if (themeToggle) {
+        themeToggle.addEventListener('click', handleThemeToggle);
+    }
+    
+    if (themeToggleMobile) {
+        themeToggleMobile.addEventListener('click', handleThemeToggle);
+    }
+    
+    // Initialize theme from localStorage
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme) {
+        document.documentElement.setAttribute('data-theme', savedTheme);
+    }
+    
+    // Status Filter
+    const filterBtns = document.querySelectorAll('.filter-btn');
+    const tableRows = document.querySelectorAll('.quotation-table tbody tr');
+
+    filterBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            filterBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            const filter = btn.getAttribute('data-filter');
+
+            tableRows.forEach(row => {
+                const rowStatus = row.getAttribute('data-status');
+
+                if (filter === 'all' || rowStatus === filter) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+    });
+
+    const setButtonLoading = (button, isLoading, loadingLabel) => {
+        if (!button) return;
+        if (isLoading) {
+            if (!button.dataset.originalHtml) {
+                button.dataset.originalHtml = button.innerHTML;
+            }
+            button.disabled = true;
+            button.classList.add('is-loading');
+            if (!button.classList.contains('icon-btn')) {
+                const label = loadingLabel || button.textContent.trim();
+                button.innerHTML = `<span class="loading-text">${label}...</span>`;
+            }
+        } else {
+            button.disabled = false;
+            button.classList.remove('is-loading');
+            if (button.dataset.originalHtml) {
+                button.innerHTML = button.dataset.originalHtml;
+                delete button.dataset.originalHtml;
+            }
+        }
+    };
+
+    const handleStatusUpdate = async (button, id, status, successMessage, errorMessage) => {
+        const confirmMap = {
+            accepted: 'Tem certeza que deseja aceitar este orçamento?',
+            rejected: 'Tem certeza que deseja recusar este orçamento?'
+        };
+
+        if (confirmMap[status] && !confirm(confirmMap[status])) {
+            return;
+        }
+
+        setButtonLoading(button, true);
+
+        try {
+            const response = await fetch(`/dashboard/quotation/${id}/status`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status })
+            });
+            const data = await response.json();
+            if (response.ok && data.success) {
+                window.location.reload();
+            } else {
+                alert(`${errorMessage}: ${data.error || 'Erro desconhecido'}`);
+                setButtonLoading(button, false);
+            }
+        } catch (error) {
+            alert(errorMessage);
+            setButtonLoading(button, false);
+        }
+    };
+
+    document.querySelectorAll('.btn-accept').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const id = e.currentTarget.getAttribute('data-id');
+            await handleStatusUpdate(e.currentTarget, id, 'accepted', 'Orçamento aceito', 'Erro ao aceitar orçamento');
+        });
+    });
+
+    document.querySelectorAll('.btn-reject').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const id = e.currentTarget.getAttribute('data-id');
+            await handleStatusUpdate(e.currentTarget, id, 'rejected', 'Orçamento recusado', 'Erro ao recusar orçamento');
+        });
+    });
+
+    document.querySelectorAll('.btn-share').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const id = e.currentTarget.getAttribute('data-id');
+            const url = `/dashboard/quotation/view/${id}`;
+            const fullUrl = window.location.origin + url;
+
+            window.currentShareUrl = fullUrl;
+            window.currentShareId = id;
+
+            const modal = document.getElementById('shareModal');
+            modal.style.display = 'flex';
+        });
+    });
+
+    document.querySelectorAll('.btn-delete').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const button = e.currentTarget;
+            const id = button.getAttribute('data-id');
+            if (!confirm('Tem certeza que deseja excluir este orçamento?')) {
+                return;
+            }
+
+            setButtonLoading(button, true);
+
+            try {
+                const response = await fetch(`/dashboard/quotation/delete/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const data = await response.json();
+                if (response.ok && data.success) {
+                    window.location.reload();
+                } else {
+                    alert('Erro ao excluir orçamento: ' + (data.error || 'Erro desconhecido'));
+                    setButtonLoading(button, false);
+                }
+            } catch (error) {
+                alert('Erro ao excluir orçamento');
+                setButtonLoading(button, false);
+            }
+        });
+    });
+
+    // Reactivate Modal
+    document.querySelectorAll('.btn-reactivate').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            currentReactivateId = e.currentTarget.getAttribute('data-id');
+            const modal = document.getElementById('reactivateModal');
+            const dateInput = document.getElementById('newExpiryDate');
+
+            const today = new Date().toISOString().split('T')[0];
+            dateInput.min = today;
+            dateInput.value = today;
+
+            modal.style.display = 'flex';
+        });
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,63 @@
+{% extends "dashboard_base.html" %}
+
+{% block title %}Selecionar Template - Lumina Flow{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+{% endblock %}
+
+{% block content %}
+        <div class="dashboard-header">
+            <div>
+                <h1>Selecionar Template</h1>
+                <p class="text-slate">
+                    {% if quotation_type == 'quick' %}
+                    Escolha um template para orçamento rápido
+                    {% else %}
+                    Escolha um template para orçamento detalhado
+                    {% endif %}
+                </p>
+            </div>
+            <a href="{{ url_for('dashboard.select_quotation_type') }}" class="btn btn-secondary">Voltar</a>
+        </div>
+        
+        <div class="template-selection">
+            {% for template in templates %}
+            <div class="template-card" onclick="selectTemplate('{{ template.template_file }}')">
+                <div class="template-preview">
+                    {% if template.preview_image %}
+                    <img src="{{ template.preview_image }}" alt="{{ template.name }}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                    <div class="template-placeholder" style="display: none;">
+                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                            <line x1="16" y1="13" x2="8" y2="13"></line>
+                            <line x1="16" y1="17" x2="8" y2="17"></line>
+                        </svg>
+                    </div>
+                    {% else %}
+                    <div class="template-placeholder">
+                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                            <line x1="16" y1="13" x2="8" y2="13"></line>
+                            <line x1="16" y1="17" x2="8" y2="17"></line>
+                        </svg>
+                    </div>
+                    {% endif %}
+                </div>
+                <h3>{{ template.name }}</h3>
+                <button class="btn btn-primary">Selecionar</button>
+            </div>
+            {% endfor %}
+        </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function selectTemplate(templateFile) {
+    const quotationType = '{{ quotation_type }}';
+    window.location.href = `/dashboard/quotation/create/${quotationType}?template=${templateFile}`;
+}
+</script>
+{% endblock %}

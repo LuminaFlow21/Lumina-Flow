@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Lumina Flow{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/global.css') }}">
+    {% block extra_css %}{% endblock %}
+    <style>
+        #main-footer {
+            display: none !important;
+        }
+        header {
+            display: none !important;
+        }
+    </style>
+</head>
+<body data-server-region="{{ session.get('user_region', 'UK') }}">
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <aside class="dashboard-sidebar">
+            <nav class="sidebar-nav">
+                <!-- Logo -->
+                <div class="sidebar-logo">
+                    <a href="/" class="logo-link">
+                        <img class="logo-sidebar" src="{{ url_for('static', filename='images/logo_sidebar.png') }}" alt="Lumina Flow Logo">
+                    </a>
+                </div>
+                
+                <!-- Navigation Items -->
+                <a href="{{ url_for('dashboard.dashboard_view') }}" class="nav-item {% if request.endpoint == 'dashboard.dashboard_view' %}active{% endif %}">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                        <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                    </svg>
+                    <span data-i18n="dashboard.quotations">Orçamentos</span>
+                </a>
+                <a href="{{ url_for('dashboard.history') }}" class="nav-item {% if request.endpoint == 'dashboard.history' %}active{% endif %}">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                    </svg>
+                    <span data-i18n="dashboard.quotation_history">Histórico</span>
+                </a>
+                <a href="{{ url_for('dashboard.profile') }}" class="nav-item {% if request.endpoint == 'dashboard.profile' %}active{% endif %}">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                    <span data-i18n="dashboard.profile">Perfil</span>
+                </a>
+                
+                <!-- Bottom Controls -->
+                <div class="sidebar-controls">
+                    <button class="theme-toggle" id="themeToggle" title="Toggle Theme">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="5"></circle>
+                            <line x1="12" y1="1" x2="12" y2="3"></line>
+                            <line x1="12" y1="21" x2="12" y2="23"></line>
+                            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                            <line x1="1" y1="12" x2="3" y2="12"></line>
+                            <line x1="21" y1="12" x2="23" y2="12"></line>
+                            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                        </svg>
+                        <span data-i18n="common.theme">Tema</span>
+                    </button>
+                    <div class="language-control">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="2" y1="12" x2="22" y2="12"></line>
+                            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                        </svg>
+                        <select id="language-selector" data-language-selector class="language-selector">
+                            <option value="BR">PT</option>
+                            <option value="UK">EN</option>
+                        </select>
+                    </div>
+                    
+                    <!-- User Profile Element -->
+                    <a href="{{ url_for('dashboard.profile') }}" class="user-profile-element">
+                        <div class="user-profile-avatar">
+                            {% if profile_data and profile_data.get('profile_photo_url') %}
+                            <img src="{{ profile_data.get('profile_photo_url') }}" alt="Profile Photo">
+                            {% else %}
+                            <span>{{ session.get('user_email', 'U')[0].upper() }}</span>
+                            {% endif %}
+                        </div>
+                        <div class="user-profile-info">
+                            <span class="user-profile-email">{{ profile_data.get('full_name') or profile_data.get('company_name') or session.get('user_email', 'user@luminaflow.com') }}</span>
+                            <span class="user-profile-plan">{{ subscription.plan|capitalize if subscription else 'Free' }}</span>
+                        </div>
+                    </a>
+                    
+                    <a href="{{ url_for('auth.handle_logout') }}" class="nav-item-logout">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                            <polyline points="16 17 21 12 16 7"></polyline>
+                            <line x1="21" y1="12" x2="9" y2="12"></line>
+                        </svg>
+                        <span data-i18n="dashboard.logout">Sair</span>
+                    </a>
+                </div>
+            </nav>
+        </aside>
+        
+        <!-- Main Content -->
+        <main class="dashboard-main">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+    
+    <div id="language-modal" class="language-modal" style="display: none;">
+        <div class="language-modal-backdrop"></div>
+        <div class="language-modal-content">
+            <h3>Escolha seu idioma / Choose your language</h3>
+            <p>Selecione uma opção para continuar / Select an option to continue</p>
+            <div class="language-modal-buttons">
+                <button class="btn btn-primary btn-lg" data-region="BR" style="min-width: 160px;">
+                    🇧🇷 Português / BRL
+                </button>
+                <button class="btn btn-secondary btn-lg" data-region="UK" style="min-width: 160px;">
+                    🇬🇧 English / GBP
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const themeToggle = document.getElementById('themeToggle');
+    if (themeToggle) {
+        themeToggle.addEventListener('click', () => {
+            const html = document.documentElement;
+            const currentTheme = html.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            html.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+        });
+    }
+
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme) {
+        document.documentElement.setAttribute('data-theme', savedTheme);
+    }
+});
+</script>
+{% endblock %}
+</body>
+</html>

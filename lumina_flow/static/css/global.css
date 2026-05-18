@@ -3,28 +3,51 @@
    ======================================== */
 
 /* Import Google Fonts */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@500;600;700&display=swap');
 
 /* ========================================
    CSS VARIABLES / DESIGN TOKENS
    ======================================== */
 :root {
-    /* Colors */
-    --color-navy: #0F172A;
-    --color-indigo: #4F46E5;
-    --color-indigo-hover: #4338CA;
-    --color-indigo-light: #818CF8;
-    --color-slate: #F8FAFC;
-    --color-slate-dark: #1E293B;
-    --color-slate-medium: #64748B;
-    --color-slate-light: #E2E8F0;
+    /* Brand Colors */
+    --color-primary: #1565FF;
+    --color-primary-glow: #29D6FF;
+    --color-primary-deep: #003BFF;
+    --color-white-neutral: #F9FBFF;
+    --color-gray-light: #E9EEF7;
+    --color-text-primary: #1C2434;
+    --color-text-secondary: #60708C;
+    
+    /* Light Theme (default) */
+    --color-background: #F7F9FC;
+    --color-card: #FFFFFF;
+    --color-border: #E8EEF7;
+    --color-text-main: #182433;
+    --color-text-muted: #60708C;
+    --color-glow: rgba(21, 101, 255, 0.1);
+    --color-footer-bg: #0F172A;
+    --color-footer-text: #F4F8FF;
+    --color-footer-muted: #94A3B8;
+    
+    /* Legacy aliases (keep for compatibility, mapped to theme vars) */
+    --color-navy: var(--color-text-main);
+    --color-indigo: var(--color-primary);
+    --color-indigo-hover: var(--color-primary-deep);
+    --color-indigo-light: var(--color-primary-glow);
+    --color-slate: var(--color-background);
+    --color-slate-dark: var(--color-text-main);
+    --color-slate-medium: var(--color-text-muted);
+    --color-slate-light: var(--color-border);
+    
+    /* Semantic Colors */
     --color-success: #10B981;
     --color-success-hover: #059669;
     --color-error: #EF4444;
     --color-warning: #F59E0B;
     
     /* Typography */
-    --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-heading: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     --font-size-xs: 0.75rem;
     --font-size-sm: 0.875rem;
     --font-size-base: 1rem;
@@ -51,10 +74,14 @@
     --spacing-3xl: 4rem;
     
     /* Border Radius */
-    --radius-sm: 6px;
-    --radius-md: 8px;
-    --radius-lg: 12px;
-    --radius-xl: 16px;
+    --radius-input: 12px;
+    --radius-card: 20px;
+    --radius-btn: 14px;
+    --radius-container: 28px;
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 20px;
     --radius-2xl: 24px;
     --radius-full: 9999px;
     
@@ -83,6 +110,32 @@
     --container-padding: var(--spacing-lg);
 }
 
+/* Dark Theme */
+[data-theme="dark"] {
+    /* Dark Theme Colors */
+    --color-background: #07111F;
+    --color-card: #121C30;
+    --color-border: rgba(255, 255, 255, 0.08);
+    --color-text-main: #F4F8FF;
+    --color-text-muted: #A4B0C5;
+    --color-glow: rgba(41, 214, 255, 0.15);
+    --color-footer-bg: #0B1220;
+    --color-footer-text: #F4F8FF;
+    --color-footer-muted: #A4B0C5;
+}
+
+/* Dark theme form inputs */
+[data-theme="dark"] .form-input,
+[data-theme="dark"] select.form-input {
+    color: #F4F8FF !important;
+    background-color: #121C30 !important;
+}
+
+[data-theme="dark"] .form-input option {
+    background-color: #121C30;
+    color: #F4F8FF;
+}
+
 /* ========================================
    CSS RESET & BASE STYLES
    ======================================== */
@@ -98,12 +151,12 @@ html {
 }
 
 body {
-    font-family: var(--font-family);
+    font-family: var(--font-body);
     font-size: var(--font-size-base);
     font-weight: var(--font-weight-normal);
     line-height: 1.6;
-    color: var(--color-navy);
-    background-color: var(--color-slate);
+    color: var(--color-text-primary);
+    background-color: var(--color-background);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
 }
@@ -112,10 +165,11 @@ body {
    TYPOGRAPHY
    ======================================== */
 h1, h2, h3, h4, h5, h6 {
-    font-weight: var(--font-weight-bold);
+    font-family: var(--font-heading);
+    font-weight: 700;
     line-height: 1.2;
     margin-bottom: var(--spacing-md);
-    color: var(--color-navy);
+    color: var(--color-text-primary);
 }
 
 h1 { font-size: var(--font-size-5xl); }
@@ -127,17 +181,17 @@ h6 { font-size: var(--font-size-lg); }
 
 p {
     margin-bottom: var(--spacing-md);
-    color: var(--color-slate-medium);
+    color: var(--color-text-secondary);
 }
 
 a {
-    color: var(--color-indigo);
+    color: var(--color-primary);
     text-decoration: none;
     transition: color var(--transition-base);
 }
 
 a:hover {
-    color: var(--color-indigo-hover);
+    color: var(--color-primary-glow);
 }
 
 /* ========================================
@@ -218,10 +272,10 @@ a:hover {
     align-items: center;
     justify-content: center;
     padding: var(--spacing-md) var(--spacing-xl);
-    font-family: var(--font-family);
+    font-family: var(--font-heading);
     font-size: var(--font-size-base);
-    font-weight: var(--font-weight-semibold);
-    border-radius: var(--radius-lg);
+    font-weight: 500;
+    border-radius: var(--radius-btn);
     border: none;
     cursor: pointer;
     transition: all var(--transition-base);
@@ -230,27 +284,28 @@ a:hover {
 }
 
 .btn-primary {
-    background-color: var(--color-indigo);
-    color: white;
+    background: linear-gradient(90deg, var(--color-primary), var(--color-primary-glow));
+    color: var(--color-footer-text);
     box-shadow: var(--shadow-md);
 }
 
 .btn-primary:hover {
-    background-color: var(--color-indigo-hover);
+    background: linear-gradient(90deg, #0057FF, #00CFFF);
     box-shadow: var(--shadow-lg);
     transform: translateY(-2px);
 }
 
 .btn-secondary {
-    background-color: white;
-    color: var(--color-navy);
-    border: 2px solid var(--color-slate-light);
+    background-color: transparent;
+    color: var(--color-primary);
+    border: 2px solid var(--color-primary-glow);
     box-shadow: var(--shadow-sm);
 }
 
 .btn-secondary:hover {
-    border-color: var(--color-indigo);
-    color: var(--color-indigo);
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+    box-shadow: 0 0 20px rgba(41, 214, 255, 0.2);
 }
 
 .btn-success {
@@ -281,39 +336,39 @@ a:hover {
 
 .form-label {
     display: block;
-    font-family: var(--font-family);
+    font-family: var(--font-heading);
     font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-semibold);
-    color: var(--color-navy);
+    font-weight: 600;
+    color: var(--color-text-primary);
     margin-bottom: var(--spacing-sm);
 }
 
 .form-input {
     width: 100%;
     padding: var(--spacing-md);
-    font-family: var(--font-family);
+    font-family: var(--font-body);
     font-size: var(--font-size-base);
-    color: var(--color-navy);
-    background-color: white;
-    border: 2px solid var(--color-slate-light);
-    border-radius: var(--radius-lg);
+    color: var(--color-text-primary);
+    background-color: var(--color-card);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-input);
     transition: all var(--transition-base);
 }
 
 .form-input:focus {
     outline: none;
-    border-color: var(--color-indigo);
-    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(21, 101, 255, 0.1);
 }
 
 .form-input::placeholder {
-    color: var(--color-slate-medium);
+    color: var(--color-text-secondary);
 }
 
 /* Cards */
 .card {
-    background-color: white;
-    border-radius: var(--radius-lg);
+    background-color: var(--color-card);
+    border-radius: var(--radius-card);
     padding: var(--spacing-xl);
     box-shadow: var(--shadow-md);
     transition: all var(--transition-base);
@@ -356,8 +411,8 @@ a:hover {
 }
 
 .badge-indigo {
-    background-color: rgba(79, 70, 229, 0.1);
-    color: var(--color-indigo);
+    background-color: rgba(21, 101, 255, 0.1);
+    color: var(--color-primary);
 }
 
 /* ========================================
@@ -371,14 +426,14 @@ a:hover {
 .font-semibold { font-weight: var(--font-weight-semibold); }
 .font-medium { font-weight: var(--font-weight-medium); }
 
-.text-navy { color: var(--color-navy); }
-.text-indigo { color: var(--color-indigo); }
-.text-slate { color: var(--color-slate-medium); }
+.text-navy { color: var(--color-text-main); }
+.text-indigo { color: var(--color-primary); }
+.text-slate { color: var(--color-text-muted); }
 .text-success { color: var(--color-success); }
 
-.bg-white { background-color: white; }
-.bg-slate { background-color: var(--color-slate); }
-.bg-navy { background-color: var(--color-navy); }
+.bg-white { background-color: var(--color-card); }
+.bg-slate { background-color: var(--color-background); }
+.bg-navy { background-color: var(--color-text-main); }
 
 .rounded-lg { border-radius: var(--radius-lg); }
 .rounded-xl { border-radius: var(--radius-xl); }
@@ -390,6 +445,71 @@ a:hover {
 .hidden { display: none !important; }
 .block { display: block; }
 .inline-block { display: inline-block; }
+
+/* Theme Toggle Button */
+.theme-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-btn);
+    border: 1px solid var(--color-border);
+    background: var(--color-card);
+    color: var(--color-text-main);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.theme-toggle:hover {
+    background: var(--color-background);
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+}
+
+.theme-toggle .sun-icon,
+.theme-toggle .moon-icon {
+    transition: all 0.2s;
+}
+
+/* Logo Link */
+.logo-link {
+    text-decoration: none;
+    outline: none;
+}
+
+.logo-link:focus {
+    outline: none;
+    box-shadow: none;
+}
+
+.logo-link::-moz-focus-inner {
+    border: 0;
+}
+
+/* Logo Image */
+.logo-image {
+    height: 70px;
+    width: 220px;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.logo-link:hover .logo-image {
+    animation: logo-spin 0.6s ease-in-out;
+}
+
+@keyframes logo-spin {
+    0% {
+        transform: rotate(0deg) scale(1);
+    }
+    50% {
+        transform: rotate(180deg) scale(1.1);
+    }
+    100% {
+        transform: rotate(360deg) scale(1);
+    }
+}
 
 /* ========================================
    RESPONSIVE BREAKPOINTS
@@ -469,4 +589,147 @@ a:hover {
     gap: var(--spacing-lg);
     justify-content: center;
     flex-wrap: wrap;
+}
+
+/* ========================================
+   RESPONSIVE DESIGN - GLOBAL
+   ======================================== */
+
+@media (max-width: 1200px) {
+    .container {
+        max-width: 100%;
+        padding: 0 var(--spacing-lg);
+    }
+}
+
+@media (max-width: 992px) {
+    .container {
+        padding: 0 var(--spacing-md);
+    }
+    
+    h1 {
+        font-size: var(--font-size-4xl);
+    }
+    
+    h2 {
+        font-size: var(--font-size-3xl);
+    }
+}
+
+@media (max-width: 768px) {
+    .container {
+        padding: 0 var(--spacing-md);
+    }
+    
+    h1 {
+        font-size: var(--font-size-3xl);
+    }
+    
+    h2 {
+        font-size: var(--font-size-2xl);
+    }
+    
+    h3 {
+        font-size: var(--font-size-xl);
+    }
+    
+    .btn {
+        padding: var(--spacing-sm) var(--spacing-lg);
+        font-size: var(--font-size-sm);
+    }
+    
+    .btn-sm {
+        padding: 6px 12px;
+        font-size: var(--font-size-xs);
+    }
+    
+    .language-modal-content {
+        padding: var(--spacing-2xl);
+        max-width: 400px;
+    }
+}
+
+@media (max-width: 640px) {
+    .container {
+        padding: 0 var(--spacing-sm);
+    }
+    
+    h1 {
+        font-size: var(--font-size-2xl);
+    }
+    
+    h2 {
+        font-size: var(--font-size-xl);
+    }
+    
+    h3 {
+        font-size: var(--font-size-lg);
+    }
+    
+    .btn {
+        padding: var(--spacing-sm) var(--spacing-md);
+        font-size: var(--font-size-sm);
+    }
+    
+    .language-modal-content {
+        padding: var(--spacing-xl);
+        max-width: 350px;
+    }
+    
+    .language-modal-buttons {
+        flex-direction: column;
+        gap: var(--spacing-md);
+    }
+    
+    .language-modal-buttons .btn {
+        width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    .container {
+        padding: 0 var(--spacing-xs);
+    }
+    
+    h1 {
+        font-size: var(--font-size-xl);
+    }
+    
+    h2 {
+        font-size: var(--font-size-lg);
+    }
+    
+    h3 {
+        font-size: var(--font-size-base);
+    }
+    
+    .btn {
+        padding: 8px 12px;
+        font-size: var(--font-size-xs);
+    }
+    
+    .language-modal-content {
+        padding: var(--spacing-lg);
+        max-width: 300px;
+    }
+}
+
+@media (max-width: 360px) {
+    h1 {
+        font-size: var(--font-size-lg);
+    }
+    
+    h2 {
+        font-size: var(--font-size-base);
+    }
+    
+    .btn {
+        padding: 6px 10px;
+        font-size: 11px;
+    }
+    
+    .language-modal-content {
+        padding: var(--spacing-md);
+        max-width: 280px;
+    }
 }

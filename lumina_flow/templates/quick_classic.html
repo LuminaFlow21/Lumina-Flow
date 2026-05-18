@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Orçamento Rápido #{{ quotation.id[:8].upper() }}</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Source+Sans+Pro:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <style>
+
+    *{
+      margin:0;
+      padding:0;
+      box-sizing:border-box;
+    }
+
+    body{
+      background:#2c3e50;
+      font-family:'Source Sans Pro', sans-serif;
+      display:flex;
+      justify-content:center;
+      padding:20px;
+      color:#2c3e50;
+    }
+
+    .orcamento{
+      width:600px;
+      background:#fff;
+      border-radius:4px;
+      padding:50px;
+      box-shadow:0 0 30px rgba(0,0,0,0.3);
+      display:flex;
+      flex-direction:column;
+      border:2px solid #1a252f;
+    }
+
+    .orcamento::after{
+      content:'';
+      position:absolute;
+      top:0;
+      right:0;
+      width:100px;
+      height:100px;
+      background:linear-gradient(135deg, transparent 50%, #1a252f 50%);
+    }
+
+    /* HEADER */
+
+    .topo{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      margin-bottom:35px;
+      border-bottom:3px solid #1a252f;
+      padding-bottom:25px;
+    }
+
+    .empresa{
+      display:flex;
+      gap:16px;
+      align-items:center;
+    }
+
+    .foto{
+      width:80px;
+      height:80px;
+      border-radius:4px;
+      border:3px solid #1a252f;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:28px;
+      color:#1a252f;
+      background:#f8f9fa;
+      overflow:hidden;
+      box-shadow:0 4px 10px rgba(0,0,0,0.1);
+    }
+
+    .foto img{
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      object-position:center;
+      display:block;
+    }
+
+    .foto span{
+      font-weight:700;
+      font-size:28px;
+      font-family:'Playfair Display', serif;
+    }
+
+    .titulo h1{
+      font-family:'Playfair Display', serif;
+      font-size:28px;
+      font-weight:700;
+      color:#1a252f;
+      line-height:1.2;
+    }
+
+    .titulo h2{
+      color:#2c3e50;
+      font-size:16px;
+      font-weight:600;
+      margin-top:5px;
+      font-family:'Source Sans Pro', sans-serif;
+      text-transform:uppercase;
+      letter-spacing:1px;
+    }
+
+    .infos-topo{
+      text-align:right;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+
+    .info-item{
+      background:#f8f9fa;
+      padding:10px 20px;
+      border-radius:2px;
+      border:2px solid #bdc3c7;
+      color:#7f8c8d;
+      font-size:13px;
+      font-weight:600;
+      font-family:'Source Sans Pro', sans-serif;
+    }
+
+    .info-item span{
+      color:#1a252f;
+      font-weight:700;
+    }
+
+    /* SEÇÕES */
+
+    .secao{
+      margin-bottom:30px;
+    }
+
+    .secao-titulo{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      margin-bottom:18px;
+      border-bottom:2px solid #bdc3c7;
+      padding-bottom:10px;
+    }
+
+    .icone-secao{
+      width:35px;
+      height:35px;
+      border-radius:2px;
+      background:#1a252f;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      color:white;
+      font-size:16px;
+      flex-shrink:0;
+    }
+
+    .secao-titulo h3{
+      font-family:'Playfair Display', serif;
+      font-size:20px;
+      font-weight:700;
+      color:#1a252f;
+    }
+
+    /* CLIENTE */
+
+    .cliente-info{
+      display:flex;
+      flex-direction:column;
+      gap:15px;
+    }
+
+    .cliente-item{
+      display:flex;
+      align-items:center;
+      gap:14px;
+      background:#f8f9fa;
+      padding:18px 24px;
+      border-radius:2px;
+      border:2px solid #bdc3c7;
+    }
+
+    .cliente-item .label{
+      font-size:12px;
+      color:#7f8c8d;
+      text-transform:uppercase;
+      letter-spacing:1px;
+      font-weight:700;
+      min-width:90px;
+    }
+
+    .cliente-item .valor{
+      font-size:16px;
+      color:#2c3e50;
+      font-weight:600;
+    }
+
+    /* SERVIÇO */
+
+    .servico-box{
+      background:#f8f9fa;
+      border-radius:2px;
+      padding:24px;
+      border:2px solid #bdc3c7;
+    }
+
+    .servico-descricao{
+      font-size:16px;
+      color:#2c3e50;
+      line-height:1.8;
+      font-weight:400;
+    }
+
+    /* TOTAL */
+
+    .total-area{
+      display:flex;
+      flex-direction:column;
+      gap:15px;
+      align-items:flex-end;
+      margin-top:25px;
+    }
+
+    .total-box{
+      display:flex;
+      align-items:center;
+      border-radius:2px;
+      overflow:hidden;
+      font-weight:700;
+      font-size:24px;
+      border:2px solid #1a252f;
+    }
+
+    .total-label{
+      padding:16px 28px;
+      background:#1a252f;
+      color:white;
+      font-family:'Playfair Display', serif;
+    }
+
+    .total-valor{
+      background:white;
+      color:#1a252f;
+      padding:16px 32px;
+      font-family:'Playfair Display', serif;
+    }
+
+    /* OBSERVAÇÕES */
+
+    .observacoes{
+      min-height:100px;
+      background:#f8f9fa;
+      border-radius:2px;
+      border:2px solid #bdc3c7;
+      margin-top:20px;
+      padding:20px;
+      font-size:14px;
+      color:#2c3e50;
+      white-space:pre-wrap;
+      line-height:1.8;
+      font-family:'Source Sans Pro', sans-serif;
+    }
+
+    .action-buttons {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 1000;
+    }
+
+    .action-btn {
+      background:#1a252f;
+      color: white;
+      border: 2px solid #1a252f;
+      padding: 12px 20px;
+      border-radius: 2px;
+      cursor: pointer;
+      font-family:'Source Sans Pro', sans-serif;
+      font-weight: 600;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow:0 4px 10px rgba(0,0,0,0.2);
+      transition: all 0.3s ease;
+    }
+
+    .action-btn:hover {
+      background:#2c3e50;
+      transform: translateY(-2px);
+    }
+
+    @media (max-width: 768px) {
+      .orcamento {
+        width: 100%;
+        padding: 20px;
+      }
+      .action-buttons {
+        position: fixed;
+        bottom: 20px;
+        top: auto;
+        right: 20px;
+        left: 20px;
+        flex-direction: row;
+        justify-content: center;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  {% set currency_code = quotation.currency or ('BRL' if session.get('user_region', 'UK') == 'BR' else 'GBP') %}
+  {% set currency_map = {'BRL': 'R$', 'GBP': '£', 'USD': '$', 'EUR': '€'} %}
+  {% set currency_symbol_resolved = (currency_symbol if currency_symbol is defined and currency_symbol else currency_map.get(currency_code, currency_code)) %}
+
+  <div class="action-buttons">
+    {% if current_user.is_authenticated and quotation.user_id == current_user.id|string %}
+    <a href="{{ url_for('dashboard.dashboard_view') }}" class="action-btn" style="text-decoration: none; display: flex; align-items: center; gap: 8px;">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      <span>Voltar</span>
+    </a>
+    <button class="action-btn" onclick="openEditModal()">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      <span>Editar</span>
+    </button>
+    {% endif %}
+    <button class="action-btn" onclick="downloadImage()">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+      <span>Baixar Imagem</span>
+    </button>
+    <button class="action-btn" onclick="downloadPDF()">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+      <span>Baixar PDF</span>
+    </button>
+    <button class="action-btn" onclick="shareQuotation(event)">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+      <span>Compartilhar</span>
+    </button>
+  </div>
+
+  <div class="orcamento" id="quotationContainer">
+
+    <!-- TOPO -->
+
+    <div class="topo">
+
+      <div class="empresa">
+
+        <div class="foto">
+          {% if profile_data and profile_data.get('profile_photo_url') %}
+          <img src="{{ profile_data.profile_photo_url }}" alt="Foto de {{ user_name }}">
+          {% else %}
+          <span>{{ user_name[0]|upper }}</span>
+          {% endif %}
+        </div>
+
+        <div class="titulo">
+          <h1>{{ user_name }}</h1>
+          <h2>Orçamento Rápido</h2>
+        </div>
+
+      </div>
+
+      <div class="infos-topo">
+
+        <div class="info-item">
+          #{{ quotation.id[:8].upper() }}
+        </div>
+
+        <div class="info-item">
+          {{ quotation.created_at[:10] }}
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- CLIENTE -->
+
+    <section class="secao">
+
+      <div class="secao-titulo">
+        <div class="icone-secao">👤</div>
+        <h3>Cliente</h3>
+      </div>
+
+      <div class="cliente-info">
+
+        <div class="cliente-item">
+          <div class="label">Nome</div>
+          <div class="valor">{{ quotation.client_name }}</div>
+        </div>
+
+        {% if quotation.phone %}
+        <div class="cliente-item">
+          <div class="label">Telefone</div>
+          <div class="valor">{{ quotation.phone }}</div>
+        </div>
+        {% endif %}
+
+      </div>
+
+    </section>
+
+    <!-- SERVIÇO -->
+
+    <section class="secao">
+
+      <div class="secao-titulo">
+        <div class="icone-secao">📋</div>
+        <h3>Serviço</h3>
+      </div>
+
+      <div class="servico-box">
+        <div class="servico-descricao">{{ quotation.service_description }}</div>
+      </div>
+
+    </section>
+
+    <!-- TOTAL -->
+
+    <section class="secao">
+
+      <div class="total-area">
+        <div class="total-box">
+          <div class="total-label">Valor Total</div>
+          <div class="total-valor">{{ currency_symbol_resolved }} {{ quotation.value }}</div>
+        </div>
+      </section>
+
+    </section>
+
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script>
+    async function downloadImage() {
+      const container = document.getElementById('quotationContainer');
+      const buttons = document.querySelector('.action-buttons');
+      buttons.style.display = 'none';
+
+      try {
+        const canvas = await html2canvas(container, {
+          backgroundColor: '#2c3e50',
+          scale: 2,
+          useCORS: true,
+          logging: false
+        });
+
+        const link = document.createElement('a');
+        link.download = `orcamento-{{ quotation.id[:8].upper() }}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+      } catch (error) {
+        console.error('Error generating image:', error);
+        alert('Erro ao gerar imagem');
+      } finally {
+        buttons.style.display = 'flex';
+      }
+    }
+
+    async function downloadPDF() {
+      const container = document.getElementById('quotationContainer');
+      const buttons = document.querySelector('.action-buttons');
+      buttons.style.display = 'none';
+
+      try {
+        const canvas = await html2canvas(container, {
+          backgroundColor: '#2c3e50',
+          scale: 2,
+          useCORS: true,
+          logging: false
+        });
+
+        const imgData = canvas.toDataURL('image/png');
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF('p', 'mm', 'a4');
+
+        const imgProps = pdf.getImageProperties(imgData);
+        const pdfWidth = 210;
+        const pdfHeight = 297;
+        const scale = Math.min(pdfWidth / imgProps.width, pdfHeight / imgProps.height);
+        const renderWidth = imgProps.width * scale;
+        const renderHeight = imgProps.height * scale;
+        const marginX = (pdfWidth - renderWidth) / 2;
+        const marginY = Math.max(0, (pdfHeight - renderHeight) / 2);
+
+        pdf.addImage(imgData, 'PNG', marginX, marginY, renderWidth, renderHeight);
+        pdf.save(`orcamento-{{ quotation.id[:8].upper() }}.pdf`);
+      } catch (error) {
+        console.error('Error generating PDF:', error);
+        alert('Erro ao gerar PDF');
+      } finally {
+        buttons.style.display = 'flex';
+      }
+    }
+
+    function shareQuotation(event) {
+      event.preventDefault();
+      const url = window.location.href;
+      if (navigator.share) {
+        navigator.share({
+          title: 'Orçamento Lumina Flow',
+          text: 'Confira este orçamento',
+          url: url
+        });
+      } else {
+        navigator.clipboard.writeText(url);
+        alert('Link copiado para a área de transferência!');
+      }
+    }
+  </script>
+
+<!-- Edit Modal -->
+<div id="editModal" class="modal" style="display: none;">
+  <div class="modal-backdrop" onclick="closeEditModal()"></div>
+  <div class="modal-content card">
+    <div class="modal-header">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <div style="width: 40px; height: 40px; background: linear-gradient(135deg, var(--color-primary), #818cf8); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+          </svg>
+        </div>
+        <h3 data-i18n="dashboard.edit_quotation" style="margin: 0; font-size: 1.25rem; font-weight: 600;">Editar Orçamento</h3>
+      </div>
+      <button class="modal-close" onclick="closeEditModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--color-text-muted); padding: 4px 8px; border-radius: 4px; transition: all 0.2s;">×</button>
+    </div>
+    <div class="modal-body" style="padding: 24px 0;">
+      <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" stroke-width="2">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+          <circle cx="12" cy="7" r="4"></circle>
+        </svg>
+        <label data-i18n="dashboard.client_name" style="margin: 0; font-weight: 600;">Nome do Cliente</label>
+      </div>
+      <input type="text" id="editClientName" class="form-input" value="{{ quotation.client_name }}" placeholder="Digite o nome do cliente" style="width: 100%; padding: 12px 16px; border: 2px solid var(--color-border); border-radius: var(--radius-input); background: var(--color-bg); color: var(--color-text); font-size: 14px; transition: all 0.2s; margin-bottom: 20px;">
+      
+      <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" stroke-width="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+          <polyline points="14 2 14 8 20 8"></polyline>
+          <line x1="16" y1="13" x2="8" y2="13"></line>
+          <line x1="16" y1="17" x2="8" y2="17"></line>
+          <polyline points="10 9 9 9 8 9"></polyline>
+        </svg>
+        <label data-i18n="dashboard.service_description" style="margin: 0; font-weight: 600;">Descrição do Serviço</label>
+      </div>
+      <textarea id="editServiceDescription" class="form-input" rows="3" placeholder="Descreva o serviço detalhadamente" style="width: 100%; padding: 12px 16px; border: 2px solid var(--color-border); border-radius: var(--radius-input); background: var(--color-bg); color: var(--color-text); font-size: 14px; transition: all 0.2s; resize: vertical; min-height: 80px; line-height: 1.5; margin-bottom: 20px;">{{ quotation.service_description }}</textarea>
+      
+      <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" stroke-width="2">
+          <line x1="12" y1="1" x2="12" y2="23"></line>
+          <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+        </svg>
+        <label data-i18n="dashboard.value" style="margin: 0; font-weight: 600;">Valor</label>
+      </div>
+      <input type="number" id="editValue" class="form-input" value="{{ quotation.value }}" step="0.01" placeholder="0.00" style="width: 100%; padding: 12px 16px; border: 2px solid var(--color-border); border-radius: var(--radius-input); background: var(--color-bg); color: var(--color-text); font-size: 14px; transition: all 0.2s; margin-bottom: 20px;">
+      
+      <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" stroke-width="2">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+          <line x1="16" y1="2" x2="16" y2="6"></line>
+          <line x1="8" y1="2" x2="8" y2="6"></line>
+          <line x1="3" y1="10" x2="21" y2="10"></line>
+        </svg>
+        <label data-i18n="dashboard.expiry_date" style="margin: 0; font-weight: 600;">Data de Validade</label>
+      </div>
+      <input type="date" id="editExpiryDate" class="form-input" value="{{ quotation.expiry_date }}" style="width: 100%; padding: 12px 16px; border: 2px solid var(--color-border); border-radius: var(--radius-input); background: var(--color-bg); color: var(--color-text); font-size: 14px; transition: all 0.2s;">
+    </div>
+    <div class="modal-footer" style="padding: 24px 0 0 0; border-top: 1px solid var(--color-border); display: flex; gap: 12px; justify-content: flex-end;">
+      <button class="btn btn-secondary" onclick="closeEditModal()" data-i18n="common.cancel" style="padding: 12px 24px; font-size: 14px; font-weight: 500; border-radius: var(--radius-btn); transition: all 0.2s; background: var(--color-slate-light); color: var(--color-text); border: 2px solid var(--color-border);">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveEdit()" data-i18n="common.save" style="padding: 12px 24px; font-size: 14px; font-weight: 500; border-radius: var(--radius-btn); transition: all 0.2s; background: var(--color-primary); color: white; border: none;">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+function openEditModal() {
+  const modal = document.getElementById('editModal');
+  modal.style.display = 'flex';
+}
+
+function closeEditModal() {
+  const modal = document.getElementById('editModal');
+  modal.style.display = 'none';
+}
+
+function saveEdit() {
+  const clientName = document.getElementById('editClientName').value;
+  const serviceDescription = document.getElementById('editServiceDescription').value;
+  const value = document.getElementById('editValue').value;
+  const expiryDate = document.getElementById('editExpiryDate').value;
+  
+  fetch(`/dashboard/quotation/{{ quotation.id }}/edit`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      client_name: clientName,
+      service_description: serviceDescription,
+      value: value,
+      expiry_date: expiryDate
+    })
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      window.location.reload();
+    } else {
+      alert('Erro ao salvar: ' + data.error);
+    }
+  })
+  .catch(error => {
+    alert('Erro ao salvar');
+  });
+}
+</script>
+</body>
+</html>

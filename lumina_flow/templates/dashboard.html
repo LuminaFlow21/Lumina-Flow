@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "dashboard_base.html" %}
 
 {% block title %}Dashboard - Lumina Flow{% endblock %}
 
@@ -7,106 +7,108 @@
 {% endblock %}
 
 {% block content %}
-<div class="dashboard-container">
-    <!-- Sidebar -->
-    <aside class="dashboard-sidebar">
-        <div class="sidebar-header">
-            <div class="sidebar-logo">
-                <div style="width: 36px; height: 36px; background: linear-gradient(135deg, var(--color-indigo), var(--color-indigo-light)); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center;">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
-                        <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
-                        <path d="M2 17l10 5 10-5"></path>
-                        <path d="M2 12l10 5 10-5"></path>
-                    </svg>
+<!-- Mobile Profile Header -->
+        <div class="mobile-profile-header">
+            <div class="mobile-profile-info">
+                <div class="mobile-profile-avatar">
+                    {% if profile_data.get('profile_photo_url') %}
+                    <img src="{{ profile_data.get('profile_photo_url') }}" alt="Profile Photo">
+                    {% else %}
+                    <span>{{ session.get('user_email', 'U')[0].upper() }}</span>
+                    {% endif %}
                 </div>
-                <span class="font-bold text-navy">Lumina Flow</span>
+            </div>
+            <div class="mobile-profile-actions">
+                <button class="theme-toggle-mobile" id="themeToggleMobile" title="Toggle Theme">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+                <button class="language-toggle" data-language-toggle title="Change Language">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="2" y1="12" x2="22" y2="12"></line>
+                        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                    </svg>
+                </button>
             </div>
         </div>
         
-        <nav class="sidebar-nav">
-            <a href="{{ url_for('dashboard.dashboard_view') }}" class="nav-item active">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                    <polyline points="14 2 14 8 20 8"></polyline>
-                    <line x1="16" y1="13" x2="8" y2="13"></line>
-                    <line x1="16" y1="17" x2="8" y2="17"></line>
-                </svg>
-                <span data-i18n="dashboard.quotations">Orçamentos</span>
-            </a>
-            <a href="{{ url_for('dashboard.profile') }}" class="nav-item">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                    <circle cx="12" cy="7" r="4"></circle>
-                </svg>
-                <span data-i18n="dashboard.profile">Perfil</span>
-            </a>
-        </nav>
-        
-        <div class="sidebar-footer">
-            <a href="{{ url_for('auth.logout') }}" class="nav-item nav-item-logout">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                    <polyline points="16 17 21 12 16 7"></polyline>
-                    <line x1="21" y1="12" x2="9" y2="12"></line>
-                </svg>
-                <span data-i18n="dashboard.logout">Sair</span>
-            </a>
+        <!-- Profile Completion Banner -->
+        {% if not profile_complete %}
+        <div class="profile-completion-banner">
+            <div class="banner-content">
+                <div class="banner-message">
+                    <h3 data-i18n="dashboard.complete_profile">Preencha o seu perfil para desbloquear todos os recursos</h3>
+                    <div class="banner-checklist">
+                        <div class="checklist-item {% if profile_data.get('profile_photo_url') %}completed{% endif %}">
+                            <span class="check-icon">{% if profile_data.get('profile_photo_url') %}✓{% else %}○{% endif %}</span>
+                            <span data-i18n="dashboard.add_photo">Coloque uma foto de perfil/logotipo empresa</span>
+                        </div>
+                        <div class="checklist-item {% if profile_data.get('whatsapp') %}completed{% endif %}">
+                            <span class="check-icon">{% if profile_data.get('whatsapp') %}✓{% else %}○{% endif %}</span>
+                            <span data-i18n="dashboard.add_whatsapp">Adicione seu número do WhatsApp</span>
+                        </div>
+                    </div>
+                </div>
+                <a href="{{ url_for('dashboard.profile') }}" class="banner-btn" data-i18n="dashboard.fill_profile">Preencher Perfil</a>
+            </div>
+            <button class="banner-close" id="bannerClose">×</button>
         </div>
-    </aside>
-    
-    <!-- Main Content -->
-    <main class="dashboard-main">
+        {% endif %}
         <!-- Header -->
         <div class="dashboard-header">
             <div>
                 <h1 data-i18n="dashboard.welcome">Bem-vindo</h1>
                 <p class="text-slate" data-i18n="dashboard.quotations">Orçamentos</p>
             </div>
-            <div class="user-info">
-                <div class="user-avatar">
-                    <span>{{ session.get('user_email', 'U')[0].upper() }}</span>
+            <div class="header-actions">
+                <div class="stats-card">
+                    <span class="stats-label" data-i18n="dashboard.total_quotations">Total</span>
+                    <span class="stats-value">{{ quotation_count }}</span>
                 </div>
             </div>
         </div>
 
-        <!-- New Quotation Form -->
+        <!-- New Quotation Button -->
+        {% if can_create %}
         <div class="quotation-form-card">
-            <h2 data-i18n="dashboard.new_quotation">Novo Orçamento</h2>
-            <form id="quotationForm" class="quotation-form">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label" data-i18n="dashboard.client_name">Nome do Cliente</label>
-                        <input type="text" name="client_name" class="form-input" data-i18n-placeholder="dashboard.client_name" placeholder="Nome do Cliente" required>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label" data-i18n="dashboard.value">Valor</label>
-                        <input type="number" name="value" class="form-input" step="0.01" min="0" placeholder="0.00" required>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label class="form-label" data-i18n="dashboard.service_description">Descrição do Serviço</label>
-                    <textarea name="service_description" class="form-input" rows="3" data-i18n-placeholder="dashboard.service_description" placeholder="Descrição do Serviço" required></textarea>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label" data-i18n="dashboard.expiry_date">Data de Validade</label>
-                        <input type="date" name="expiry_date" class="form-input" required>
-                    </div>
-                </div>
-                <div class="form-actions">
-                    {% if can_create %}
-                    <button type="submit" class="btn btn-primary" data-i18n="dashboard.generate">Gerar</button>
-                    {% else %}
-                    <button type="button" class="btn btn-primary" disabled data-i18n="dashboard.generate">Gerar</button>
-                    <span class="limit-badge" data-i18n="dashboard.free_limit">Limite Gratuito: 3 orçamentos</span>
-                    {% endif %}
-                </div>
-            </form>
+            <div class="card-header">
+                <h2 data-i18n="dashboard.create_new_quotation_card_title">Criar Novo Orçamento</h2>
+                {% if subscription.plan == 'free' %}
+                <span class="limit-info">
+                    <span class="limit-count">{{ quotation_count }}</span>/3 <span data-i18n="dashboard.quotations">Orçamentos</span>
+                </span>
+                {% endif %}
+            </div>
+            <div style="text-align: center; padding: 40px;">
+                <p style="margin-bottom: 20px; color: var(--color-text-muted);" data-i18n="dashboard.select_quotation_type_description">Escolha o tipo de orçamento que deseja criar</p>
+                <a href="{{ url_for('dashboard.quotation_spa') }}" class="btn btn-primary" style="padding: 15px 40px; font-size: 16px;" data-i18n="dashboard.create_quotation_button">
+                    Criar Orçamento
+                </a>
+            </div>
         </div>
+        {% else %}
+        <div class="upgrade-cta">
+            <h3 data-i18n="dashboard.upgrade_title">Upgrade para Pro</h3>
+            <p data-i18n="dashboard.upgrade_subtitle">Desbloqueie recursos ilimitados</p>
+            <a href="/pricing" class="btn btn-primary" data-i18n="dashboard.upgrade_plan">Fazer Upgrade</a>
+        </div>
+        {% endif %}
 
         <!-- Quotation History -->
         <div class="quotation-history">
-            <h2 data-i18n="dashboard.quotation_history">Histórico de Orçamentos</h2>
+            <div class="card-header">
+                <h2 data-i18n="dashboard.quotation_history">Histórico de Orçamentos</h2>
+            </div>
             
             {% if quotations %}
             <div class="table-container">
@@ -122,18 +124,17 @@
                     </thead>
                     <tbody>
                         {% for q in quotations %}
-                        <tr>
+                        <tr onclick="viewQuotation('{{ q.id }}')" style="cursor: pointer;">
                             <td class="client-cell">{{ q.client_name }}</td>
-                            <td class="date-cell">{{ q.created_at.strftime('%d/%m/%Y') if q.created_at and q.created_at.strftime is defined else (q.created_at if q.created_at else '') }}</td>
+                            <td class="date-cell">{{ q.created_at[:10].split('-')[2] }}/{{ q.created_at[:10].split('-')[1] }}/{{ q.created_at[:10].split('-')[0] if q.created_at else '' }}</td>
                             <td class="value-cell">
                                 {% if q.currency == 'BRL' %}R$ {% else %}£ {% endif %}{{ "%.2f"|format(q.value) }}
                             </td>
                             <td>
-                                <span class="status-badge status-{{ q.status }}" data-status="{{ q.status }}">{{ q.status|capitalize }}</span>
+                                <span class="status-badge status-{{ q.status }}" data-i18n="dashboard.{{ q.status }}"></span>
                             </td>
                             <td class="actions-cell">
                                 <a href="{{ url_for('dashboard.quotation_detail', quotation_id=q.id) }}" class="btn btn-sm btn-secondary" data-i18n="dashboard.view_details">Ver Detalhes</a>
-                                <a href="{{ url_for('dashboard.quotation_detail', quotation_id=q.id, pdf=1) }}" class="btn btn-sm btn-secondary" data-i18n="dashboard.generate_pdf">Gerar PDF</a>
                             </td>
                         </tr>
                         {% endfor %}
@@ -142,8 +143,14 @@
             </div>
             {% else %}
             <div class="empty-state">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="1.5">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                </svg>
                 <p data-i18n="dashboard.no_quotations">Nenhum orçamento ainda</p>
-                <p class="text-slate" data-i18n="dashboard.start_quotation">Crie seu primeiro orçamento</p>
+                <p class="text-slate" data-i18n="dashboard.start_quotation">Crie seu primeiro orçamento acima</p>
             </div>
             {% endif %}
         </div>
@@ -151,18 +158,50 @@
         <!-- Upgrade CTA for free users -->
         {% if subscription.plan == 'free' and quotation_count >= 2 %}
         <div class="upgrade-cta">
-            <p data-i18n="dashboard.upgrade_cta">Upgrade para Pro (ilimitado)</p>
+            <div class="upgrade-content">
+                <h3 data-i18n="dashboard.upgrade_title">Upgrade para Pro</h3>
+                <p data-i18n="dashboard.upgrade_subtitle">Desbloqueie recursos ilimitados</p>
+            </div>
             <a href="#pricing" class="btn btn-primary" data-i18n="dashboard.upgrade_plan">Fazer Upgrade</a>
         </div>
         {% endif %}
-    </main>
-</div>
 {% endblock %}
 
 {% block extra_js %}
 <script src="{{ url_for('static', filename='js/stripe_client.js') }}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
+    // View quotation on row click
+    window.viewQuotation = function(quotationId) {
+        window.location.href = `/dashboard/quotation/${quotationId}`;
+    };
+
+    // Theme Toggle - Desktop and Mobile
+    const themeToggle = document.getElementById('themeToggle');
+    const themeToggleMobile = document.getElementById('themeToggleMobile');
+    
+    const handleThemeToggle = () => {
+        const html = document.documentElement;
+        const currentTheme = html.getAttribute('data-theme');
+        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        html.setAttribute('data-theme', newTheme);
+        localStorage.setItem('theme', newTheme);
+    };
+    
+    if (themeToggle) {
+        themeToggle.addEventListener('click', handleThemeToggle);
+    }
+    
+    if (themeToggleMobile) {
+        themeToggleMobile.addEventListener('click', handleThemeToggle);
+    }
+    
+    // Initialize theme from localStorage
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme) {
+        document.documentElement.setAttribute('data-theme', savedTheme);
+    }
+    
     // Translate status badges
     document.querySelectorAll('[data-status]').forEach(el => {
         if (typeof t === 'function') {
@@ -174,29 +213,22 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    const form = document.getElementById('quotationForm');
-    if (form) {
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const formData = new FormData(form);
-            const data = Object.fromEntries(formData);
-            try {
-                const response = await fetch('/api/quotations', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
-                });
-                const result = await response.json();
-                if (result.success && result.quotation && result.quotation.id) {
-                    window.location.href = '/quotation/' + result.quotation.id;
-                } else if (result.success) {
-                    window.location.reload();
-                } else {
-                    alert(result.error || 'Error creating quotation');
-                }
-            } catch (err) {
-                console.error(err);
-                alert('Error');
+    // Check if banner was previously dismissed
+    if (localStorage.getItem('profileBannerDismissed') === 'true') {
+        const banner = document.querySelector('.profile-completion-banner');
+        if (banner) {
+            banner.style.display = 'none';
+        }
+    }
+
+    // Banner close button
+    const bannerClose = document.getElementById('bannerClose');
+    if (bannerClose) {
+        bannerClose.addEventListener('click', () => {
+            const banner = document.querySelector('.profile-completion-banner');
+            if (banner) {
+                banner.style.display = 'none';
+                localStorage.setItem('profileBannerDismissed', 'true');
             }
         });
     }

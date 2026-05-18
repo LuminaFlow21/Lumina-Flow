@@ -1,22 +1,37 @@
 from flask import Blueprint, render_template, session, redirect, url_for, request, jsonify
-from functools import wraps
+from flask_login import login_required, current_user
 from datetime import datetime
 from ..supabase_handler import get_supabase_handler
+import os
+import base64
+import uuid
+from werkzeug.utils import secure_filename
 
 dashboard_bp = Blueprint('dashboard', __name__)
 
-def login_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if 'user_id' not in session:
-            return redirect(url_for('auth.login_page'))
-        return f(*args, **kwargs)
-    return decorated_function
-
-def get_user_quotations(user_id: str) -> list:
+def check_and_update_expired_quotations(quotations: list, user_id: str) -> list:
+    """Check if quotations have expired and update status to 'expired'"""
     supabase = get_supabase_handler()
-    result = supabase.get_user_quotations(user_id)
-    return result.get('data', []) if result.get('success') else []
+    today = datetime.now().date()
+
+    for quotation in quotations:
+        if quotation.get('status') in ['pending', 'accepted'] and quotation.get('expiry_date'):
+            try:
+                expiry_date = datetime.strptime(quotation['expiry_date'][:10], '%Y-%m-%d').date()
+                if expiry_date < today:
+                    # Update status to expired
+                    supabase.update_quotation_status(user_id, quotation['id'], 'expired')
+                    quotation['status'] = 'expired'
+            except (ValueError, KeyError):
+                pass
+
+    return quotations
+
+def get_user_quotations(user_id: str, access_token: str = None) -> list:
+    supabase = get_supabase_handler()
+    result = supabase.get_user_quotations(user_id, access_token)
+    quotations = result.get('data', []) if result.get('success') else []
+    return check_and_update_expired_quotations(quotations, user_id)
 
 def can_create_quotation(user_id: str, plan: str) -> bool:
     if plan == 'pro':
@@ -81,70 +96,455 @@ def test_dashboard():
         can_create=True
     )
 
-@dashboard_bp.route('/dashboard')
+@dashboard_bp.route('/')
 @login_required
 def dashboard_view():
-    user_id = session.get('user_id')
+    user_id = current_user.id
+    user_plan = current_user.plan
     supabase = get_supabase_handler()
-    
+
     subscription_result = supabase.get_user_subscription(user_id)
     subscription = {
-        'plan': 'free',
-        'status': 'inactive',
-        'next_billing': None
+        'plan': user_plan,
+        'status': subscription_result.get('subscription_status', 'inactive') if subscription_result.get('success') else 'inactive',
+        'next_billing': subscription_result.get('next_billing_date') if subscription_result.get('success') else None
     }
-    if subscription_result.get('success'):
-        subscription['plan'] = subscription_result.get('plan', 'free')
-        subscription['status'] = subscription_result.get('subscription_status', 'inactive')
-        subscription['next_billing'] = subscription_result.get('next_billing_date')
-    
+
     quotations = get_user_quotations(user_id)
     quotation_count = len(quotations)
     can_create_new = can_create_quotation(user_id, subscription['plan'])
-    
+
+    # Check if profile is complete
+    profile_result = supabase.get_user_profile(user_id)
+    profile_data = profile_result.get('data', {}) if profile_result.get('success') else {}
+    profile_complete = bool(profile_data.get('profile_photo_url') and profile_data.get('whatsapp'))
+
     return render_template(
-        'dashboard.html', 
-        subscription=subscription, 
-        quotations=quotations, 
+        'dashboard.html',
+        subscription=subscription,
+        quotations=quotations,
         quotation_count=quotation_count, 
-        can_create=can_create_new
+        can_create=can_create_new,
+        profile_complete=profile_complete,
+        profile_data=profile_data
     )
 
-@dashboard_bp.route('/quotation/<uuid:quotation_id>')
+@dashboard_bp.route('/quotation/select-type')
+@login_required
+def select_quotation_type():
+    user_id = current_user.id
+    supabase = get_supabase_handler()
+    
+    # Get profile data
+    profile_result = supabase.get_user_profile(user_id)
+    profile_data = profile_result.get('data', {}) if profile_result.get('success') else {}
+    
+    # Get subscription data
+    sub_result = supabase.get_user_subscription(user_id)
+    subscription = {
+        'plan': current_user.plan,
+        'status': sub_result.get('subscription_status', 'inactive') if sub_result.get('success') else 'inactive'
+    }
+    
+    return render_template('select_quotation_type.html', profile_data=profile_data, subscription=subscription)
+
+@dashboard_bp.route('/quotation/select-template/<quotation_type>')
+@login_required
+def select_template(quotation_type):
+    user_id = current_user.id
+    supabase = get_supabase_handler()
+    
+    # Get subscription data
+    sub_result = supabase.get_user_subscription(user_id)
+    subscription = {
+        'plan': current_user.plan,
+        'status': sub_result.get('subscription_status', 'inactive') if sub_result.get('success') else 'inactive'
+    }
+    
+    # Get profile data
+    profile_result = supabase.get_user_profile(user_id)
+    profile_data = profile_result.get('data', {}) if profile_result.get('success') else {}
+    
+    # For now, return hardcoded templates
+    if quotation_type == 'quick':
+        templates = [
+            {'name': 'Moderno Clássico', 'template_file': 'quick_modern_v2.html', 'preview_image': '/static/images/previews/quick_modern_v2.png'},
+            {'name': 'Clássico Profissional', 'template_file': 'quick_classic.html', 'preview_image': '/static/images/previews/quick_classic.png'},
+            {'name': 'Bold Impactante', 'template_file': 'quick_bold.html', 'preview_image': '/static/images/previews/quick_bold.png'},
+            {'name': 'Elegante Sofisticado', 'template_file': 'quick_elegant.html', 'preview_image': '/static/images/previews/quick_elegant.png'},
+            {'name': 'Vibrante Energético', 'template_file': 'quick_vibrant.html', 'preview_image': '/static/images/previews/quick_vibrant.png'}
+        ]
+    else:
+        templates = [
+            {'name': 'Premium Dark', 'template_file': 'detailed_premium.html', 'preview_image': '/static/images/previews/detailed_premium.png'},
+            {'name': 'Moderno Minimalista', 'template_file': 'detailed_modern.html', 'preview_image': '/static/images/previews/detailed_modern.png'},
+            {'name': 'Clássico Profissional', 'template_file': 'detailed_classic.html', 'preview_image': '/static/images/previews/detailed_classic.png'},
+            {'name': 'Bold Impactante', 'template_file': 'detailed_bold.html', 'preview_image': '/static/images/previews/detailed_bold.png'},
+            {'name': 'Elegante Sofisticado', 'template_file': 'detailed_elegant.html', 'preview_image': '/static/images/previews/detailed_elegant.png'}
+        ]
+    
+    return render_template('select_template.html', templates=templates, quotation_type=quotation_type, profile_data=profile_data, subscription=subscription)
+
+@dashboard_bp.route('/api/templates')
+@login_required
+def get_templates_api():
+    """API endpoint to get all templates for SPA"""
+    quick_templates = [
+        {'name': 'Moderno Clássico', 'template_file': 'quick_modern_v2.html', 'preview_image': '/static/images/previews/quick_modern_v2.png'},
+        {'name': 'Clássico Profissional', 'template_file': 'quick_classic.html', 'preview_image': '/static/images/previews/quick_classic.png'},
+        {'name': 'Bold Impactante', 'template_file': 'quick_bold.html', 'preview_image': '/static/images/previews/quick_bold.png'},
+        {'name': 'Elegante Sofisticado', 'template_file': 'quick_elegant.html', 'preview_image': '/static/images/previews/quick_elegant.png'},
+        {'name': 'Vibrante Energético', 'template_file': 'quick_vibrant.html', 'preview_image': '/static/images/previews/quick_vibrant.png'}
+    ]
+
+    detailed_templates = [
+        {'name': 'Premium Dark', 'template_file': 'detailed_premium.html', 'preview_image': '/static/images/previews/detailed_premium.png'},
+        {'name': 'Moderno Minimalista', 'template_file': 'detailed_modern.html', 'preview_image': '/static/images/previews/detailed_modern.png'},
+        {'name': 'Clássico Profissional', 'template_file': 'detailed_classic.html', 'preview_image': '/static/images/previews/detailed_classic.png'},
+        {'name': 'Bold Impactante', 'template_file': 'detailed_bold.html', 'preview_image': '/static/images/previews/detailed_bold.png'},
+        {'name': 'Elegante Sofisticado', 'template_file': 'detailed_elegant.html', 'preview_image': '/static/images/previews/detailed_elegant.png'}
+    ]
+
+    all_templates = quick_templates + detailed_templates
+
+    return jsonify({'templates': all_templates})
+
+@dashboard_bp.route('/quotation/spa')
+@login_required
+def quotation_spa():
+    """SPA page for quotation creation flow"""
+    user_id = current_user.id
+    supabase = get_supabase_handler()
+
+    profile_result = supabase.get_user_profile(user_id)
+    profile_data = profile_result.get('data', {}) if profile_result.get('success') else {}
+
+    sub_result = supabase.get_user_subscription(user_id)
+    subscription = {
+        'plan': current_user.plan,
+        'status': sub_result.get('subscription_status', 'inactive') if sub_result.get('success') else 'inactive'
+    }
+
+    return render_template('quotation_spa.html', profile_data=profile_data, subscription=subscription)
+
+@dashboard_bp.route('/quotation/create/<quotation_type>')
+@login_required
+def create_quotation_form(quotation_type):
+    user_id = current_user.id
+    supabase = get_supabase_handler()
+    
+    # Get profile data
+    profile_result = supabase.get_user_profile(user_id)
+    profile_data = profile_result.get('data', {}) if profile_result.get('success') else {}
+    
+    # Get subscription data
+    sub_result = supabase.get_user_subscription(user_id)
+    subscription = {
+        'plan': current_user.plan,
+        'status': sub_result.get('subscription_status', 'inactive') if sub_result.get('success') else 'inactive'
+    }
+    
+    template = request.args.get('template', 'quick_modern.html')
+    
+    if quotation_type == 'quick':
+        return render_template('create_quick_quotation.html', template=template, profile_data=profile_data, subscription=subscription)
+    else:
+        return render_template('create_detailed_quotation.html', template=template, profile_data=profile_data, subscription=subscription)
+
+@dashboard_bp.route('/quotation/view/<quotation_id>')
 @login_required
 def quotation_detail(quotation_id):
-    user_id = session.get('user_id')
+    user_id = current_user.id
     supabase = get_supabase_handler()
     result = supabase.get_quotation_by_id(user_id, str(quotation_id))
 
     if result.get('success') and result.get('data'):
-        return render_template('quotation_detail.html', quotation=result['data'])
+        quotation = result['data']
+        
+        # Get user profile data
+        profile_result = supabase.get_user_profile(user_id)
+        profile_data = profile_result.get('data', {}) if profile_result.get('success') else {}
+        
+        # Use user name or email as company name
+        company_name = profile_data.get('full_name') or profile_data.get('company_name') or current_user.email.split('@')[0].capitalize()
+        
+        template = quotation.get('template', 'quotation_detail.html')
+
+        currency_code = (quotation.get('currency') or ('BRL' if session.get('user_region', 'UK') == 'BR' else 'GBP'))
+        if isinstance(currency_code, str):
+            currency_code = currency_code.upper()
+
+        currency_map = {
+            'BRL': 'R$',
+            'GBP': '£',
+            'USD': '$',
+            'EUR': '€'
+        }
+        currency_symbol = currency_map.get(currency_code, currency_code)
+
+        return render_template(
+            template,
+            quotation=quotation,
+            user_name=company_name,
+            user_email=current_user.email,
+            profile_data=profile_data,
+            currency_symbol=currency_symbol,
+            currency_code=currency_code
+        )
     
     return redirect(url_for('dashboard.dashboard_view'))
 
 @dashboard_bp.route('/profile')
 @login_required
 def profile():
-    user_id = session.get('user_id')
+    user_id = current_user.id
     supabase = get_supabase_handler()
     
     sub_result = supabase.get_user_subscription(user_id)
     subscription = {
-        'plan': sub_result.get('plan', 'free') if sub_result.get('success') else 'free',
+        'plan': current_user.plan,
         'status': sub_result.get('subscription_status', 'inactive') if sub_result.get('success') else 'inactive'
     }
     
-    return render_template('profile.html', subscription=subscription, user_email=session.get('user_email'))
+    # Check if profile is complete
+    profile_result = supabase.get_user_profile(user_id)
+    profile_data = profile_result.get('data', {}) if profile_result.get('success') else {}
+    profile_complete = bool(profile_data.get('profile_photo_url') and profile_data.get('whatsapp'))
+    
+    return render_template('profile.html', subscription=subscription, user_email=current_user.email, profile_complete=profile_complete, profile_data=profile_data)
+
+@dashboard_bp.route('/history')
+@login_required
+def history():
+    user_id = current_user.id
+    supabase = get_supabase_handler()
+    quotations = get_user_quotations(user_id)
+    
+    # Get subscription info
+    sub_result = supabase.get_user_subscription(user_id)
+    subscription = {
+        'plan': current_user.plan,
+        'status': sub_result.get('subscription_status', 'inactive') if sub_result.get('success') else 'inactive'
+    }
+    
+    # Get profile data
+    profile_result = supabase.get_user_profile(user_id)
+    profile_data = profile_result.get('data', {}) if profile_result.get('success') else {}
+    
+    return render_template('history.html', quotations=quotations, subscription=subscription, profile_data=profile_data)
+
+@dashboard_bp.route('/quotation/edit/<quotation_id>', methods=['POST'])
+@login_required
+def edit_quotation(quotation_id):
+    user_id = current_user.id
+    supabase = get_supabase_handler()
+    
+    data = request.get_json()
+    result = supabase.update_quotation(
+        user_id=user_id,
+        quotation_id=str(quotation_id),
+        client_name=data.get('client_name'),
+        service_description=data.get('service_description'),
+        value=float(data.get('value', 0)),
+        expiry_date=data.get('expiry_date')
+    )
+    
+    if result.get('success'):
+        return jsonify({'success': True, 'quotation': result.get('data')})
+    else:
+        return jsonify({'success': False, 'error': result.get('error', 'Failed to update quotation')}), 400
+
+@dashboard_bp.route('/quotation/delete/<quotation_id>', methods=['DELETE'])
+@login_required
+def delete_quotation(quotation_id):
+    user_id = current_user.id
+    supabase = get_supabase_handler()
+    
+    result = supabase.delete_quotation(user_id, str(quotation_id))
+    
+    if result.get('success'):
+        return jsonify({'success': True})
+    else:
+        return jsonify({'success': False, 'error': result.get('error', 'Failed to delete quotation')}), 400
+
+@dashboard_bp.route('/quotation/<quotation_id>/status', methods=['POST'])
+@login_required
+def update_quotation_status(quotation_id):
+    user_id = current_user.id
+    supabase = get_supabase_handler()
+    data = request.get_json()
+    status = data.get('status')
+    
+    if status not in ['pending', 'accepted', 'rejected', 'expired']:
+        return jsonify({'success': False, 'error': 'Invalid status'}), 400
+    
+    result = supabase.update_quotation_status(user_id, str(quotation_id), status)
+    
+    if result.get('success'):
+        return jsonify({'success': True})
+    else:
+        return jsonify({'success': False, 'error': result.get('error', 'Failed to update status')}), 400
+
+@dashboard_bp.route('/quotation/<quotation_id>/reactivate', methods=['POST'])
+@login_required
+def reactivate_quotation(quotation_id):
+    user_id = current_user.id
+    supabase = get_supabase_handler()
+    data = request.get_json()
+    new_expiry_date = data.get('expiry_date')
+    
+    if not new_expiry_date:
+        return jsonify({'success': False, 'error': 'Expiry date is required'}), 400
+    
+    result = supabase.update_quotation_expiry(user_id, str(quotation_id), new_expiry_date)
+    
+    if result.get('success'):
+        # Also update status to pending
+        supabase.update_quotation_status(user_id, str(quotation_id), 'pending')
+        return jsonify({'success': True})
+    else:
+        return jsonify({'success': False, 'error': result.get('error', 'Failed to reactivate quotation')}), 400
+
+@dashboard_bp.route('/quotation/<quotation_id>/edit', methods=['POST'])
+@login_required
+def edit_quotation_basic(quotation_id):
+    user_id = current_user.id
+    supabase = get_supabase_handler()
+    data = request.get_json()
+    
+    client_name = data.get('client_name')
+    service_description = data.get('service_description')
+    value = data.get('value')
+    expiry_date = data.get('expiry_date')
+    notes = data.get('notes')
+    items = data.get('items')
+    
+    update_data = {}
+    if client_name:
+        update_data['client_name'] = client_name
+    if service_description:
+        update_data['service_description'] = service_description
+    if value:
+        update_data['value'] = float(value)
+    if expiry_date:
+        update_data['expiry_date'] = expiry_date
+    if notes is not None:
+        update_data['notes'] = notes
+    if items is not None:
+        update_data['items'] = items
+    
+    if not update_data:
+        return jsonify({'success': False, 'error': 'No data to update'}), 400
+    
+    result = supabase.update_quotation(user_id, str(quotation_id), update_data)
+    
+    if result.get('success'):
+        return jsonify({'success': True})
+    else:
+        return jsonify({'success': False, 'error': result.get('error', 'Failed to update quotation')}), 400
+
+@dashboard_bp.route('/quotation/update-currency', methods=['POST'])
+@login_required
+def update_quotation_currency():
+    """Update currency of all user's quotations based on current region"""
+    user_id = current_user.id
+    region = session.get('user_region', 'UK')
+    currency = 'BRL' if region == 'BR' else 'GBP'
+    
+    supabase = get_supabase_handler()
+    result = supabase.update_user_quotation_currency(user_id, currency)
+    
+    if result.get('success'):
+        return jsonify({'success': True, 'currency': currency})
+    else:
+        return jsonify({'success': False, 'error': result.get('error', 'Failed to update currency')}), 400
+
+@dashboard_bp.route('/api/quotations/quick', methods=['POST'])
+@login_required
+def create_quick_quotation():
+    user_id = current_user.id
+    data = request.get_json()
+    
+    supabase = get_supabase_handler()
+    plan = current_user.plan
+    
+    if not can_create_quotation(user_id, plan):
+        return jsonify({'success': False, 'error': 'Free plan limit reached. Upgrade to Pro.'}), 403
+    
+    region = session.get('user_region', 'UK')
+    currency = 'BRL' if region == 'BR' else 'GBP'
+    
+    result = supabase.create_quotation(
+        user_id=user_id,
+        client_name=data.get('client_name'),
+        service_description=data.get('service_description'),
+        value=float(data.get('value', 0)),
+        currency=currency,
+        expiry_date=data.get('expiry_date'),
+        quotation_type='quick',
+        phone=data.get('phone'),
+        template=data.get('template', 'quick_modern.html')
+    )
+    
+    if result.get('success'):
+        return jsonify({'success': True, 'quotation': result.get('data')})
+    else:
+        return jsonify({'success': False, 'error': result.get('error', 'Failed to create quotation')}), 400
+
+@dashboard_bp.route('/api/quotations/detailed', methods=['POST'])
+@login_required
+def create_detailed_quotation():
+    try:
+        user_id = current_user.id
+        data = request.get_json()
+
+        supabase = get_supabase_handler()
+        plan = current_user.plan
+
+        if not can_create_quotation(user_id, plan):
+            return jsonify({'success': False, 'error': 'Free plan limit reached. Upgrade to Pro.'}), 403
+
+        region = session.get('user_region', 'UK')
+        currency = 'BRL' if region == 'BR' else 'GBP'
+
+        # Calculate total from items
+        items = data.get('items', [])
+        total = sum(float(item['quantity']) * float(item['value']) for item in items)
+        discount = float(data.get('discount', 0))
+        final_value = total - discount
+
+        result = supabase.create_quotation(
+            user_id=user_id,
+            client_name=data.get('client_name'),
+            service_description='Orçamento detalhado com ' + str(len(items)) + ' itens',
+            value=final_value,
+            currency=currency,
+            expiry_date=data.get('expiry_date'),
+            quotation_type='detailed',
+            phone=data.get('phone'),
+            address=data.get('address'),
+            items=items,
+            discount=discount,
+            notes=data.get('notes'),
+            template=data.get('template', 'detailed_professional.html')
+        )
+
+        if result.get('success'):
+            return jsonify({'success': True, 'quotation': result.get('data')})
+        else:
+            return jsonify({'success': False, 'error': result.get('error', 'Failed to create quotation')}), 400
+    except Exception as e:
+        print(f"Error creating detailed quotation: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @dashboard_bp.route('/api/quotations', methods=['POST'])
 @login_required
 def create_quotation():
-    user_id = session.get('user_id')
+    user_id = current_user.id
     data = request.get_json()
     
     supabase = get_supabase_handler()
-    sub_result = supabase.get_user_subscription(user_id)
-    plan = sub_result.get('plan', 'free') if sub_result.get('success') else 'free'
+    plan = current_user.plan
     
     if not can_create_quotation(user_id, plan):
         return jsonify({'success': False, 'error': 'Free plan limit reached. Upgrade to Pro.'}), 403
@@ -169,13 +569,74 @@ def create_quotation():
 @dashboard_bp.route('/api/profile', methods=['PUT'])
 @login_required
 def update_profile():
-    user_id = session.get('user_id')
+    user_id = current_user.id
     data = request.get_json()
     
     supabase = get_supabase_handler()
-    result = supabase.update_user_profile(user_id, full_name=data.get('full_name'))
     
-    if result.get('success'):
-        return jsonify({'success': True})
+    profile_data = {}
+
+    # Save WhatsApp to the database
+    if data.get('whatsapp'):
+        profile_data['whatsapp'] = data.get('whatsapp')
+        print(f"[Dashboard API] Saving WhatsApp: {data.get('whatsapp')}")
+
+    # Save Full Name to the database
+    if data.get('full_name'):
+        profile_data['full_name'] = data.get('full_name')
+        print(f"[Dashboard API] Saving Full Name: {data.get('full_name')}")
+
+    # Handle profile photo upload to Supabase Storage
+    profile_photo_url = None
+    # Check if base64 image data is provided in the request
+    photo_key = 'profile_photo' if 'profile_photo' in data else 'profile_photo_url_data'
+    if data.get(photo_key):
+        base64_image_string = data[photo_key]
+        try:
+            # Extract base64 part (remove data URL prefix if present)
+            if ',' in base64_image_string:
+                header, base64_data = base64_image_string.split(',', 1)
+            else:
+                base64_data = base64_image_string
+
+            # Decode base64 string to bytes
+            file_content = base64.b64decode(base64_data)
+
+            # Generate a unique filename. Determine file extension (defaulting to jpg).
+            # A more robust solution might parse the MIME type from the header.
+            file_extension = "jpg"
+            filename = f"{uuid.uuid4()}.{file_extension}"
+
+            print(f"[Dashboard API] Uploading image to Supabase Storage bucket 'avatars' with filename: {filename}")
+
+            # Upload to Supabase Storage using the handler's method
+            uploaded_url = supabase.upload_file_to_storage(file_content, filename, bucket_name='avatars')
+
+            if uploaded_url:
+                profile_photo_url = uploaded_url
+                profile_data['profile_photo_url'] = profile_photo_url
+                print(f"[Dashboard API] Image uploaded successfully. URL: {profile_photo_url}")
+            else:
+                print("[Dashboard API] Failed to upload image to Supabase Storage.")
+
+        except Exception as e:
+            print(f"[Dashboard API] Error processing profile photo upload: {str(e)}")
+            # Optionally return an error
+            # return jsonify({'success': False, 'error': 'Error processing profile photo'}), 500
+
+    # Update the profile in the database if there's any data to update
+    if profile_data:
+        # update_user_profile expects kwargs like full_name, whatsapp, profile_photo_url
+        result = supabase.update_user_profile(user_id, **profile_data)
+
+        if result.get('success'):
+            print(f"[Dashboard API] Profile updated successfully for user {user_id}")
+            return jsonify({'success': True})
+        else:
+            print(f"[Dashboard API] Failed to update profile in database: {result.get('error')}")
+            return jsonify({'success': False, 'error': result.get('error', 'Failed to update profile')}), 400
     else:
-        return jsonify({'success': False, 'error': result.get('error')}), 400
+        # No data to update
+        print("[Dashboard API] No profile data provided for update.")
+        return jsonify({'success': False, 'error': 'No data to update'}), 400
+

@@ -1,0 +1,67 @@
+{% extends "dashboard_base.html" %}
+
+{% block title %}Selecionar Tipo de Orçamento - Lumina Flow{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+{% endblock %}
+
+{% block content %}
+        <div class="dashboard-header">
+            <div>
+                <h1>Novo Orçamento</h1>
+                <p class="text-slate">Selecione o tipo de orçamento que deseja criar</p>
+            </div>
+        </div>
+        
+        <div class="quotation-type-selection">
+            <div class="type-card" onclick="selectType('quick')">
+                <div class="type-icon">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                    </svg>
+                </div>
+                <h3>Orçamento Rápido</h3>
+                <p>Ideal para orçamentos simples e rápidos</p>
+                <ul>
+                    <li>Nome do cliente</li>
+                    <li>Telefone</li>
+                    <li>Descrição</li>
+                    <li>Valor</li>
+                    <li>Validade</li>
+                </ul>
+                <button class="btn btn-primary">Selecionar</button>
+            </div>
+            
+            <div class="type-card" onclick="selectType('detailed')">
+                <div class="type-icon">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                        <line x1="10" y1="9" x2="8" y2="9"></line>
+                    </svg>
+                </div>
+                <h3>Orçamento Detalhado</h3>
+                <p>Para orçamentos complexos com múltiplos itens</p>
+                <ul>
+                    <li>Nome do cliente</li>
+                    <li>Telefone e Endereço</li>
+                    <li>Múltiplos itens</li>
+                    <li>Desconto</li>
+                    <li>Observações</li>
+                    <li>Valor calculado automaticamente</li>
+                </ul>
+                <button class="btn btn-primary">Selecionar</button>
+            </div>
+        </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function selectType(type) {
+    window.location.href = `/dashboard/quotation/select-template/${type}`;
+}
+</script>
+{% endblock %}

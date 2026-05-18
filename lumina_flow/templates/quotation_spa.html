@@ -1,0 +1,602 @@
+{% extends "dashboard_base.html" %}
+
+{% block title %}Novo Orçamento - Lumina Flow{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+<style>
+  .quotation-spa {
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+  }
+
+  .quotation-spa__progress {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .quotation-spa__progress-step {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--color-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-heading);
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--color-text-secondary);
+    transition: all 0.3s ease;
+  }
+
+  .quotation-spa__progress-step.active,
+  .quotation-spa__progress-step.completed {
+    background: var(--color-primary);
+    color: #fff;
+  }
+
+  .quotation-spa__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 24px;
+    max-width: 1000px;
+    margin: 0 auto;
+  }
+
+  .quotation-spa__grid--narrow {
+    max-width: 800px;
+  }
+
+  .quotation-spa__type-card,
+  .quotation-spa__template-card {
+    cursor: pointer;
+    text-align: center;
+    padding: 32px;
+  }
+
+  .step-section {
+    display: none;
+    animation: fadeIn 0.25s ease;
+  }
+
+  .step-section.active {
+    display: block;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .quotation-spa__icon {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 20px;
+    background: var(--color-background);
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-primary);
+  }
+
+  .quotation-spa__card-list {
+    text-align: left;
+    margin-bottom: 24px;
+    padding-left: 20px;
+    color: var(--color-text-secondary);
+    font-size: 14px;
+  }
+
+  .quotation-spa__template-preview {
+    width: 100%;
+    height: 200px;
+    background: var(--color-background);
+    border-radius: 16px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  .quotation-spa__template-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .quotation-spa__template-placeholder {
+    color: var(--color-text-secondary);
+    font-size: 14px;
+    text-align: center;
+  }
+
+  .quotation-spa__button-group {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    margin-top: 32px;
+  }
+
+  .quotation-spa__items-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr auto;
+    gap: 12px;
+    margin-bottom: 12px;
+    align-items: center;
+  }
+
+  .quotation-spa__add-item {
+    background: var(--color-background);
+    color: var(--color-primary);
+    border: 1px dashed var(--color-primary);
+    padding: 12px 20px;
+    border-radius: 12px;
+    cursor: pointer;
+    font-weight: 500;
+    width: 100%;
+  }
+
+  .quotation-spa__remove-item {
+    background: rgba(231, 76, 60, 0.12);
+    color: #E74C3C;
+    border: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .is-hidden {
+    display: none !important;
+  }
+
+  .quotation-spa__loading {
+    text-align: center;
+    padding: 40px;
+    color: var(--color-text-secondary);
+  }
+
+  .quotation-spa__form-card {
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 40px;
+  }
+
+  .quotation-spa__subtitle {
+    color: var(--color-text-secondary);
+  }
+
+  .quotation-spa h1,
+  .quotation-spa h2,
+  .quotation-spa h3 {
+    color: var(--color-text-main);
+  }
+
+  .quotation-spa h3 {
+    font-family: var(--font-heading);
+    font-weight: 600;
+    font-size: 18px;
+    margin-bottom: 12px;
+  }
+
+  .quotation-spa__spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--color-border);
+    border-top-color: var(--color-primary);
+    border-radius: 50%;
+    animation: quotation-spin 1s linear infinite;
+    margin: 0 auto 16px;
+  }
+
+  @keyframes quotation-spin {
+    to { transform: rotate(360deg); }
+  }
+
+  @media (max-width: 768px) {
+    .quotation-spa__items-grid {
+      grid-template-columns: 1fr;
+      gap: 8px;
+    }
+  }
+</style>
+{% endblock %}
+{% block content %}
+<div class="dashboard-header">
+  <div class="dashboard-header__title">
+    <h1>Novo Orçamento</h1>
+    <p class="quotation-spa__subtitle">Crie seu orçamento em poucos passos</p>
+  </div>
+</div>
+
+<div class="quotation-spa">
+  <div class="quotation-spa__progress">
+    <div class="quotation-spa__progress-step active" data-step="1">1</div>
+    <div class="quotation-spa__progress-step" data-step="2">2</div>
+    <div class="quotation-spa__progress-step" data-step="3">3</div>
+  </div>
+
+  <div class="step-section active" id="step-1">
+    <div class="quotation-spa__grid quotation-spa__grid--narrow">
+      <div class="card quotation-spa__type-card" onclick="selectType('quick')">
+        <div class="quotation-spa__icon">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+          </svg>
+        </div>
+        <h3>Orçamento Rápido</h3>
+        <p class="quotation-spa__subtitle">Ideal para orçamentos simples e rápidos</p>
+        <ul class="quotation-spa__card-list">
+          <li>Nome do cliente</li>
+          <li>Telefone</li>
+          <li>Descrição</li>
+          <li>Valor</li>
+          <li>Validade</li>
+        </ul>
+        <button class="btn btn-primary">Selecionar</button>
+      </div>
+
+      <div class="card quotation-spa__type-card" onclick="selectType('detailed')">
+        <div class="quotation-spa__icon">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+            <line x1="10" y1="9" x2="8" y2="9"/>
+          </svg>
+        </div>
+        <h3>Orçamento Detalhado</h3>
+        <p class="quotation-spa__subtitle">Para orçamentos complexos com múltiplos itens</p>
+        <ul class="quotation-spa__card-list">
+          <li>Nome do cliente</li>
+          <li>Telefone e Endereço</li>
+          <li>Múltiplos itens</li>
+          <li>Desconto</li>
+          <li>Observações</li>
+          <li>Valor calculado automaticamente</li>
+        </ul>
+        <button class="btn btn-primary">Selecionar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="step-section" id="step-2">
+    <div class="quotation-spa__grid" id="templateGrid">
+      <!-- Templates via JS -->
+    </div>
+    <div class="quotation-spa__button-group">
+      <button class="btn btn-secondary" onclick="goToStep(1)">Voltar</button>
+    </div>
+  </div>
+
+  <div class="step-section" id="step-3">
+    <div class="card quotation-spa__form-card" id="formContainer">
+      <!-- Form via JS -->
+    </div>
+  </div>
+
+  <div class="step-section" id="loading">
+    <div class="quotation-spa__loading">
+      <div class="quotation-spa__spinner"></div>
+      <p>Processando...</p>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ super() }}
+<script>
+  let selectedType = null;
+  let selectedTemplate = null;
+  let templates = [];
+
+  // Load templates on page load
+  document.addEventListener('DOMContentLoaded', async () => {
+    await loadTemplates();
+  });
+
+  async function loadTemplates() {
+    try {
+      const response = await fetch('/dashboard/api/templates');
+      const data = await response.json();
+      templates = data.templates || [];
+    } catch (error) {
+      console.error('Error loading templates:', error);
+    }
+  }
+
+  function selectType(type) {
+    selectedType = type;
+    renderTemplates(type);
+    goToStep(2);
+  }
+
+  function renderTemplates(type) {
+    const grid = document.getElementById('templateGrid');
+    const filteredTemplates = templates.filter(t => 
+      type === 'quick' ? t.template_file.startsWith('quick_') : t.template_file.startsWith('detailed_')
+    );
+
+    grid.innerHTML = filteredTemplates.map(template => `
+      <div class="card quotation-spa__template-card" onclick="selectTemplate('${template.template_file}')">
+        <div class="quotation-spa__template-preview">
+          ${template.preview_image 
+            ? `<img src="${template.preview_image}" alt="${template.name}" onerror="this.classList.add('is-hidden'); this.nextElementSibling.classList.remove('is-hidden');">
+               <div class="quotation-spa__template-placeholder is-hidden">Preview não disponível</div>`
+            : '<div class="quotation-spa__template-placeholder">Preview não disponível</div>'
+          }
+        </div>
+        <h3>${template.name}</h3>
+        <button class="btn btn-primary">Selecionar</button>
+      </div>
+    `).join('');
+  }
+
+  function selectTemplate(templateFile) {
+    selectedTemplate = templateFile;
+    renderForm();
+    goToStep(3);
+  }
+
+  function renderForm() {
+    const container = document.getElementById('formContainer');
+    
+    if (selectedType === 'quick') {
+      container.innerHTML = `
+        <form id="quotationForm">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="client_name">Nome do Cliente *</label>
+              <input type="text" id="client_name" name="client_name" class="form-input" required placeholder="Digite o nome do cliente">
+            </div>
+            <div class="form-group">
+              <label for="phone">Telefone</label>
+              <input type="tel" id="phone" name="phone" class="form-input" placeholder="(00) 00000-0000">
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label for="service_description">Descrição do Serviço *</label>
+            <textarea id="service_description" name="service_description" class="form-input" rows="4" required placeholder="Descreva o serviço a ser orçado"></textarea>
+          </div>
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label for="value">Valor (<span id="currencyLabel">R$</span>) *</label>
+              <input type="number" id="value" name="value" class="form-input" step="0.01" min="0" required placeholder="0.00">
+            </div>
+            <div class="form-group">
+              <label for="expiry_date">Validade</label>
+              <input type="date" id="expiry_date" name="expiry_date" class="form-input">
+            </div>
+          </div>
+
+          <div class="quotation-spa__button-group">
+            <button type="button" class="btn btn-secondary" onclick="goToStep(2)">Voltar</button>
+            <button type="submit" class="btn btn-primary">Gerar Orçamento</button>
+          </div>
+        </form>
+      `;
+    } else {
+      container.innerHTML = `
+        <form id="quotationForm">
+          <div class="form-group">
+            <label for="client_name">Nome do Cliente *</label>
+            <input type="text" id="client_name" name="client_name" class="form-input" required placeholder="Digite o nome do cliente">
+          </div>
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label for="phone">Telefone</label>
+              <input type="tel" id="phone" name="phone" class="form-input" placeholder="(00) 00000-0000">
+            </div>
+            <div class="form-group">
+              <label for="address">Endereço</label>
+              <input type="text" id="address" name="address" class="form-input" placeholder="Endereço completo">
+            </div>
+          </div>
+
+          <div>
+            <label>Itens do Orçamento *</label>
+            <div id="itemsList">
+              <div class="quotation-spa__items-grid">
+                <input type="text" placeholder="Descrição" class="form-input item-name" required>
+                <input type="number" placeholder="Qtd" class="form-input item-quantity" min="1" value="1" required>
+                <input type="number" placeholder="Valor" class="form-input item-value" step="0.01" min="0" required>
+                <input type="text" placeholder="Subtotal" class="form-input item-subtotal" readonly>
+                <button type="button" onclick="removeItem(this)" class="quotation-spa__remove-item is-hidden">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <button type="button" onclick="addItem()" class="quotation-spa__add-item">+ Adicionar Item</button>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="discount">Desconto (%)</label>
+              <input type="number" id="discount" name="discount" class="form-input" step="0.01" min="0" max="100" placeholder="0">
+            </div>
+            <div class="form-group">
+              <label for="expiry_date">Validade</label>
+              <input type="date" id="expiry_date" name="expiry_date" class="form-input">
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label for="notes">Observações</label>
+            <textarea id="notes" name="notes" class="form-input" rows="4" placeholder="Observações adicionais"></textarea>
+          </div>
+
+          <div class="quotation-spa__button-group">
+            <button type="button" class="btn btn-secondary" onclick="goToStep(2)">Voltar</button>
+            <button type="submit" class="btn btn-primary">Gerar Orçamento</button>
+          </div>
+        </form>
+      `;
+    }
+
+    // Initialize currency label
+    updateCurrencyLabel();
+    
+    // Setup form submission
+    document.getElementById('quotationForm').addEventListener('submit', handleSubmit);
+    
+    // Setup item calculation for detailed
+    if (selectedType === 'detailed') {
+      setupItemCalculation();
+    }
+  }
+
+  function updateCurrencyLabel() {
+    const region = localStorage.getItem('user_region') || 'UK';
+    const currency = region === 'BR' ? 'R$' : '£';
+    const label = document.getElementById('currencyLabel');
+    if (label) label.textContent = currency;
+  }
+
+  function addItem() {
+    const itemsList = document.getElementById('itemsList');
+    const newItem = document.createElement('div');
+    newItem.className = 'quotation-spa__items-grid';
+    newItem.innerHTML = `
+      <input type="text" placeholder="Descrição" class="form-input item-name" required>
+      <input type="number" placeholder="Qtd" class="form-input item-quantity" min="1" value="1" required>
+      <input type="number" placeholder="Valor" class="form-input item-value" step="0.01" min="0" required>
+      <input type="text" placeholder="Subtotal" class="form-input item-subtotal" readonly>
+      <button type="button" onclick="removeItem(this)" class="quotation-spa__remove-item">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    `;
+    itemsList.appendChild(newItem);
+    setupItemCalculation();
+  }
+
+  function removeItem(button) {
+    const itemsList = document.getElementById('itemsList');
+    if (itemsList.children.length > 1) {
+      button.closest('div').remove();
+    }
+  }
+
+  function setupItemCalculation() {
+    const itemRows = document.querySelectorAll('#itemsList > div');
+    itemRows.forEach(row => {
+      const quantity = row.querySelector('.item-quantity');
+      const value = row.querySelector('.item-value');
+      const subtotal = row.querySelector('.item-subtotal');
+
+      const calculate = () => {
+        const q = parseFloat(quantity.value) || 0;
+        const v = parseFloat(value.value) || 0;
+        subtotal.value = (q * v).toFixed(2);
+      };
+
+      quantity.addEventListener('input', calculate);
+      value.addEventListener('input', calculate);
+    });
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    showLoading();
+
+    const formData = new FormData(e.target);
+    const data = Object.fromEntries(formData.entries());
+    data.template = selectedTemplate;
+
+    if (selectedType === 'detailed') {
+      // Collect items
+      const items = [];
+      document.querySelectorAll('#itemsList > div').forEach(row => {
+        items.push({
+          name: row.querySelector('.item-name').value,
+          quantity: parseFloat(row.querySelector('.item-quantity').value),
+          value: parseFloat(row.querySelector('.item-value').value)
+        });
+      });
+      data.items = items;
+    }
+
+    try {
+      const endpoint = selectedType === 'quick' 
+        ? '/dashboard/api/quotations/quick' 
+        : '/dashboard/api/quotations/detailed';
+      
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        window.location.href = `/dashboard/quotation/view/${result.quotation.id}`;
+      } else {
+        alert('Erro ao criar orçamento: ' + result.error);
+        hideLoading();
+      }
+    } catch (error) {
+      alert('Erro ao criar orçamento');
+      hideLoading();
+    }
+  }
+
+  function goToStep(step) {
+    // Update progress steps
+    document.querySelectorAll('.quotation-spa__progress-step').forEach((el, index) => {
+      el.classList.remove('active', 'completed');
+      if (index + 1 < step) {
+        el.classList.add('completed');
+      } else if (index + 1 === step) {
+        el.classList.add('active');
+      }
+    });
+
+    // Update sections
+    document.querySelectorAll('.step-section').forEach(section => {
+      section.classList.remove('active');
+    });
+
+    const targetSection = document.getElementById(`step-${step}`);
+    if (targetSection) {
+      targetSection.classList.add('active');
+    }
+  }
+
+  function showLoading() {
+    document.querySelectorAll('.step-section').forEach(section => {
+      section.classList.remove('active');
+    });
+    document.getElementById('loading').classList.add('active');
+  }
+
+  function hideLoading() {
+    document.getElementById('loading').classList.remove('active');
+    goToStep(3);
+  }
+</script>
+{% endblock %}

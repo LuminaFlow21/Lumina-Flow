@@ -38,6 +38,10 @@ class Config:
     STRIPE_PRICE_ID_UK_MONTHLY = os.getenv('STRIPE_PRICE_ID_UK_MONTHLY')
     STRIPE_PRICE_ID_UK_YEARLY = os.getenv('STRIPE_PRICE_ID_UK_YEARLY')
     
+    # Brevo API (Email)
+    BREVO_API_KEY = os.getenv('BREVO_API_KEY')
+    BREVO_SENDER_EMAIL = os.getenv('BREVO_SENDER_EMAIL', 'noreply@luminaflow.com')
+    
     # URLs
     BASE_URL = os.getenv('BASE_URL', 'http://localhost:5000')
     SUCCESS_URL = f'{BASE_URL}/dashboard?session_id={{CHECKOUT_SESSION_ID}}'

@@ -5,6 +5,8 @@
 # Flask Framework
 Flask
 Werkzeug
+Flask-Login
+Flask-Talisman
 
 # Environment Variables
 python-dotenv
@@ -16,7 +18,13 @@ supabase
 stripe
 
 # Security
-Flask-Talisman
+bcrypt
+
+# Image Processing
+Pillow
+
+# HTTP Requests
+requests
 
 # Development
 pytest

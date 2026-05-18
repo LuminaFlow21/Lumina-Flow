@@ -1,0 +1,115 @@
+{% extends "dashboard_base.html" %}
+
+{% block title %}Novo Orçamento Rápido - Lumina Flow{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+{% endblock %}
+
+{% block content %}
+        <div class="dashboard-header">
+            <div>
+                <h1>Novo Orçamento Rápido</h1>
+                <p class="text-slate">Preencha os dados para criar um orçamento rápido</p>
+            </div>
+            <a href="{{ url_for('dashboard.select_quotation_type') }}" class="btn btn-secondary">Voltar</a>
+        </div>
+        
+        <div class="quotation-form-card">
+            <div class="card-header">
+                <h2>Dados do Cliente</h2>
+            </div>
+            
+            <form id="quickQuotationForm" class="quotation-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="client_name">Nome do Cliente *</label>
+                        <input type="text" id="client_name" name="client_name" required placeholder="Digite o nome do cliente">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="phone">Telefone</label>
+                        <input type="tel" id="phone" name="phone" placeholder="(00) 00000-0000">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="service_description">Descrição do Serviço *</label>
+                    <textarea id="service_description" name="service_description" rows="4" required placeholder="Descreva o serviço a ser orçado"></textarea>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="value">Valor (<span id="currencyLabel">R$</span>) *</label>
+                        <input type="number" id="value" name="value" step="0.01" min="0" required placeholder="0.00">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="expiry_date">Validade</label>
+                        <input type="date" id="expiry_date" name="expiry_date">
+                    </div>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="goBack()">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Gerar Orçamento</button>
+                </div>
+            </form>
+        </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const selectedTemplate = '{{ template }}';
+
+function getCurrency() {
+    return localStorage.getItem('user_region') === 'BR' ? 'R$' : '£';
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', () => {
+    const currency = getCurrency();
+    const currencyLabel = document.getElementById('currencyLabel');
+    if (currencyLabel) {
+        currencyLabel.textContent = currency;
+    }
+});
+
+document.getElementById('quickQuotationForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = {
+        client_name: document.getElementById('client_name').value,
+        phone: document.getElementById('phone').value,
+        service_description: document.getElementById('service_description').value,
+        value: parseFloat(document.getElementById('value').value),
+        expiry_date: document.getElementById('expiry_date').value,
+        template: selectedTemplate
+    };
+    
+    try {
+        const response = await fetch('/dashboard/api/quotations/quick', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formData)
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            window.location.href = `/dashboard/quotation/view/${data.quotation.id}`;
+        } else {
+            alert('Erro ao criar orçamento: ' + data.error);
+        }
+    } catch (error) {
+        alert('Erro ao criar orçamento');
+    }
+});
+
+function goBack() {
+    window.location.href = '/dashboard/quotation/select-template/quick';
+}
+</script>
+{% endblock %}

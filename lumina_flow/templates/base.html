@@ -6,24 +6,22 @@
     <meta name="description" content="Lumina Flow - Transform your workflow with intelligence">
     <title>{% block title %}Lumina Flow{% endblock %}</title>
     
+    <!-- Google Fonts: Poppins (headings) and Inter (body) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
+    
     <!-- Global CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/global.css') }}">
     {% block extra_css %}{% endblock %}
 </head>
 <body data-server-region="{{ session.get('user_region', 'UK') }}">
     <!-- Header -->
-    <header class="bg-white shadow-md fixed w-full top-0 z-sticky">
+    <header class="bg-white shadow-md w-full z-sticky">
         <nav class="container flex items-center justify-between" style="padding: var(--spacing-md) var(--spacing-lg);">
             <!-- Logo -->
-            <a href="{{ url_for('main.index') }}" class="flex items-center gap-sm">
-                <div style="width: 40px; height: 40px; background: linear-gradient(135deg, var(--color-indigo), var(--color-indigo-light)); border-radius: var(--radius-lg); display: flex; align-items: center; justify-content: center;">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
-                        <path d="M2 17l10 5 10-5"></path>
-                        <path d="M2 12l10 5 10-5"></path>
-                    </svg>
-                </div>
-                <span class="font-bold text-navy" style="font-size: var(--font-size-xl);">Lumina Flow</span>
+            <a href="{{ url_for('main.index') }}" class="logo-link">
+                <img id="header-logo" src="{{ url_for('static', filename='images/Light_Theme_logo.png') }}" alt="Lumina Flow Logo" class="logo-image">
             </a>
             
             <!-- Navigation -->
@@ -34,11 +32,29 @@
                     <li><a href="#pricing" data-i18n="nav.pricing">Pricing</a></li>
                 </ul>
                 
+                <!-- Theme Toggle -->
+                <button id="theme-toggle" class="theme-toggle" aria-label="Toggle theme">
+                    <svg class="sun-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                    <svg class="moon-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: none;">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                </button>
+                
                 <!-- Language Selector -->
                 <div class="relative">
-                    <select id="language-selector" class="form-input" style="padding: var(--spacing-sm) var(--spacing-md); font-size: var(--font-size-sm); min-width: 120px; cursor: pointer;">
-                        <option value="BR" {% if user_region == 'BR' %}selected{% endif %}>🇧🇷 BRL</option>
-                        <option value="UK" {% if user_region == 'UK' %}selected{% endif %}>🇬🇧 GBP</option>
+                    <select id="language-selector" data-language-selector class="form-input" style="padding: var(--spacing-sm) var(--spacing-md); font-size: var(--font-size-sm); min-width: 120px; cursor: pointer;">
+                        <option value="BR">🇧🇷 BRL</option>
+                        <option value="UK">🇬🇧 GBP</option>
                     </select>
                 </div>
                 
@@ -54,52 +70,46 @@
     </header>
 
     <!-- Main Content -->
-    <main style="padding-top: 80px;">
+    <main>
         {% block content %}{% endblock %}
     </main>
 
     <!-- Footer -->
-    <footer class="bg-navy" style="padding: var(--spacing-3xl) 0; margin-top: var(--spacing-3xl);">
+    <footer id="main-footer" style="background: var(--color-footer-bg); padding: var(--spacing-3xl) 0; margin-top: var(--spacing-3xl);">
         <div class="container">
             <div class="grid grid-cols-1 md:grid-cols-4 gap-xl">
                 <div>
                     <div class="flex items-center gap-sm mb-md">
-                        <div style="width: 32px; height: 32px; background: linear-gradient(135deg, var(--color-indigo), var(--color-indigo-light)); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center;">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
-                                <path d="M2 17l10 5 10-5"></path>
-                                <path d="M2 12l10 5 10-5"></path>
-                            </svg>
-                        </div>
-                        <span class="font-bold" style="color: white; font-size: var(--font-size-lg);">Lumina Flow</span>
+                        <img id="footer-logo" src="{{ url_for('static', filename='images/Light_Theme_logo.png') }}" alt="Lumina Flow Logo" style="width: 32px; height: 32px; object-fit: contain;">
+                        <span class="font-bold" style="color: var(--color-footer-text); font-size: var(--font-size-lg);">Lumina Flow</span>
                     </div>
-                    <p style="color: var(--color-slate-medium);">Transform your workflow with intelligence.</p>
+                    <p style="color: var(--color-footer-muted);">Transform your workflow with intelligence.</p>
                 </div>
                 
                 <div>
-                    <h4 style="color: white; margin-bottom: var(--spacing-md);" data-i18n="nav.home">Product</h4>
+                    <h4 style="color: var(--color-footer-text); margin-bottom: var(--spacing-md);" data-i18n="nav.home">Product</h4>
                     <ul style="list-style: none;">
-                        <li style="margin-bottom: var(--spacing-sm);"><a href="#features" style="color: var(--color-slate-medium);" data-i18n="nav.features">Features</a></li>
-                        <li style="margin-bottom: var(--spacing-sm);"><a href="#pricing" style="color: var(--color-slate-medium);" data-i18n="nav.pricing">Pricing</a></li>
+                        <li style="margin-bottom: var(--spacing-sm);"><a href="#features" style="color: var(--color-footer-muted);" data-i18n="nav.features">Features</a></li>
+                        <li style="margin-bottom: var(--spacing-sm);"><a href="#pricing" style="color: var(--color-footer-muted);" data-i18n="nav.pricing">Pricing</a></li>
                     </ul>
                 </div>
                 
                 <div>
-                    <h4 style="color: white; margin-bottom: var(--spacing-md);" data-i18n="common.legal">Legal</h4>
+                    <h4 style="color: var(--color-footer-text); margin-bottom: var(--spacing-md);" data-i18n="common.legal">Legal</h4>
                     <ul style="list-style: none;">
-                        <li style="margin-bottom: var(--spacing-sm);"><a href="#" style="color: var(--color-slate-medium);" data-i18n="common.privacy_policy">Privacy Policy</a></li>
-                        <li style="margin-bottom: var(--spacing-sm);"><a href="#" style="color: var(--color-slate-medium);" data-i18n="common.terms_of_service">Terms of Service</a></li>
+                        <li style="margin-bottom: var(--spacing-sm);"><a href="#" style="color: var(--color-footer-muted);" data-i18n="common.privacy_policy">Privacy Policy</a></li>
+                        <li style="margin-bottom: var(--spacing-sm);"><a href="#" style="color: var(--color-footer-muted);" data-i18n="common.terms_of_service">Terms of Service</a></li>
                     </ul>
                 </div>
                 
                 <div>
-                    <h4 style="color: white; margin-bottom: var(--spacing-md);" data-i18n="common.contact_us">Contact</h4>
-                    <p style="color: var(--color-slate-medium);">support@luminaflow.com</p>
+                    <h4 style="color: var(--color-footer-text); margin-bottom: var(--spacing-md);" data-i18n="common.contact_us">Contact</h4>
+                    <p style="color: var(--color-footer-muted);">support@luminaflow.com</p>
                 </div>
             </div>
             
-            <div style="border-top: 1px solid var(--color-slate-dark); margin-top: var(--spacing-xl); padding-top: var(--spacing-xl); text-align: center;">
-                <p style="color: var(--color-slate-medium); font-size: var(--font-size-sm);">&copy; 2024 Lumina Flow. All rights reserved.</p>
+            <div style="border-top: 1px solid rgba(255,255,255,0.1); margin-top: var(--spacing-xl); padding-top: var(--spacing-xl); text-align: center;">
+                <p style="color: var(--color-footer-muted);"> 2025 Lumina Flow. All rights reserved.</p>
             </div>
         </div>
     </footer>
@@ -108,20 +118,83 @@
     <div id="language-modal" class="language-modal" style="display: none;">
         <div class="language-modal-backdrop"></div>
         <div class="language-modal-content">
-            <h3 data-i18n="modal.choose_language">Choose your language</h3>
+            <h3>Escolha seu idioma / Choose your language</h3>
+            <p>Selecione uma opção para continuar / Select an option to continue</p>
             <div class="language-modal-buttons">
                 <button class="btn btn-primary btn-lg" data-region="BR" style="min-width: 160px;">
-                    🇧🇷 <span data-i18n="modal.portuguese">Português</span>
+                    🇧🇷 Português / BRL
                 </button>
                 <button class="btn btn-secondary btn-lg" data-region="UK" style="min-width: 160px;">
-                    🇬🇧 <span data-i18n="modal.english">English</span>
+                    🇬🇧 English / GBP
                 </button>
             </div>
         </div>
     </div>
 
+    <!-- Apply theme early to avoid flash -->
+    <script>
+        (function() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            const savedRegion = localStorage.getItem('user_region');
+            if (savedRegion) {
+                document.documentElement.setAttribute('data-region', savedRegion);
+            }
+        })();
+    </script>
+    
     <!-- JavaScript -->
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const themeToggle = document.getElementById('theme-toggle');
+            const headerLogo = document.getElementById('header-logo');
+            
+            if (!themeToggle) {
+                console.warn('[Theme] Toggle button not found');
+                return;
+            }
+            const sunIcon = themeToggle.querySelector('.sun-icon');
+            const moonIcon = themeToggle.querySelector('.moon-icon');
+            
+            function updateThemeIcons(theme) {
+                if (theme === 'dark') {
+                    sunIcon.style.display = 'none';
+                    moonIcon.style.display = 'block';
+                } else {
+                    sunIcon.style.display = 'block';
+                    moonIcon.style.display = 'none';
+                }
+            }
+            
+            function updateLogo(theme) {
+                const logoPath = theme === 'dark' ? "{{ url_for('static', filename='images/Dark_Theme_logo.png') }}" : "{{ url_for('static', filename='images/Light_Theme_logo.png') }}";
+                
+                if (headerLogo) {
+                    headerLogo.src = logoPath;
+                }
+                
+                const footerLogo = document.getElementById('footer-logo');
+                if (footerLogo) {
+                    footerLogo.src = logoPath;
+                }
+            }
+            
+            const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+            updateThemeIcons(currentTheme);
+            updateLogo(currentTheme);
+            
+            themeToggle.addEventListener('click', function() {
+                const current = document.documentElement.getAttribute('data-theme');
+                const newTheme = current === 'light' ? 'dark' : 'light';
+                document.documentElement.setAttribute('data-theme', newTheme);
+                localStorage.setItem('theme', newTheme);
+                updateThemeIcons(newTheme);
+                updateLogo(newTheme);
+                console.log('[Theme] Switched to:', newTheme);
+            });
+        });
+    </script>
     {% block extra_js %}{% endblock %}
 </body>
 </html>

@@ -1,8 +1,10 @@
 import os
 from flask import Flask, session
 from flask_talisman import Talisman
+from flask_login import LoginManager
 
 from .config import get_config
+from .auth_handler import User
 
 def create_app(config_name=None):
     """
@@ -20,6 +22,22 @@ def create_app(config_name=None):
     if not app.config['DEBUG']:
         Talisman(app, content_security_policy=None)
 
+    # Inicializa Flask-Login
+    login_manager = LoginManager()
+    login_manager.init_app(app)
+    login_manager.login_view = 'auth.login_page'
+    login_manager.login_message = 'Please log in to access this page.'
+    login_manager.session_protection = 'strong'
+
+    @login_manager.user_loader
+    def load_user(user_id):
+        from .auth_handler import get_auth_handler
+        auth_handler = get_auth_handler()
+        result = auth_handler.get_user_by_id(user_id)
+        if result.get('success'):
+            return User(result['user'])
+        return None
+
     # --- Registra os Blueprints ---
     # As importações são feitas aqui para evitar importações circulares
     from .blueprints.main import main_bp
@@ -29,7 +47,7 @@ def create_app(config_name=None):
 
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp, url_prefix='/auth')
-    app.register_blueprint(dashboard_bp)
+    app.register_blueprint(dashboard_bp, url_prefix='/dashboard')
     app.register_blueprint(payments_bp)
 
     # --- Registra o Context Processor ---

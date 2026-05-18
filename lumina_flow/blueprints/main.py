@@ -1,6 +1,8 @@
 import json
 import os
-from flask import Blueprint, render_template, session, jsonify, request
+from flask import Blueprint, render_template, session, jsonify, request, redirect, url_for, flash
+from flask_login import login_user
+from ..auth_handler import get_auth_handler, User
 
 main_bp = Blueprint('main', __name__)
 
@@ -30,18 +32,80 @@ def index():
 
 @main_bp.route('/translations.json')
 def translations():
-    translations_path = os.path.join(os.path.dirname(__file__), '..', 'translations.json')
-    with open(translations_path, 'r', encoding='utf-8') as f:
-        return jsonify(json.load(f))
+    try:
+        # Get absolute path to translations.json in project root
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        translations_path = os.path.normpath(os.path.join(current_dir, '..', '..', 'translations.json'))
+        print(f'[Translations] Loading from: {translations_path}')
+
+        if not os.path.exists(translations_path):
+            print(f'[Translations] File not found!')
+            return jsonify({'error': 'Translations file not found'}), 500
+
+        with open(translations_path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+            print(f'[Translations] Loaded {len(data)} languages')
+            return jsonify(data)
+    except Exception as e:
+        print(f'[Translations] Error: {str(e)}')
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
 
 @main_bp.route('/set-region', methods=['POST'])
 def set_region():
+    from flask_login import current_user
+    from ..supabase_handler import get_supabase_handler
+    
     data = request.get_json()
     region = data.get('region', 'UK')
     if region in ['BR', 'UK']:
         session['user_region'] = region
+        
+        # Update currency of existing quotations if user is logged in
+        if current_user.is_authenticated:
+            try:
+                supabase = get_supabase_handler()
+                currency = 'BRL' if region == 'BR' else 'GBP'
+                supabase.update_user_quotation_currency(current_user.id, currency)
+            except Exception as e:
+                print(f"[set-region] Error updating quotation currency: {str(e)}")
+        
         return jsonify({'success': True, 'region': region})
     return jsonify({'success': False, 'error': 'Invalid region'}), 400
+
+@main_bp.route('/verify/<token>')
+def verify_email(token):
+    """Verify email with token"""
+    try:
+        auth_handler = get_auth_handler()
+        result = auth_handler.verify_email(token)
+        
+        if result.get('success'):
+            user_data = result['user']
+            user = User(user_data)
+            login_user(user)
+            
+            # Set session variables
+            session['user_id'] = str(user_data['id'])
+            session['user_email'] = user_data['email']
+            session['user_plan'] = user_data.get('plan', 'free')
+            
+            # Set region based on email
+            if '.br' in user_data['email'].lower():
+                session['user_region'] = 'BR'
+            else:
+                session['user_region'] = 'UK'
+            
+            flash('Email verified successfully! Welcome to Lumina Flow.')
+            return redirect(url_for('dashboard.dashboard_view'))
+        else:
+            flash(result.get('error', 'Invalid or expired verification token'))
+            return redirect(url_for('auth.login_page'))
+            
+    except Exception as e:
+        flash(f'Error verifying email: {str(e)}')
+        return redirect(url_for('auth.login_page'))
 
 @main_bp.app_errorhandler(404)
 def not_found(error):

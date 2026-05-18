@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Orçamento Rápido #{{ quotation.id[:8].upper() }}</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <style>
+
+    *{
+      margin:0;
+      padding:0;
+      box-sizing:border-box;
+    }
+
+    body{
+      background:#0E7A5F;
+      font-family:'Inter', sans-serif;
+      display:flex;
+      justify-content:center;
+      padding:20px;
+      color:#fff;
+    }
+
+    .orcamento{
+      width:600px;
+      background:#fff;
+      border-radius:20px;
+      padding:40px;
+      box-shadow:0 20px 60px rgba(0,0,0,0.3);
+      display:flex;
+      flex-direction:column;
+      position:relative;
+    }
+
+    .orcamento::before{
+      content:'';
+      position:absolute;
+      top:0;
+      left:0;
+      right:0;
+      height:6px;
+      background:linear-gradient(90deg, #1565FF 0%, #29D6FF 50%, #7B61FF 100%);
+      border-radius:20px 20px 0 0;
+    }
+
+    /* HEADER */
+
+    .topo{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      margin-bottom:30px;
+    }
+
+    .empresa{
+      display:flex;
+      gap:16px;
+      align-items:center;
+    }
+
+    .foto{
+      width:80px;
+      height:80px;
+      border-radius:50%;
+      border:3px solid #1565FF;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:28px;
+      color:white;
+      background:linear-gradient(135deg, #1565FF 0%, #7B61FF 100%);
+      overflow:hidden;
+      box-shadow:0 8px 20px rgba(21, 101, 255, 0.3);
+    }
+
+    .foto img{
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      object-position:center;
+      display:block;
+      border-radius:inherit;
+      image-rendering:auto;
+    }
+
+    .foto span{
+      font-weight:700;
+      font-size:28px;
+      font-family:'Poppins', sans-serif;
+    }
+
+    .titulo h1{
+      font-family:'Poppins', sans-serif;
+      font-size:24px;
+      font-weight:700;
+      color:#0E7A5F;
+      line-height:1.2;
+    }
+
+    .titulo h2{
+      color:#1565FF;
+      font-size:18px;
+      font-weight:600;
+      margin-top:4px;
+      font-family:'Poppins', sans-serif;
+    }
+
+    .infos-topo{
+      text-align:right;
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+    }
+
+    .info-item{
+      background:linear-gradient(135deg, #F7F9FC 0%, #E8EEF7 100%);
+      padding:10px 16px;
+      border-radius:12px;
+      border:1px solid #E8EEF7;
+      color:#60708C;
+      font-size:12px;
+      font-weight:500;
+      font-family:'Inter', sans-serif;
+    }
+
+    .info-item span{
+      color:#1565FF;
+      font-weight:600;
+    }
+
+    /* SEÇÕES */
+
+    .secao{
+      margin-bottom:25px;
+    }
+
+    .secao-titulo{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      margin-bottom:16px;
+    }
+
+    .icone-secao{
+      width:40px;
+      height:40px;
+      border-radius:12px;
+      background:linear-gradient(135deg, #1565FF 0%, #29D6FF 100%);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      color:white;
+      font-size:18px;
+      flex-shrink:0;
+    }
+
+    .secao-titulo h3{
+      font-family:'Poppins', sans-serif;
+      font-size:18px;
+      font-weight:600;
+      color:#0E7A5F;
+    }
+
+    /* CLIENTE */
+
+    .cliente-info{
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+    }
+
+    .cliente-item{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      background:linear-gradient(135deg, #F7F9FC 0%, #E8EEF7 100%);
+      padding:16px 20px;
+      border-radius:14px;
+      border:1px solid #E8EEF7;
+      transition: all 0.3s ease;
+    }
+
+    .cliente-item:hover{
+      border-color:#29D6FF;
+      box-shadow:0 4px 15px rgba(41, 214, 255, 0.15);
+    }
+
+    .cliente-item .label{
+      font-size:12px;
+      color:#60708C;
+      text-transform:uppercase;
+      letter-spacing:0.5px;
+      font-weight:600;
+      min-width:80px;
+    }
+
+    .cliente-item .valor{
+      font-size:15px;
+      color:#182433;
+      font-weight:500;
+    }
+
+    /* SERVIÇO */
+
+    .servico-box{
+      background:linear-gradient(135deg, #F7F9FC 0%, #E8EEF7 100%);
+      border-radius:14px;
+      padding:20px;
+      border:1px solid #E8EEF7;
+      transition: all 0.3s ease;
+    }
+
+    .servico-box:hover{
+      border-color:#29D6FF;
+      box-shadow:0 4px 15px rgba(41, 214, 255, 0.15);
+    }
+
+    .servico-descricao{
+      font-size:15px;
+      color:#182433;
+      line-height:1.6;
+      font-weight:400;
+    }
+
+    /* TOTAL */
+
+    .total-area{
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+      align-items:flex-end;
+      margin-top:20px;
+    }
+
+    .total-box{
+      display:flex;
+      align-items:center;
+      border-radius:14px;
+      overflow:hidden;
+      font-weight:600;
+      font-size:20px;
+      border:2px solid #E8EEF7;
+      transition: all 0.3s ease;
+    }
+
+    .total-box:hover{
+      border-color:#29D6FF;
+      box-shadow:0 4px 15px rgba(41, 214, 255, 0.15);
+    }
+
+    .total-label{
+      padding:14px 24px;
+      background:#F7F9FC;
+      color:#60708C;
+      font-family:'Poppins', sans-serif;
+    }
+
+    .total-valor{
+      background:linear-gradient(90deg, #1565FF 0%, #29D6FF 100%);
+      color:white;
+      padding:14px 28px;
+      font-family:'Poppins', sans-serif;
+      font-weight:700;
+    }
+
+    /* OBSERVAÇÕES */
+
+    .observacoes{
+      min-height:100px;
+      background:linear-gradient(135deg, #F7F9FC 0%, #E8EEF7 100%);
+      border-radius:14px;
+      border:1px dashed #1565FF;
+      margin-top:16px;
+      padding:16px;
+      font-size:13px;
+      color:#182433;
+      white-space:pre-wrap;
+      line-height:1.6;
+    }
+
+    .action-buttons {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 1000;
+    }
+
+    .action-btn {
+      background:linear-gradient(90deg, #1565FF 0%, #29D6FF 100%);
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 14px;
+      cursor: pointer;
+      font-family: 'Poppins', sans-serif;
+      font-weight: 600;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 15px rgba(21, 101, 255, 0.3);
+      transition: all 0.3s ease;
+    }
+
+    .action-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(21, 101, 255, 0.4);
+    }
+
+    @media (max-width: 768px) {
+      .orcamento {
+        width: 100%;
+        padding: 20px;
+      }
+      .action-buttons {
+        position: fixed;
+        bottom: 20px;
+        top: auto;
+        right: 20px;
+        left: 20px;
+        flex-direction: row;
+        justify-content: center;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  {% set currency_code = quotation.currency or ('BRL' if session.get('user_region', 'UK') == 'BR' else 'GBP') %}
+  {% set currency_map = {'BRL': 'R$', 'GBP': '£', 'USD': '$', 'EUR': '€'} %}
+  {% set currency_symbol_resolved = (currency_symbol if currency_symbol is defined and currency_symbol else currency_map.get(currency_code, currency_code)) %}
+
+  <div class="action-buttons">
+    {% if current_user.is_authenticated and quotation.user_id == current_user.id|string %}
+    <a href="{{ url_for('dashboard.dashboard_view') }}" class="action-btn" style="text-decoration: none; display: flex; align-items: center; gap: 8px;">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      <span>Voltar</span>
+    </a>
+    <button class="action-btn" onclick="openEditModal()">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      <span>Editar</span>
+    </button>
+    {% endif %}
+    <button class="action-btn" onclick="downloadImage()">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+      <span>Baixar Imagem</span>
+    </button>
+    <button class="action-btn" onclick="downloadPDF()">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+      <span>Baixar PDF</span>
+    </button>
+    <button class="action-btn" onclick="shareQuotation(event)">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+      <span>Compartilhar</span>
+    </button>
+  </div>
+
+  <div class="orcamento" id="quotationContainer">
+
+    <!-- TOPO -->
+
+    <div class="topo">
+
+      <div class="empresa">
+
+        <div class="foto">
+          {% if profile_data and profile_data.get('profile_photo_url') %}
+          <img src="{{ profile_data.profile_photo_url }}" alt="Foto de {{ user_name }}">
+          {% else %}
+          <span>{{ user_name[0]|upper }}</span>
+          {% endif %}
+        </div>
+
+        <div class="titulo">
+          <h1>{{ user_name }}</h1>
+          <h2>Orçamento Rápido</h2>
+        </div>
+
+      </div>
+
+      <div class="infos-topo">
+
+        <div class="info-item">
+          #{{ quotation.id[:8].upper() }}
+        </div>
+
+        <div class="info-item">
+          {{ quotation.created_at[:10] }}
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- CLIENTE -->
+
+    <section class="secao">
+
+      <div class="secao-titulo">
+        <div class="icone-secao">👤</div>
+        <h3>Cliente</h3>
+      </div>
+
+      <div class="cliente-info">
+
+        <div class="cliente-item">
+          <div class="label">Nome</div>
+          <div class="valor">{{ quotation.client_name }}</div>
+        </div>
+
+        {% if quotation.phone %}
+        <div class="cliente-item">
+          <div class="label">Telefone</div>
+          <div class="valor">{{ quotation.phone }}</div>
+        </div>
+        {% endif %}
+
+      </div>
+
+    </section>
+
+    <!-- SERVIÇO -->
+
+    <section class="secao">
+
+      <div class="secao-titulo">
+        <div class="icone-secao">📋</div>
+        <h3>Serviço</h3>
+      </div>
+
+      <div class="servico-box">
+        <div class="servico-descricao">{{ quotation.service_description }}</div>
+      </div>
+
+    </section>
+
+    <!-- TOTAL -->
+
+    <section class="secao">
+
+      <div class="total-area">
+        <div class="total-box">
+          <div class="total-label">Valor Total</div>
+          <div class="total-valor">{{ currency_symbol_resolved }} {{ quotation.value }}</div>
+        </div>
+      </section>
+
+    </section>
+
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script>
+    async function downloadImage() {
+      const container = document.getElementById('quotationContainer');
+      const buttons = document.querySelector('.action-buttons');
+      buttons.style.display = 'none';
+
+      try {
+        const canvas = await html2canvas(container, {
+          backgroundColor: '#0E7A5F',
+          scale: 2,
+          useCORS: true,
+          logging: false
+        });
+
+        const link = document.createElement('a');
+        link.download = `orcamento-{{ quotation.id[:8].upper() }}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+      } catch (error) {
+        console.error('Error generating image:', error);
+        alert('Erro ao gerar imagem');
+      } finally {
+        buttons.style.display = 'flex';
+      }
+    }
+
+    async function downloadPDF() {
+      const container = document.getElementById('quotationContainer');
+      const buttons = document.querySelector('.action-buttons');
+      buttons.style.display = 'none';
+
+      try {
+        const canvas = await html2canvas(container, {
+          backgroundColor: '#0E7A5F',
+          scale: 2,
+          useCORS: true,
+          logging: false
+        });
+
+        const imgData = canvas.toDataURL('image/png');
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF('p', 'mm', 'a4');
+
+        const imgProps = pdf.getImageProperties(imgData);
+        const pdfWidth = 210;
+        const pdfHeight = 297;
+        const scale = Math.min(pdfWidth / imgProps.width, pdfHeight / imgProps.height);
+        const renderWidth = imgProps.width * scale;
+        const renderHeight = imgProps.height * scale;
+        const marginX = (pdfWidth - renderWidth) / 2;
+        const marginY = Math.max(0, (pdfHeight - renderHeight) / 2);
+
+        pdf.addImage(imgData, 'PNG', marginX, marginY, renderWidth, renderHeight);
+        pdf.save(`orcamento-{{ quotation.id[:8].upper() }}.pdf`);
+      } catch (error) {
+        console.error('Error generating PDF:', error);
+        alert('Erro ao gerar PDF');
+      } finally {
+        buttons.style.display = 'flex';
+      }
+    }
+
+    function shareQuotation(event) {
+      event.preventDefault();
+      const url = window.location.href;
+      if (navigator.share) {
+        navigator.share({
+          title: 'Orçamento Lumina Flow',
+          text: 'Confira este orçamento',
+          url: url
+        });
+      } else {
+        navigator.clipboard.writeText(url);
+        alert('Link copiado para a área de transferência!');
+      }
+    }
+  </script>
+
+<!-- Edit Modal -->
+<div id="editModal" class="modal" style="display: none;">
+  <div class="modal-backdrop" onclick="closeEditModal()"></div>
+  <div class="modal-content card">
+    <div class="modal-header">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <div style="width: 40px; height: 40px; background: linear-gradient(135deg, var(--color-primary), #818cf8); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+          </svg>
+        </div>
+        <h3 data-i18n="dashboard.edit_quotation" style="margin: 0; font-size: 1.25rem; font-weight: 600;">Editar Orçamento</h3>
+      </div>
+      <button class="modal-close" onclick="closeEditModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--color-text-muted); padding: 4px 8px; border-radius: 4px; transition: all 0.2s;">×</button>
+    </div>
+    <div class="modal-body" style="padding: 24px 0;">
+      <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" stroke-width="2">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+          <circle cx="12" cy="7" r="4"></circle>
+        </svg>
+        <label data-i18n="dashboard.client_name" style="margin: 0; font-weight: 600;">Nome do Cliente</label>
+      </div>
+      <input type="text" id="editClientName" class="form-input" value="{{ quotation.client_name }}" placeholder="Digite o nome do cliente" style="width: 100%; padding: 12px 16px; border: 2px solid var(--color-border); border-radius: var(--radius-input); background: var(--color-bg); color: var(--color-text); font-size: 14px; transition: all 0.2s; margin-bottom: 20px;">
+      
+      <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" stroke-width="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+          <polyline points="14 2 14 8 20 8"></polyline>
+          <line x1="16" y1="13" x2="8" y2="13"></line>
+          <line x1="16" y1="17" x2="8" y2="17"></line>
+          <polyline points="10 9 9 9 8 9"></polyline>
+        </svg>
+        <label data-i18n="dashboard.service_description" style="margin: 0; font-weight: 600;">Descrição do Serviço</label>
+      </div>
+      <textarea id="editServiceDescription" class="form-input" rows="3" placeholder="Descreva o serviço detalhadamente" style="width: 100%; padding: 12px 16px; border: 2px solid var(--color-border); border-radius: var(--radius-input); background: var(--color-bg); color: var(--color-text); font-size: 14px; transition: all 0.2s; resize: vertical; min-height: 80px; line-height: 1.5; margin-bottom: 20px;">{{ quotation.service_description }}</textarea>
+      
+      <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" stroke-width="2">
+          <line x1="12" y1="1" x2="12" y2="23"></line>
+          <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+        </svg>
+        <label data-i18n="dashboard.value" style="margin: 0; font-weight: 600;">Valor</label>
+      </div>
+      <input type="number" id="editValue" class="form-input" value="{{ quotation.value }}" step="0.01" placeholder="0.00" style="width: 100%; padding: 12px 16px; border: 2px solid var(--color-border); border-radius: var(--radius-input); background: var(--color-bg); color: var(--color-text); font-size: 14px; transition: all 0.2s; margin-bottom: 20px;">
+      
+      <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" stroke-width="2">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+          <line x1="16" y1="2" x2="16" y2="6"></line>
+          <line x1="8" y1="2" x2="8" y2="6"></line>
+          <line x1="3" y1="10" x2="21" y2="10"></line>
+        </svg>
+        <label data-i18n="dashboard.expiry_date" style="margin: 0; font-weight: 600;">Data de Validade</label>
+      </div>
+      <input type="date" id="editExpiryDate" class="form-input" value="{{ quotation.expiry_date }}" style="width: 100%; padding: 12px 16px; border: 2px solid var(--color-border); border-radius: var(--radius-input); background: var(--color-bg); color: var(--color-text); font-size: 14px; transition: all 0.2s;">
+    </div>
+    <div class="modal-footer" style="padding: 24px 0 0 0; border-top: 1px solid var(--color-border); display: flex; gap: 12px; justify-content: flex-end;">
+      <button class="btn btn-secondary" onclick="closeEditModal()" data-i18n="common.cancel" style="padding: 12px 24px; font-size: 14px; font-weight: 500; border-radius: var(--radius-btn); transition: all 0.2s; background: var(--color-slate-light); color: var(--color-text); border: 2px solid var(--color-border);">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveEdit()" data-i18n="common.save" style="padding: 12px 24px; font-size: 14px; font-weight: 500; border-radius: var(--radius-btn); transition: all 0.2s; background: var(--color-primary); color: white; border: none;">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+function openEditModal() {
+  const modal = document.getElementById('editModal');
+  modal.style.display = 'flex';
+}
+
+function closeEditModal() {
+  const modal = document.getElementById('editModal');
+  modal.style.display = 'none';
+}
+
+function saveEdit() {
+  const clientName = document.getElementById('editClientName').value;
+  const serviceDescription = document.getElementById('editServiceDescription').value;
+  const value = document.getElementById('editValue').value;
+  const expiryDate = document.getElementById('editExpiryDate').value;
+  
+  fetch(`/dashboard/quotation/{{ quotation.id }}/edit`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      client_name: clientName,
+      service_description: serviceDescription,
+      value: value,
+      expiry_date: expiryDate
+    })
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      window.location.reload();
+    } else {
+      alert('Erro ao salvar: ' + data.error);
+    }
+  })
+  .catch(error => {
+    alert('Erro ao salvar');
+  });
+}
+</script>
+</body>
+</html>

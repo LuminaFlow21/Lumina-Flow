@@ -3,17 +3,24 @@
 // ========================================
 
 // Global state
-let currentLanguage = 'en-GB';
+const LANGUAGE_STORAGE_KEY = 'user_region';
+const REGION_CONFIG = {
+    BR: { language: 'pt-BR', currency: 'R$' },
+    UK: { language: 'en-GB', currency: '£' }
+};
+
+let currentLanguage = REGION_CONFIG.UK.language;
 let currentRegion = 'UK';
 let translations = {};
 
 // Load translations from JSON file
 async function loadTranslations() {
     try {
-        const response = await fetch('/translations.json');
+        const response = await fetch('/translations.json?v=' + Date.now()); // Cache bust
         translations = await response.json();
+        console.log('[i18n] Translations loaded:', Object.keys(translations));
     } catch (error) {
-        console.error('Error loading translations:', error);
+        console.error('[i18n] Error loading translations:', error);
     }
 }
 
@@ -21,47 +28,30 @@ async function loadTranslations() {
 async function initializeLanguage() {
     const body = document.body;
     const serverRegion = body ? body.getAttribute('data-server-region') : null;
-    const savedRegion = localStorage.getItem('user_region');
+    const savedRegion = localStorage.getItem(LANGUAGE_STORAGE_KEY);
 
-    if (savedRegion) {
-        // User has already chosen a language - use localStorage (priority)
+    console.log('[i18n] Init - savedRegion:', savedRegion, '| serverRegion:', serverRegion);
+
+    if (savedRegion && REGION_CONFIG[savedRegion]) {
         currentRegion = savedRegion;
-        currentLanguage = savedRegion === 'BR' ? 'pt-BR' : 'en-GB';
-
-        // If server has different region, sync it
-        if (serverRegion && serverRegion !== savedRegion) {
-            try {
-                await fetch('/set-region', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ region: savedRegion })
-                });
-            } catch (error) {
-                console.error('Error syncing region to server:', error);
-            }
-        }
-    } else if (serverRegion) {
-        // No localStorage yet, but server has a region
+    } else if (serverRegion && REGION_CONFIG[serverRegion]) {
         currentRegion = serverRegion;
-        currentLanguage = serverRegion === 'BR' ? 'pt-BR' : 'en-GB';
-        localStorage.setItem('user_region', serverRegion);
     } else {
-        // First visit - detect browser language
-        const browserLang = navigator.language || navigator.userLanguage;
-        if (browserLang.startsWith('pt')) {
-            currentRegion = 'BR';
-            currentLanguage = 'pt-BR';
-        } else {
-            currentRegion = 'UK';
-            currentLanguage = 'en-GB';
-        }
+        const browserLang = navigator.language || navigator.userLanguage || 'en';
+        currentRegion = browserLang.startsWith('pt') ? 'BR' : 'UK';
     }
 
-    // Update language selector
-    const selector = document.getElementById('language-selector');
-    if (selector) {
+    currentLanguage = REGION_CONFIG[currentRegion].language;
+    document.documentElement.setAttribute('data-region', currentRegion);
+    syncGlobalState();
+    updateCurrencyDisplays();
+
+    const selectors = document.querySelectorAll('[data-language-selector]');
+    selectors.forEach(selector => {
         selector.value = currentRegion;
-    }
+    });
+
+    return Boolean(savedRegion);
 }
 
 // Get translation by key
@@ -82,43 +72,70 @@ function t(key) {
 
 // Update all translatable elements
 function updateTranslations() {
+    console.log('[i18n] Updating translations for:', currentLanguage);
     const elements = document.querySelectorAll('[data-i18n]');
+    console.log('[i18n] Found', elements.length, 'elements');
+
+    let translated = 0;
+    let missing = 0;
+
     elements.forEach(element => {
         const key = element.getAttribute('data-i18n');
         const translation = t(key);
         if (translation && translation !== key) {
             element.textContent = translation;
+            translated++;
+        } else {
+            console.warn('[i18n] Missing translation:', key);
+            missing++;
         }
     });
+
+    console.log(`[i18n] Done: ${translated} translated, ${missing} missing`);
 }
 
-// Handle language/region change
-async function handleLanguageChange(event) {
-    const newRegion = event.target.value;
-    currentRegion = newRegion;
-    currentLanguage = newRegion === 'BR' ? 'pt-BR' : 'en-GB';
-
-    // Save to localStorage
-    localStorage.setItem('user_region', newRegion);
-
-    // Update server-side session
-    try {
-        await fetch('/set-region', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ region: newRegion })
-        });
-    } catch (error) {
-        console.error('Error setting region:', error);
+async function applyRegionChange(newRegion, { reload = true } = {}) {
+    if (!REGION_CONFIG[newRegion]) {
+        console.warn('[i18n] Invalid region:', newRegion);
+        return;
     }
 
-    // Update translations
-    updateTranslations();
+    const previous = localStorage.getItem(LANGUAGE_STORAGE_KEY);
+    currentRegion = newRegion;
+    currentLanguage = REGION_CONFIG[newRegion].language;
+    document.documentElement.setAttribute('data-region', currentRegion);
+    localStorage.setItem(LANGUAGE_STORAGE_KEY, newRegion);
+    console.log('[i18n] Region updated to:', newRegion);
 
-    // Reload page to apply changes
-    window.location.reload();
+    const selectors = document.querySelectorAll('[data-language-selector]');
+    selectors.forEach(selector => {
+        selector.value = newRegion;
+    });
+
+    try {
+        const response = await fetch('/set-region', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ region: newRegion })
+        });
+        await response.json();
+    } catch (error) {
+        console.error('[i18n] Error setting region on server:', error);
+    }
+
+    updateCurrencyDisplays();
+    updateTranslations();
+    updatePricing();
+    updatePlaceholderTranslations();
+    syncGlobalState();
+
+    if (reload && previous !== newRegion) {
+        setTimeout(() => window.location.reload(), 150);
+    }
+}
+
+function handleLanguageSelectorChange(event) {
+    applyRegionChange(event.target.value);
 }
 
 // Current billing period
@@ -180,54 +197,65 @@ function showLanguageModal() {
 
     const buttons = modal.querySelectorAll('[data-region]');
     buttons.forEach(btn => {
-        btn.addEventListener('click', async () => {
+        btn.addEventListener('click', () => {
             const region = btn.getAttribute('data-region');
-            currentRegion = region;
-            currentLanguage = region === 'BR' ? 'pt-BR' : 'en-GB';
-            localStorage.setItem('user_region', region);
-
-            // Update server-side session
-            try {
-                await fetch('/set-region', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ region: region })
-                });
-            } catch (error) {
-                console.error('Error setting region:', error);
-            }
-
-            const selector = document.getElementById('language-selector');
-            if (selector) selector.value = region;
-
-            updateTranslations();
-            updatePricing();
-            updatePlaceholderTranslations();
             modal.style.display = 'none';
+            applyRegionChange(region);
         });
     });
+}
+
+function attachLanguageSelectors() {
+    const selectors = document.querySelectorAll('[data-language-selector]');
+    selectors.forEach(selector => {
+        selector.removeEventListener('change', handleLanguageSelectorChange);
+        selector.addEventListener('change', handleLanguageSelectorChange);
+    });
+}
+
+function attachLanguageToggles() {
+    const toggles = document.querySelectorAll('[data-language-toggle]');
+    toggles.forEach(toggle => {
+        toggle.addEventListener('click', () => {
+            const nextRegion = currentRegion === 'BR' ? 'UK' : 'BR';
+            applyRegionChange(nextRegion);
+        });
+    });
+}
+
+function updateCurrencyDisplays() {
+    const currency = REGION_CONFIG[currentRegion].currency;
+    const elements = document.querySelectorAll('.currency-label');
+    elements.forEach(el => {
+        el.textContent = currency;
+    });
+}
+
+function syncGlobalState() {
+    window.LuminaFlow = window.LuminaFlow || {};
+    window.LuminaFlow.t = t;
+    window.LuminaFlow.updateTranslations = updateTranslations;
+    window.LuminaFlow.updatePricing = updatePricing;
+    window.LuminaFlow.updatePlaceholderTranslations = updatePlaceholderTranslations;
+    window.LuminaFlow.updateCurrencyDisplays = updateCurrencyDisplays;
+    window.LuminaFlow.applyRegionChange = applyRegionChange;
+    window.LuminaFlow.currentLanguage = currentLanguage;
+    window.LuminaFlow.currentRegion = currentRegion;
 }
 
 // Initialize on DOM ready
 document.addEventListener('DOMContentLoaded', async () => {
     await loadTranslations();
-    await initializeLanguage();
+    const hasSavedLanguage = await initializeLanguage();
+    attachLanguageSelectors();
+    attachLanguageToggles();
     updateTranslations();
     updatePricing();
     updatePlaceholderTranslations();
     initBillingToggle();
 
-    // Show modal if no language has been explicitly chosen before
-    if (!localStorage.getItem('user_region')) {
+    if (!hasSavedLanguage) {
         showLanguageModal();
-    }
-
-    // Attach event listener to language selector
-    const languageSelector = document.getElementById('language-selector');
-    if (languageSelector) {
-        languageSelector.addEventListener('change', handleLanguageChange);
     }
 });
 
@@ -244,11 +272,4 @@ function updatePlaceholderTranslations() {
 }
 
 // Export functions for use in other scripts
-window.LuminaFlow = {
-    t,
-    currentLanguage,
-    currentRegion,
-    updateTranslations,
-    updatePricing,
-    updatePlaceholderTranslations
-};
+syncGlobalState();

@@ -1,0 +1,286 @@
+{% extends "dashboard_base.html" %}
+
+{% block title %}Novo Orçamento Detalhado - Lumina Flow{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+<style>
+    .items-container {
+        margin-top: var(--spacing-md);
+    }
+    
+    .item-row {
+        display: grid;
+        grid-template-columns: 2fr 1fr 1fr 1fr auto;
+        gap: var(--spacing-md);
+        align-items: end;
+        margin-bottom: var(--spacing-md);
+        padding: var(--spacing-md);
+        background: var(--color-slate);
+        border-radius: var(--radius-btn);
+    }
+    
+    .remove-item-btn {
+        padding: 8px;
+        background: rgba(239, 68, 68, 0.1);
+        border: 1px solid #ef4444;
+        border-radius: var(--radius-btn);
+        color: #ef4444;
+        cursor: pointer;
+        transition: all var(--transition-base);
+    }
+    
+    .remove-item-btn:hover {
+        background: #ef4444;
+        color: white;
+    }
+    
+    .add-item-btn {
+        padding: var(--spacing-sm) var(--spacing-lg);
+        background: rgba(16, 185, 129, 0.1);
+        border: 1px solid #10b981;
+        border-radius: var(--radius-btn);
+        color: #10b981;
+        cursor: pointer;
+        transition: all var(--transition-base);
+        font-weight: var(--font-weight-semibold);
+    }
+    
+    .add-item-btn:hover {
+        background: #10b981;
+        color: white;
+    }
+    
+    .total-display {
+        font-size: 1.5rem;
+        font-weight: var(--font-weight-bold);
+        color: var(--color-indigo);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+        <div class="dashboard-header">
+            <div>
+                <h1>Novo Orçamento Detalhado</h1>
+                <p class="text-slate">Preencha os dados para criar um orçamento detalhado</p>
+            </div>
+            <a href="{{ url_for('dashboard.select_quotation_type') }}" class="btn btn-secondary">Voltar</a>
+        </div>
+        
+        <div class="quotation-form-card">
+            <div class="card-header">
+                <h2>Dados do Cliente</h2>
+            </div>
+            
+            <form id="detailedQuotationForm" class="quotation-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="client_name">Nome do Cliente *</label>
+                        <input type="text" id="client_name" name="client_name" required placeholder="Digite o nome do cliente">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="phone">Telefone</label>
+                        <input type="tel" id="phone" name="phone" placeholder="(00) 00000-0000">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="address">Endereço</label>
+                    <input type="text" id="address" name="address" placeholder="Digite o endereço completo">
+                </div>
+                
+                <div class="card-header" style="margin-top: var(--spacing-2xl);">
+                    <h2>Itens do Orçamento</h2>
+                </div>
+                
+                <div class="items-container" id="itemsContainer">
+                    <div class="item-row">
+                        <div class="form-group">
+                            <label>Nome do Item *</label>
+                            <input type="text" class="item-name" required placeholder="Ex: Serviço de Design">
+                        </div>
+                        <div class="form-group">
+                            <label>Quantidade *</label>
+                            <input type="number" class="item-quantity" min="1" value="1" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Valor Unitário (<span class="currency-label">R$</span>) *</label>
+                            <input type="number" class="item-value" step="0.01" min="0" required placeholder="0.00">
+                        </div>
+                        <div class="form-group">
+                            <label>Subtotal</label>
+                            <input type="text" class="item-subtotal" readonly style="background: var(--color-slate);">
+                        </div>
+                        <button type="button" class="remove-item-btn" onclick="removeItem(this)">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                                <line x1="6" y1="6" x2="18" y2="18"></line>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                
+                <button type="button" class="add-item-btn" onclick="addItem()">+ Adicionar Item</button>
+                
+                <div class="form-row" style="margin-top: var(--spacing-2xl);">
+                    <div class="form-group">
+                        <label for="discount">Desconto (<span class="currency-label">R$</span>)</label>
+                        <input type="number" id="discount" name="discount" step="0.01" min="0" value="0" placeholder="0.00" onchange="calculateTotal()">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Total Final</label>
+                        <div class="total-display" id="totalDisplay">R$ 0.00</div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="expiry_date">Validade</label>
+                    <input type="date" id="expiry_date" name="expiry_date">
+                </div>
+                
+                <div class="form-group">
+                    <label for="notes">Observações</label>
+                    <textarea id="notes" name="notes" rows="3" placeholder="Adicione observações adicionais"></textarea>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="goBack()">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Gerar Orçamento</button>
+                </div>
+            </form>
+        </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const selectedTemplate = '{{ template }}';
+
+function getCurrency() {
+    return localStorage.getItem('user_region') === 'BR' ? 'R$' : '£';
+}
+
+function updateCurrencyLabels() {
+    const currency = getCurrency();
+    document.querySelectorAll('.currency-label').forEach(label => {
+        label.textContent = currency;
+    });
+    calculateTotal();
+}
+
+function addItem() {
+    const container = document.getElementById('itemsContainer');
+    const newRow = document.createElement('div');
+    newRow.className = 'item-row';
+    const currency = getCurrency();
+    newRow.innerHTML = `
+        <div class="form-group">
+            <label>Nome do Item *</label>
+            <input type="text" class="item-name" required placeholder="Ex: Serviço de Design">
+        </div>
+        <div class="form-group">
+            <label>Quantidade *</label>
+            <input type="number" class="item-quantity" min="1" value="1" required onchange="calculateTotal()">
+        </div>
+        <div class="form-group">
+            <label>Valor Unitário (${currency}) *</label>
+            <input type="number" class="item-value" step="0.01" min="0" required placeholder="0.00" onchange="calculateTotal()">
+        </div>
+        <div class="form-group">
+            <label>Subtotal</label>
+            <input type="text" class="item-subtotal" readonly style="background: var(--color-slate);">
+        </div>
+        <button type="button" class="remove-item-btn" onclick="removeItem(this)">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+        </button>
+    `;
+    container.appendChild(newRow);
+}
+
+function removeItem(button) {
+    const container = document.getElementById('itemsContainer');
+    if (container.children.length > 1) {
+        button.parentElement.remove();
+        calculateTotal();
+    }
+}
+
+function calculateTotal() {
+    const itemRows = document.querySelectorAll('.item-row');
+    let total = 0;
+    const currency = getCurrency();
+    
+    itemRows.forEach(row => {
+        const quantity = parseFloat(row.querySelector('.item-quantity').value) || 0;
+        const value = parseFloat(row.querySelector('.item-value').value) || 0;
+        const subtotal = quantity * value;
+        
+        row.querySelector('.item-subtotal').value = currency + ' ' + subtotal.toFixed(2);
+        total += subtotal;
+    });
+    
+    const discount = parseFloat(document.getElementById('discount').value) || 0;
+    const finalTotal = total - discount;
+    
+    document.getElementById('totalDisplay').textContent = currency + ' ' + finalTotal.toFixed(2);
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', () => {
+    updateCurrencyLabels();
+});
+
+document.getElementById('detailedQuotationForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const items = [];
+    document.querySelectorAll('.item-row').forEach(row => {
+        items.push({
+            name: row.querySelector('.item-name').value,
+            quantity: parseFloat(row.querySelector('.item-quantity').value),
+            value: parseFloat(row.querySelector('.item-value').value)
+        });
+    });
+    
+    const formData = {
+        client_name: document.getElementById('client_name').value,
+        phone: document.getElementById('phone').value,
+        address: document.getElementById('address').value,
+        items: items,
+        discount: parseFloat(document.getElementById('discount').value) || 0,
+        expiry_date: document.getElementById('expiry_date').value,
+        notes: document.getElementById('notes').value,
+        template: selectedTemplate
+    };
+    
+    try {
+        const response = await fetch('/dashboard/api/quotations/detailed', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formData)
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            window.location.href = '/dashboard/quotation/view/' + data.quotation.id;
+        } else {
+            alert('Erro ao criar orçamento: ' + data.error);
+        }
+    } catch (error) {
+        alert('Erro ao criar orçamento');
+    }
+});
+
+function goBack() {
+    window.location.href = '/dashboard/quotation/select-template/detailed';
+}
+</script>
+{% endblock %}
