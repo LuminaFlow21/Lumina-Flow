@@ -77,6 +77,50 @@
             <a href="#" class="link" id="showLogin" data-i18n="auth.sign_in">Sign in</a>
         </div>
     </div>
+
+    <!-- Email Verification Section -->
+    <div class="auth-card" id="verificationCard" style="display: none;">
+        <div class="auth-logo">
+            <h1 data-i18n="auth.verification_title">Verify your email</h1>
+            <p data-i18n="auth.verification_subtitle">We sent a verification code to your email</p>
+        </div>
+
+        <div class="verification-info">
+            <p id="verificationEmail" class="verification-email"></p>
+            <p class="verification-message" data-i18n="auth.verification_message">Please check your inbox and click the verification link to activate your account.</p>
+        </div>
+
+        <div class="verification-actions">
+            <button type="button" class="btn btn-secondary btn-full" id="resendCode" data-i18n="auth.resend_code">Resend code</button>
+            <button type="button" class="btn btn-outline btn-full" id="changeEmail" data-i18n="auth.change_email">Change email</button>
+        </div>
+
+        <div class="auth-switch">
+            <p data-i18n="auth.back_to_login">Back to</p>
+            <a href="#" class="link" id="showLoginFromVerification" data-i18n="auth.sign_in">Sign in</a>
+        </div>
+    </div>
+
+    <!-- Change Email Section -->
+    <div class="auth-card" id="changeEmailCard" style="display: none;">
+        <div class="auth-logo">
+            <h1 data-i18n="auth.change_email_title">Change email</h1>
+            <p data-i18n="auth.change_email_subtitle">Enter a new email address</p>
+        </div>
+
+        <form class="auth-form" id="changeEmailForm">
+            <div class="form-group">
+                <label for="newEmail" data-i18n="auth.new_email">New Email</label>
+                <input type="email" id="newEmail" name="new_email" required placeholder="your@email.com">
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-full" data-i18n="auth.update_email">Update email</button>
+        </form>
+
+        <div class="auth-switch">
+            <a href="#" class="link" id="cancelChangeEmail" data-i18n="auth.cancel">Cancel</a>
+        </div>
+    </div>
 </div>
 
 <style>
@@ -225,6 +269,52 @@
 .auth-switch .link:hover {
     text-decoration: underline;
 }
+
+.verification-info {
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+
+.verification-email {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #1C2434;
+    margin-bottom: 0.5rem;
+    font-family: 'Poppins', sans-serif;
+}
+
+.verification-message {
+    font-size: 0.875rem;
+    color: #60708C;
+    font-family: 'Inter', sans-serif;
+}
+
+.verification-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+
+.btn-secondary {
+    background: #F7F9FC;
+    color: #1C2434;
+}
+
+.btn-secondary:hover {
+    background: #E8EEF7;
+}
+
+.btn-outline {
+    background: transparent;
+    border: 1px solid #E8EEF7;
+    color: #1565FF;
+}
+
+.btn-outline:hover {
+    background: #F7F9FC;
+    border-color: #1565FF;
+}
 </style>
 
 <script>
@@ -339,14 +429,127 @@ document.addEventListener('DOMContentLoaded', function() {
                 const result = await response.json();
                 
                 if (result.success) {
-                    alert(result.message);
-                    window.location.href = '/auth/login';
+                    // Show verification card instead of redirecting
+                    document.getElementById('signupCard').style.display = 'none';
+                    document.getElementById('verificationCard').style.display = 'block';
+                    document.getElementById('verificationEmail').textContent = data.email;
+                    // Store email for resend functionality
+                    sessionStorage.setItem('pendingEmail', data.email);
+                    sessionStorage.setItem('pendingName', data.full_name);
+                    sessionStorage.setItem('pendingPassword', data.password);
                 } else {
                     alert(result.error || 'Signup failed');
                 }
             } catch (error) {
                 alert('Error: ' + error.message);
             }
+        });
+    }
+
+    // Verification card buttons
+    const resendCodeBtn = document.getElementById('resendCode');
+    if (resendCodeBtn) {
+        resendCodeBtn.addEventListener('click', async () => {
+            const email = sessionStorage.getItem('pendingEmail');
+            const name = sessionStorage.getItem('pendingName');
+            
+            if (!email) {
+                alert('Please signup again');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/auth/resend-verification', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, full_name: name })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert('Verification code resent to ' + email);
+                } else {
+                    alert(result.error || 'Failed to resend code');
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        });
+    }
+
+    const changeEmailBtn = document.getElementById('changeEmail');
+    if (changeEmailBtn) {
+        changeEmailBtn.addEventListener('click', () => {
+            document.getElementById('verificationCard').style.display = 'none';
+            document.getElementById('changeEmailCard').style.display = 'block';
+        });
+    }
+
+    const showLoginFromVerificationBtn = document.getElementById('showLoginFromVerification');
+    if (showLoginFromVerificationBtn) {
+        showLoginFromVerificationBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            document.getElementById('verificationCard').style.display = 'none';
+            document.getElementById('loginCard').style.display = 'block';
+            sessionStorage.removeItem('pendingEmail');
+            sessionStorage.removeItem('pendingName');
+            sessionStorage.removeItem('pendingPassword');
+        });
+    }
+
+    // Change email form
+    const changeEmailForm = document.getElementById('changeEmailForm');
+    if (changeEmailForm) {
+        changeEmailForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData.entries());
+            const oldEmail = sessionStorage.getItem('pendingEmail');
+            const name = sessionStorage.getItem('pendingName');
+            const password = sessionStorage.getItem('pendingPassword');
+            
+            if (!oldEmail) {
+                alert('Please signup again');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/auth/change-email', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        old_email: oldEmail,
+                        new_email: data.new_email,
+                        full_name: name,
+                        password: password
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Update stored email
+                    sessionStorage.setItem('pendingEmail', data.new_email);
+                    document.getElementById('changeEmailCard').style.display = 'none';
+                    document.getElementById('verificationCard').style.display = 'block';
+                    document.getElementById('verificationEmail').textContent = data.new_email;
+                    alert('Email updated. Please check your new inbox for verification code.');
+                } else {
+                    alert(result.error || 'Failed to change email');
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        });
+    }
+
+    const cancelChangeEmailBtn = document.getElementById('cancelChangeEmail');
+    if (cancelChangeEmailBtn) {
+        cancelChangeEmailBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            document.getElementById('changeEmailCard').style.display = 'none';
+            document.getElementById('verificationCard').style.display = 'block';
         });
     }
 });

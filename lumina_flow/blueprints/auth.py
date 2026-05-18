@@ -4,6 +4,7 @@ Authentication Blueprint - Custom Authentication with Flask-Login
 
 from flask import Blueprint, render_template, request, jsonify, session, redirect, url_for, flash
 from flask_login import login_user, logout_user, login_required, current_user
+from datetime import datetime
 from ..auth_handler import get_auth_handler, User
 from ..email_handler import get_email_handler
 
@@ -113,3 +114,133 @@ def handle_logout():
     logout_user()
     session.clear()
     return redirect(url_for('main.index'))
+
+
+@auth_bp.route('/resend-verification', methods=['POST'])
+def handle_resend_verification():
+    """Handle resend verification code request"""
+    try:
+        data = request.get_json()
+        email = data.get('email')
+        full_name = data.get('full_name', email.split('@')[0])
+        
+        if not email:
+            return jsonify({'success': False, 'error': 'Email is required'}), 400
+        
+        auth_handler = get_auth_handler()
+        
+        # Find user by email
+        result = auth_handler.supabase.admin_client.table('users') \
+            .select('*') \
+            .eq('email', email) \
+            .execute()
+        
+        if not result.data or len(result.data) == 0:
+            return jsonify({'success': False, 'error': 'Email not found'}), 404
+        
+        user = result.data[0]
+        
+        # Check if already verified
+        if user.get('verified'):
+            return jsonify({'success': False, 'error': 'Email already verified'}), 400
+        
+        # Generate new verification token
+        new_token = auth_handler.generate_verification_token()
+        
+        # Update user with new token
+        auth_handler.supabase.admin_client.table('users') \
+            .update({'verification_token': new_token}) \
+            .eq('id', user['id']) \
+            .execute()
+        
+        # Send verification email
+        email_handler = get_email_handler()
+        email_result = email_handler.send_verification_email(
+            email=email,
+            verification_token=new_token,
+            user_name=full_name
+        )
+        
+        if email_result.get('success'):
+            return jsonify({'success': True, 'message': 'Verification code resent'})
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'Failed to send verification email'
+            }), 500
+            
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@auth_bp.route('/change-email', methods=['POST'])
+def handle_change_email():
+    """Handle change email request"""
+    try:
+        data = request.get_json()
+        old_email = data.get('old_email')
+        new_email = data.get('new_email')
+        full_name = data.get('full_name')
+        password = data.get('password')
+        
+        if not old_email or not new_email or not password:
+            return jsonify({'success': False, 'error': 'Missing required fields'}), 400
+        
+        auth_handler = get_auth_handler()
+        
+        # Find user by old email
+        result = auth_handler.supabase.admin_client.table('users') \
+            .select('*') \
+            .eq('email', old_email) \
+            .execute()
+        
+        if not result.data or len(result.data) == 0:
+            return jsonify({'success': False, 'error': 'User not found'}), 404
+        
+        user = result.data[0]
+        
+        # Verify password
+        if not auth_handler.verify_password(password, user['password_hash']):
+            return jsonify({'success': False, 'error': 'Invalid password'}), 401
+        
+        # Check if new email already exists
+        existing = auth_handler.supabase.admin_client.table('users') \
+            .select('id') \
+            .eq('email', new_email) \
+            .execute()
+        
+        if existing.data and len(existing.data) > 0:
+            return jsonify({'success': False, 'error': 'Email already registered'}), 400
+        
+        # Generate new verification token
+        new_token = auth_handler.generate_verification_token()
+        
+        # Update user with new email and new token
+        auth_handler.supabase.admin_client.table('users') \
+            .update({
+                'email': new_email,
+                'verification_token': new_token,
+                'verified': False,
+                'updated_at': datetime.now().isoformat()
+            }) \
+            .eq('id', user['id']) \
+            .execute()
+        
+        # Send verification email to new email
+        email_handler = get_email_handler()
+        email_result = email_handler.send_verification_email(
+            email=new_email,
+            verification_token=new_token,
+            user_name=full_name
+        )
+        
+        if email_result.get('success'):
+            return jsonify({'success': True, 'message': 'Email updated. Please verify new email.'})
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'Failed to send verification email'
+            }), 500
+            
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
