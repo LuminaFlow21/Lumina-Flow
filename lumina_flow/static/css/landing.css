@@ -2,6 +2,72 @@
    LUMINA FLOW - LANDING PAGE STYLES
    ======================================== */
 
+/* Landing Navigation */
+.landing-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-lg);
+    padding: var(--spacing-md) 0;
+}
+
+.landing-nav__logo {
+    display: flex;
+    align-items: center;
+}
+
+.landing-nav__actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--spacing-xl);
+    flex: 1;
+}
+
+.landing-nav__links {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-lg);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.landing-nav__links a {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-slate-dark);
+    text-decoration: none;
+    transition: color var(--transition-base);
+}
+
+.landing-nav__links a:hover {
+    color: var(--color-indigo);
+}
+
+.landing-nav__controls {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+}
+
+.landing-nav__select {
+    min-width: 120px;
+    padding: var(--spacing-sm) var(--spacing-md);
+    font-size: var(--font-size-sm);
+    cursor: pointer;
+}
+
+.landing-nav__auth {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.landing-nav__auth .btn {
+    min-width: 110px;
+}
+
 /* Hero Section */
 .hero {
     position: relative;
@@ -471,7 +537,30 @@
     }
 }
 
+@media (max-width: 1024px) {
+    .landing-nav {
+        gap: var(--spacing-md);
+    }
+
+    .landing-nav__actions {
+        gap: var(--spacing-lg);
+    }
+}
+
 @media (max-width: 992px) {
+    .landing-nav {
+        flex-wrap: wrap;
+    }
+
+    .landing-nav__actions {
+        flex: 1 1 100%;
+        justify-content: space-between;
+    }
+
+    .landing-nav__links {
+        flex: 1;
+    }
+
     .hero-text h1 {
         font-size: var(--font-size-4xl);
     }
@@ -490,6 +579,49 @@
 }
 
 @media (max-width: 768px) {
+    .landing-nav {
+        flex-direction: column;
+        align-items: stretch;
+        gap: var(--spacing-md);
+    }
+
+    .landing-nav__actions {
+        flex-direction: column;
+        align-items: stretch;
+        gap: var(--spacing-md);
+    }
+
+    .landing-nav__links {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .landing-nav__links li {
+        flex: 1;
+        text-align: center;
+    }
+
+    .landing-nav__links a {
+        display: inline-flex;
+        justify-content: center;
+        padding: var(--spacing-xs) 0;
+    }
+
+    .landing-nav__controls {
+        justify-content: space-between;
+    }
+
+    .landing-nav__auth {
+        width: 100%;
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: var(--spacing-sm);
+    }
+
+    .landing-nav__auth .btn {
+        width: 100%;
+    }
+
     .hero-text h1 {
         font-size: var(--font-size-3xl);
     }
@@ -542,6 +674,10 @@
         padding: var(--spacing-2xl) 0;
     }
     
+    .landing-nav__links {
+        gap: var(--spacing-md);
+    }
+
     .hero-text h1 {
         font-size: var(--font-size-2xl);
     }
@@ -573,18 +709,47 @@
     .container {
         padding: 0 var(--spacing-md);
     }
+
+    .landing-nav__controls {
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: var(--spacing-sm);
+    }
+
+    .landing-nav__language {
+        flex: 1;
+    }
+
+    .landing-nav__select {
+        width: 100%;
+    }
+
+    .landing-nav__links {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .landing-nav__links li {
+        width: 100%;
+    }
+
+    .landing-nav__links a {
+        width: 100%;
+        padding: var(--spacing-xs) 0;
+    }
 }
 
 @media (max-width: 480px) {
-    .hero-text h1 {
-        font-size: var(--font-size-xl);
+    .container {
+        padding: 0 var(--spacing-xs);
     }
-    
-    .section-header h2 {
-        font-size: var(--font-size-lg);
+
+    .hero-text {
+        text-align: center;
     }
-    
-    .pricing-card {
+
+    .hero-trust p {
+        text-align: center;
         padding: var(--spacing-md);
     }
     

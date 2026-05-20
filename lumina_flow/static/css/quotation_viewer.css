@@ -1,0 +1,179 @@
+/* ========================================
+   Quotation Viewer Enhancements
+   ======================================== */
+
+body.quotation-viewer {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    justify-content: flex-start !important;
+    padding: clamp(16px, 5vw, 32px) !important;
+    gap: clamp(16px, 4vw, 28px) !important;
+    min-height: 100vh !important;
+    position: relative;
+    isolation: isolate;
+    width: 100%;
+    overflow-x: auto !important;
+    touch-action: pan-x pan-y pinch-zoom !important;
+}
+
+body.quotation-viewer::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0) 40%);
+    z-index: -1;
+}
+
+body.quotation-viewer .action-buttons {
+    position: sticky !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: min(100%, 760px) !important;
+    margin: 0 auto !important;
+    padding: clamp(14px, 3vw, 18px) !important;
+    border-radius: 20px !important;
+    background: rgba(255, 255, 255, 0.92) !important;
+    box-shadow: 0 18px 36px rgba(15, 23, 42, 0.12) !important;
+    backdrop-filter: blur(12px);
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 14px !important;
+    z-index: 2000 !important;
+    border: 1px solid rgba(148, 163, 184, 0.18) !important;
+}
+
+body.quotation-viewer .action-buttons__hint {
+    margin: 0;
+    text-align: center;
+    font-size: clamp(0.85rem, 1.9vw, 1rem);
+    font-weight: 600;
+    color: rgba(15, 23, 42, 0.78);
+    letter-spacing: 0.02em;
+}
+
+body.quotation-viewer .action-buttons__bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: center;
+    align-items: stretch;
+}
+
+body.quotation-viewer .action-btn {
+    flex: 1 1 160px !important;
+    display: inline-flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: 8px !important;
+    min-height: 48px !important;
+    text-align: center !important;
+}
+
+body.quotation-viewer .action-btn svg {
+    flex-shrink: 0;
+}
+
+body.quotation-viewer .viewport-pan {
+    width: 100%;
+    overflow-x: auto;
+    touch-action: pan-x pan-y pinch-zoom;
+    padding-bottom: clamp(12px, 3vw, 18px);
+}
+
+body.quotation-viewer .mobile-scroll-hint {
+    display: none;
+    text-align: left;
+    color: rgba(15, 23, 42, 0.65);
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    animation: viewerHintPulse 2s infinite;
+}
+
+@keyframes viewerHintPulse {
+    0%, 100% { opacity: 0.55; }
+    50% { opacity: 1; }
+}
+
+@media (min-width: 300px) {
+    body.quotation-viewer .orcamento {
+        width: 760px !important;
+        max-width: 760px !important;
+        min-width: 760px !important;
+        flex: 0 0 760px !important;
+        margin: 0;
+    }
+}
+
+@media (min-width: 900px) {
+    body.quotation-viewer {
+        align-items: center !important;
+    }
+
+    body.quotation-viewer .orcamento {
+        margin: 0 auto;
+    }
+}
+
+@media (max-width: 768px) {
+    body.quotation-viewer {
+        padding: clamp(14px, 5vw, 20px);
+        gap: clamp(14px, 5vw, 24px);
+    }
+
+    body.quotation-viewer .action-buttons {
+        border-radius: 18px;
+        padding: clamp(12px, 4vw, 16px);
+    }
+
+    body.quotation-viewer .action-buttons__bar {
+        gap: 10px;
+    }
+
+    body.quotation-viewer .action-btn {
+        flex: 1 1 calc(50% - 10px);
+        min-height: 44px;
+        font-size: 0.875rem;
+    }
+
+    body.quotation-viewer .mobile-scroll-hint {
+        display: block;
+    }
+}
+
+@media (max-width: 480px) {
+    body.quotation-viewer {
+        padding: clamp(12px, 6vw, 18px);
+    }
+
+    body.quotation-viewer .action-buttons {
+        padding: clamp(12px, 4vw, 14px);
+        gap: 12px;
+    }
+
+    body.quotation-viewer .action-buttons__bar {
+        gap: 8px;
+    }
+
+    body.quotation-viewer .action-btn {
+        flex: 1 1 100%;
+        min-height: 46px;
+    }
+}
+
+@media (max-width: 360px) {
+    body.quotation-viewer {
+        padding: 10px;
+    }
+
+    body.quotation-viewer .action-buttons__hint {
+        font-size: 0.8rem;
+    }
+
+    body.quotation-viewer .action-buttons {
+        border-radius: 16px;
+    }
+}

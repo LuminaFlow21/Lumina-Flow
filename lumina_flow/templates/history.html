@@ -15,48 +15,13 @@
 {% endblock %}
 
 {% block content %}
-        <!-- Mobile Profile Header -->
-        <div class="mobile-profile-header">
-            <div class="mobile-profile-info">
-                <div class="mobile-profile-avatar">
-                    {% if profile_data.get('profile_photo_url') %}
-                    <img src="{{ profile_data.get('profile_photo_url') }}" alt="Profile Photo">
-                    {% else %}
-                    <span>{{ session.get('user_email', 'U')[0].upper() }}</span>
-                    {% endif %}
-                </div>
-            </div>
-            <div class="mobile-profile-actions">
-                <button class="theme-toggle-mobile" id="themeToggleMobile" title="Toggle Theme">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="5"></circle>
-                        <line x1="12" y1="1" x2="12" y2="3"></line>
-                        <line x1="12" y1="21" x2="12" y2="23"></line>
-                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-                        <line x1="1" y1="12" x2="3" y2="12"></line>
-                        <line x1="21" y1="12" x2="23" y2="12"></line>
-                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-                    </svg>
-                </button>
-                <button class="language-toggle" data-language-toggle title="Change Language">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <line x1="2" y1="12" x2="22" y2="12"></line>
-                        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
-                    </svg>
-                </button>
-            </div>
-        </div>
-        
-        <div class="dashboard-header">
-            <div>
+        <div class="history-header">
+            <div class="history-header__title">
                 <h1 data-i18n="dashboard.quotation_history">Histórico de Orçamentos</h1>
                 <p class="text-slate" data-i18n="dashboard.history_subtitle">Gerencie todos os seus orçamentos</p>
             </div>
-            <div class="header-actions">
-                <a href="{{ url_for('dashboard.dashboard_view') }}" class="btn btn-primary">
+            <div class="history-header__actions">
+                <a href="{{ url_for('dashboard.dashboard_view') }}" class="btn btn-primary history-new-btn">
                     <span data-i18n="dashboard.new_quotation">Novo Orçamento</span>
                 </a>
             </div>
@@ -89,31 +54,31 @@
                     <tbody>
                         {% for quotation in quotations %}
                         <tr data-status="{{ quotation.status }}" onclick="viewQuotation('{{ quotation.id }}')" style="cursor: pointer;">
-                            <td class="client-cell" data-label="{{ 'Cliente' }}">
+                            <td class="client-cell" data-label="Cliente" data-i18n-label="dashboard.client_name">
                                 {{ quotation.client_name }}
                             </td>
-                            <td class="value-cell" data-label="{{ 'Valor' }}">
+                            <td class="value-cell" data-label="Valor" data-i18n-label="dashboard.value">
                                 {{ 'R$' if quotation.currency == 'BRL' else '£' }} {{ quotation.value }}
                             </td>
-                            <td data-label="{{ 'Validade' }}">
+                            <td data-label="Validade" data-i18n-label="dashboard.expiry_date">
     {% if quotation.expiry_date %}
         {{ quotation.expiry_date[:10].split('-')[2] }}/{{ quotation.expiry_date[:10].split('-')[1] }}/{{ quotation.expiry_date[:10].split('-')[0] }}
     {% else %}
         -
     {% endif %}
 </td>
-                            <td data-label="{{ 'Status' }}">
+                            <td data-label="Status" data-i18n-label="dashboard.status">
                                 <span class="status-badge status-{{ quotation.status }}" data-i18n="dashboard.{{ quotation.status }}">
                                 </span>
                             </td>
-                            <td class="date-cell" data-label="{{ 'Data' }}">
+                            <td class="date-cell" data-label="Data" data-i18n-label="dashboard.date">
                                 {% if quotation.created_at %}
                                     {{ quotation.created_at[:10].split('-')[2] }}/{{ quotation.created_at[:10].split('-')[1] }}/{{ quotation.created_at[:10].split('-')[0] }}
                                 {% else %}
                                     -
                                 {% endif %}
                             </td>
-                            <td class="actions-cell" data-label="{{ 'Ações' }}">
+                            <td class="actions-cell" data-label="Ações" data-i18n-label="dashboard.actions">
                                 {% if quotation.status == 'expired' %}
                                 <button class="btn btn-primary btn-reactivate" data-id="{{ quotation.id }}" data-i18n="dashboard.reactivate">Ativar Orçamento</button>
                                 <button class="icon-btn btn-delete" data-id="{{ quotation.id }}" title="Excluir">
@@ -239,6 +204,7 @@
 </div>
 
 {% block extra_js %}
+{{ super() }}
 <script>
 // Global variables
 let currentReactivateId = null;
@@ -334,30 +300,21 @@ document.addEventListener('DOMContentLoaded', () => {
         window.location.href = `/dashboard/quotation/view/${quotationId}`;
     };
 
-    // Theme Toggle - Desktop and Mobile
     const themeToggle = document.getElementById('themeToggle');
-    const themeToggleMobile = document.getElementById('themeToggleMobile');
-    
-    const handleThemeToggle = () => {
-        const html = document.documentElement;
-        const currentTheme = html.getAttribute('data-theme');
-        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-        html.setAttribute('data-theme', newTheme);
-        localStorage.setItem('theme', newTheme);
-    };
-    
-    if (themeToggle) {
-        themeToggle.addEventListener('click', handleThemeToggle);
+    const themeToggleMobile = document.getElementById('themeToggleMobileFloat');
+    const themeHandler = typeof window.toggleTheme === 'function' ? window.toggleTheme : null;
+
+    if (themeToggle && themeHandler) {
+        themeToggle.addEventListener('click', themeHandler);
     }
     
-    if (themeToggleMobile) {
-        themeToggleMobile.addEventListener('click', handleThemeToggle);
+    if (themeToggleMobile && themeHandler) {
+        themeToggleMobile.addEventListener('click', themeHandler);
     }
     
-    // Initialize theme from localStorage
     const savedTheme = localStorage.getItem('theme');
-    if (savedTheme) {
-        document.documentElement.setAttribute('data-theme', savedTheme);
+    if (savedTheme && typeof window.applyTheme === 'function') {
+        window.applyTheme(savedTheme);
     }
     
     // Status Filter

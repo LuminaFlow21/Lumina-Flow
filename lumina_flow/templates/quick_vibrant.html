@@ -2,12 +2,14 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes"/>
   <title>Orçamento Rápido #{{ quotation.id[:8].upper() }}</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/quotation_viewer.css') }}">
+  <script defer src="{{ url_for('static', filename='js/quotation_viewer.js') }}"></script>
 
   <style>
 
@@ -21,9 +23,12 @@
       background:#0E7A5F;
       font-family:'Inter', sans-serif;
       display:flex;
-      justify-content:center;
-      padding:20px;
+      flex-direction:column;
+      align-items:center;
+      padding:24px;
       color:#fff;
+      gap:24px;
+      min-height:100vh;
     }
 
     .orcamento{
@@ -283,19 +288,10 @@
       line-height:1.6;
     }
 
-    .action-buttons {
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      z-index: 1000;
-    }
-
     .action-btn {
-      background:linear-gradient(90deg, #1565FF 0%, #29D6FF 100%);
-      color: white;
+      background: rgba(14,122,95,0.85);
+      border:1px solid rgba(255,255,255,0.18);
+      color: #fff;
       border: none;
       padding: 12px 20px;
       border-radius: 14px;
@@ -319,15 +315,6 @@
       .orcamento {
         width: 100%;
         padding: 20px;
-      }
-      .action-buttons {
-        position: fixed;
-        bottom: 20px;
-        top: auto;
-        right: 20px;
-        left: 20px;
-        flex-direction: row;
-        justify-content: center;
       }
     }
   </style>
@@ -462,63 +449,61 @@
   <script>
     async function downloadImage() {
       const container = document.getElementById('quotationContainer');
-      const buttons = document.querySelector('.action-buttons');
-      buttons.style.display = 'none';
 
-      try {
-        const canvas = await html2canvas(container, {
-          backgroundColor: '#0E7A5F',
-          scale: 2,
-          useCORS: true,
-          logging: false
-        });
+      await (window.LuminaFlow?.withToolbarHidden?.(async () => {
+        try {
+          const canvas = await html2canvas(container, {
+            backgroundColor: '#0E7A5F',
+            scale: 2,
+            useCORS: true,
+            logging: false
+          });
 
-        const link = document.createElement('a');
-        link.download = `orcamento-{{ quotation.id[:8].upper() }}.png`;
-        link.href = canvas.toDataURL('image/png');
-        link.click();
-      } catch (error) {
-        console.error('Error generating image:', error);
-        alert('Erro ao gerar imagem');
-      } finally {
-        buttons.style.display = 'flex';
-      }
+          const link = document.createElement('a');
+          link.download = `orcamento-{{ quotation.id[:8].upper() }}.png`;
+          link.href = canvas.toDataURL('image/png');
+          link.click();
+        } catch (error) {
+          console.error('Error generating image:', error);
+          alert('Erro ao gerar imagem');
+          throw error;
+        }
+      }) ?? Promise.resolve());
     }
 
     async function downloadPDF() {
       const container = document.getElementById('quotationContainer');
-      const buttons = document.querySelector('.action-buttons');
-      buttons.style.display = 'none';
 
-      try {
-        const canvas = await html2canvas(container, {
-          backgroundColor: '#0E7A5F',
-          scale: 2,
-          useCORS: true,
-          logging: false
-        });
+      await (window.LuminaFlow?.withToolbarHidden?.(async () => {
+        try {
+          const canvas = await html2canvas(container, {
+            backgroundColor: '#0E7A5F',
+            scale: 2,
+            useCORS: true,
+            logging: false
+          });
 
-        const imgData = canvas.toDataURL('image/png');
-        const { jsPDF } = window.jspdf;
-        const pdf = new jsPDF('p', 'mm', 'a4');
+          const imgData = canvas.toDataURL('image/png');
+          const { jsPDF } = window.jspdf;
+          const pdf = new jsPDF('p', 'mm', 'a4');
 
-        const imgProps = pdf.getImageProperties(imgData);
-        const pdfWidth = 210;
-        const pdfHeight = 297;
-        const scale = Math.min(pdfWidth / imgProps.width, pdfHeight / imgProps.height);
-        const renderWidth = imgProps.width * scale;
-        const renderHeight = imgProps.height * scale;
-        const marginX = (pdfWidth - renderWidth) / 2;
-        const marginY = Math.max(0, (pdfHeight - renderHeight) / 2);
+          const imgProps = pdf.getImageProperties(imgData);
+          const pdfWidth = 210;
+          const pdfHeight = 297;
+          const scale = Math.min(pdfWidth / imgProps.width, pdfHeight / imgProps.height);
+          const renderWidth = imgProps.width * scale;
+          const renderHeight = imgProps.height * scale;
+          const marginX = (pdfWidth - renderWidth) / 2;
+          const marginY = Math.max(0, (pdfHeight - renderHeight) / 2);
 
-        pdf.addImage(imgData, 'PNG', marginX, marginY, renderWidth, renderHeight);
-        pdf.save(`orcamento-{{ quotation.id[:8].upper() }}.pdf`);
-      } catch (error) {
-        console.error('Error generating PDF:', error);
-        alert('Erro ao gerar PDF');
-      } finally {
-        buttons.style.display = 'flex';
-      }
+          pdf.addImage(imgData, 'PNG', marginX, marginY, renderWidth, renderHeight);
+          pdf.save(`orcamento-{{ quotation.id[:8].upper() }}.pdf`);
+        } catch (error) {
+          console.error('Error generating PDF:', error);
+          alert('Erro ao gerar PDF');
+          throw error;
+        }
+      }) ?? Promise.resolve());
     }
 
     function shareQuotation(event) {

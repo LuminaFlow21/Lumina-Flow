@@ -127,6 +127,7 @@ async function applyRegionChange(newRegion, { reload = true } = {}) {
     updateTranslations();
     updatePricing();
     updatePlaceholderTranslations();
+    updateDataLabels();
     syncGlobalState();
 
     if (reload && previous !== newRegion) {
@@ -237,6 +238,7 @@ function syncGlobalState() {
     window.LuminaFlow.updateTranslations = updateTranslations;
     window.LuminaFlow.updatePricing = updatePricing;
     window.LuminaFlow.updatePlaceholderTranslations = updatePlaceholderTranslations;
+    window.LuminaFlow.updateDataLabels = updateDataLabels;
     window.LuminaFlow.updateCurrencyDisplays = updateCurrencyDisplays;
     window.LuminaFlow.applyRegionChange = applyRegionChange;
     window.LuminaFlow.currentLanguage = currentLanguage;
@@ -252,6 +254,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     updateTranslations();
     updatePricing();
     updatePlaceholderTranslations();
+    updateDataLabels();
     initBillingToggle();
 
     if (!hasSavedLanguage) {
@@ -267,6 +270,17 @@ function updatePlaceholderTranslations() {
         const translation = t(key);
         if (translation && translation !== key) {
             element.setAttribute('placeholder', translation);
+        }
+    });
+}
+
+function updateDataLabels() {
+    const elements = document.querySelectorAll('[data-i18n-label]');
+    elements.forEach(element => {
+        const key = element.getAttribute('data-i18n-label');
+        const translation = t(key);
+        if (translation && translation !== key) {
+            element.setAttribute('data-label', translation);
         }
     });
 }

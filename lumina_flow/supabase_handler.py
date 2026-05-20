@@ -7,6 +7,7 @@ import os
 import io
 import base64
 import uuid
+from datetime import datetime
 from werkzeug.utils import secure_filename
 from supabase import create_client, Client
 from .config import Config
@@ -129,7 +130,7 @@ class SupabaseHandler:
     
     def get_user_subscription(self, user_id: str) -> dict:
         """
-        Get user subscription information from users table
+        Get user subscription information combining user and profile tables
         
         Args:
             user_id: User ID
@@ -138,27 +139,40 @@ class SupabaseHandler:
             Dictionary with subscription data or error
         """
         try:
-            # Query from users table (new custom auth system)
-            response = self.admin_client.table('users') \
+            user_plan = 'free'
+
+            user_response = self.admin_client.table('users') \
                 .select('plan') \
                 .eq('id', user_id) \
                 .execute()
-            
-            if response.data:
-                user = response.data[0]
+
+            if user_response.data:
+                user_plan = user_response.data[0].get('plan', 'free')
+
+            profile_response = self.admin_client.table('profiles') \
+                .select('plan, subscription_status, stripe_customer_id, stripe_subscription_id, next_billing_date') \
+                .eq('user_id', user_id) \
+                .execute()
+
+            if profile_response.data:
+                profile = profile_response.data[0]
                 return {
                     'success': True,
-                    'plan': user.get('plan', 'free'),
-                    'subscription_status': 'active',  # Always active for custom auth
-                    'stripe_customer_id': None,
-                    'stripe_subscription_id': None,
-                    'next_billing_date': None
+                    'plan': profile.get('plan', user_plan) or user_plan,
+                    'subscription_status': profile.get('subscription_status', 'inactive'),
+                    'stripe_customer_id': profile.get('stripe_customer_id'),
+                    'stripe_subscription_id': profile.get('stripe_subscription_id'),
+                    'next_billing_date': profile.get('next_billing_date')
                 }
-            else:
-                return {
-                    'success': False,
-                    'error': 'User not found'
-                }
+
+            return {
+                'success': True,
+                'plan': user_plan,
+                'subscription_status': 'inactive',
+                'stripe_customer_id': None,
+                'stripe_subscription_id': None,
+                'next_billing_date': None
+            }
         except Exception as e:
             return {
                 'success': False,
@@ -188,14 +202,23 @@ class SupabaseHandler:
                 'subscription_status': subscription_status
             }
             
-            if stripe_customer_id:
+            if stripe_customer_id is not None:
                 update_data['stripe_customer_id'] = stripe_customer_id
-            if stripe_subscription_id:
+            if stripe_subscription_id is not None:
                 update_data['stripe_subscription_id'] = stripe_subscription_id
-            if next_billing_date:
+            if next_billing_date is not None:
                 update_data['next_billing_date'] = next_billing_date
             
-            response = self.admin_client.table('profiles').update(update_data).eq('user_id', user_id).execute()
+            response = self.admin_client.table('profiles') \
+                .upsert({**update_data, 'user_id': user_id}, on_conflict='user_id') \
+                .execute()
+
+            # Keep users table in sync
+            self.admin_client.table('users') \
+                .update({'plan': plan, 'updated_at': datetime.now().isoformat()}) \
+                .eq('id', user_id) \
+                .execute()
+
             return {
                 'success': True,
                 'data': response.data

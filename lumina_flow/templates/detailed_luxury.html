@@ -7,7 +7,7 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/quotation_viewer.css') }}">
   <script defer src="{{ url_for('static', filename='js/quotation_viewer.js') }}"></script>
 
@@ -20,26 +20,47 @@
     }
 
     body{
-      background:#000;
-      font-family:'Roboto', sans-serif;
+      background:#faf5ff;
+      font-family:'Poppins', sans-serif;
       display:flex;
       flex-direction:column;
       align-items:center;
-      padding:24px;
-      gap:24px;
+      padding:32px 0 48px;
+      gap:18px;
       min-height:100vh;
-      color:#fff;
+      color:#333;
+    }
+
+    .viewport-pan{
+      width:100%;
+      overflow-x:auto;
+      touch-action:pan-x pan-y;
+      padding-bottom:16px;
     }
 
     .orcamento{
-      width:min(100%, 760px);
-      background:linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-      border-radius:8px;
-      padding:25px;
-      border:4px solid #e94560;
-      box-shadow:0 0 50px rgba(233,69,96,0.3);
+      width:760px;
+      max-width:760px;
+      min-width:760px;
+      flex:0 0 760px;
+      background:#ffffff;
+      border-radius:16px;
+      padding:30px;
+      box-shadow:0 10px 40px rgba(0,0,0,0.08);
       display:flex;
       flex-direction:column;
+      position:relative;
+      margin:0 auto;
+    }
+
+    .orcamento::before{
+      content:'';
+      position:absolute;
+      top:0;
+      left:0;
+      right:0;
+      height:6px;
+      background:linear-gradient(90deg, #7c3aed 0%, #6d28d9 100%);
     }
 
     /* HEADER */
@@ -48,7 +69,7 @@
       display:flex;
       justify-content:space-between;
       align-items:flex-start;
-      margin-bottom:20px;
+      margin-bottom:30px;
     }
 
     .empresa{
@@ -60,16 +81,15 @@
     .foto{
       width:70px;
       height:70px;
-      border-radius:8px;
-      border:3px solid #e94560;
+      border-radius:12px;
+      border:2px solid #7c3aed;
       display:flex;
       align-items:center;
       justify-content:center;
-      font-size:28px;
-      color:#e94560;
-      background:#0f3460;
+      font-size:26px;
+      color:#7c3aed;
+      background:#f3e8ff;
       overflow:hidden;
-      box-shadow:0 0 20px rgba(233,69,96,0.4);
     }
 
     .foto img{
@@ -78,134 +98,119 @@
       object-fit:cover;
       object-position:center;
       display:block;
-      border-radius:4px;
+      border-radius:10px;
       image-rendering:auto;
     }
 
     .foto span{
-      font-weight:900;
-      font-size:32px;
-      font-family:'Bebas Neue', sans-serif;
+      font-weight:700;
+      font-size:26px;
     }
 
     .titulo h1{
-      font-family:'Bebas Neue', sans-serif;
-      font-size:28px;
-      font-weight:900;
-      color:#fff;
-      line-height:1;
-      letter-spacing:2px;
+      font-size:22px;
+      font-weight:700;
+      color:#1a1a2e;
+      line-height:1.2;
     }
 
     .titulo h2{
-      color:#e94560;
-      font-size:16px;
-      font-weight:900;
+      color:#7c3aed;
+      font-size:14px;
+      font-weight:600;
       text-transform:uppercase;
-      letter-spacing:3px;
-      margin-top:4px;
+      letter-spacing:1px;
+      margin-top:2px;
     }
 
     .infos-topo{
       text-align:right;
       display:flex;
       flex-direction:column;
-      gap:12px;
+      gap:8px;
     }
 
     .info-item{
-      font-size:16px;
-      color:#a0a0a0;
-      font-weight:700;
-      text-transform:uppercase;
-      letter-spacing:1px;
+      font-size:13px;
+      color:#666;
+      font-weight:500;
     }
 
     .info-item span{
-      color:#fff;
-      font-weight:900;
+      color:#1a1a2e;
+      font-weight:600;
     }
 
     /* SEÇÕES */
 
     .secao{
-      margin-bottom:12px;
+      margin-bottom:25px;
     }
 
     .secao-titulo{
       display:flex;
       align-items:center;
       gap:12px;
-      margin-bottom:12px;
-      padding-bottom:8px;
-      border-bottom:3px solid #e94560;
+      margin-bottom:16px;
+      padding-bottom:12px;
+      border-bottom:2px solid #faf5ff;
     }
 
     .icone-secao{
       width:32px;
       height:32px;
       border-radius:8px;
-      background:#e94560;
+      background:linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
       display:flex;
       align-items:center;
       justify-content:center;
-      color:#000;
-      font-size:16px;
+      color:white;
+      font-size:14px;
       flex-shrink:0;
-      font-weight:900;
     }
 
     .secao-titulo h3{
-      font-family:'Bebas Neue', sans-serif;
-      font-size:22px;
-      font-weight:900;
-      color:#fff;
-      text-transform:uppercase;
-      letter-spacing:2px;
+      font-size:16px;
+      font-weight:600;
+      color:#1a1a2e;
     }
 
     /* CLIENTE */
 
     .cliente-info{
-      display:flex;
-      flex-direction:column;
-      gap:10px;
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:16px;
     }
 
     .cliente-item{
-      display:flex;
-      align-items:center;
-      gap:12px;
-      background:rgba(15,52,96,0.6);
-      padding:12px 16px;
-      border-radius:8px;
-      border-left:5px solid #e94560;
+      background:#f3e8ff;
+      padding:14px 16px;
+      border-radius:10px;
+      border-left:3px solid #7c3aed;
     }
 
     .cliente-item .label{
-      font-size:12px;
-      color:#a0a0a0;
+      font-size:11px;
+      color:#888;
       text-transform:uppercase;
-      letter-spacing:1px;
-      font-weight:700;
-      min-width:90px;
+      letter-spacing:0.5px;
+      margin-bottom:4px;
+      font-weight:500;
     }
 
     .cliente-item .valor{
-      font-size:18px;
-      color:#fff;
-      font-weight:900;
-      text-transform:uppercase;
-      letter-spacing:0.5px;
+      font-size:14px;
+      color:#1a1a2e;
+      font-weight:600;
     }
 
     /* TABELA */
 
     .tabela-box{
       overflow:hidden;
-      border-radius:8px;
-      border:3px solid #e94560;
-      box-shadow:0 0 20px rgba(233,69,96,0.2);
+      border-radius:12px;
+      border:1px solid #e8e8e8;
     }
 
     table{
@@ -214,37 +219,34 @@
     }
 
     thead{
-      background:#e94560;
-      color:#000;
+      background:linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+      color:white;
     }
 
     thead th{
-      padding:10px 8px;
+      padding:14px 12px;
       font-size:12px;
-      font-weight:900;
+      font-weight:600;
       text-transform:uppercase;
-      letter-spacing:1px;
-      border-bottom:3px solid #c73e54;
+      letter-spacing:0.5px;
     }
 
     tbody td{
-      padding:8px 6px;
+      padding:14px 12px;
       text-align:center;
-      border-bottom:2px solid rgba(233,69,96,0.3);
-      font-size:12px;
-      color:#e0e0e0;
-      font-weight:700;
+      border-bottom:1px solid #faf5ff;
+      font-size:13px;
+      color:#555;
     }
 
     tbody tr:hover{
-      background:rgba(233,69,96,0.1);
+      background:#f3e8ff;
     }
 
     tbody td:first-child{
       text-align:left;
-      font-weight:900;
-      color:#fff;
-      font-size:16px;
+      font-weight:600;
+      color:#1a1a2e;
     }
 
     /* TOTAL */
@@ -254,108 +256,313 @@
       flex-direction:column;
       gap:12px;
       align-items:flex-end;
-      margin-top:15px;
+      margin-top:20px;
     }
 
     .discount-info{
-      background:rgba(233,69,96,0.2);
-      border:3px solid #e94560;
-      color:#e94560;
-      padding:16px 24px;
+      background:#fff3cd;
+      border:1px solid #ffc107;
+      color:#856404;
+      padding:12px 18px;
       border-radius:8px;
-      font-size:16px;
-      font-weight:900;
+      font-size:13px;
+      font-weight:600;
       display:flex;
-      gap:16px;
+      gap:12px;
       align-items:center;
-      text-transform:uppercase;
-      letter-spacing:1px;
     }
 
     .discount-info .discount-label{
-      font-size:12px;
-      letter-spacing:2px;
+      text-transform:uppercase;
+      letter-spacing:0.5px;
+      font-size:11px;
     }
 
     .total-box{
       display:flex;
       align-items:center;
-      border-radius:8px;
+      border-radius:10px;
       overflow:hidden;
-      font-weight:900;
-      font-size:28px;
-      border:4px solid #e94560;
-      box-shadow:0 0 25px rgba(233,69,96,0.4);
+      font-weight:700;
+      font-size:18px;
+      box-shadow:0 4px 12px rgba(102,126,234,0.2);
     }
 
     .total-label{
-      padding:16px 28px;
-      background:#e94560;
-      color:#000;
-      font-family:'Bebas Neue', sans-serif;
-      letter-spacing:2px;
+      padding:12px 20px;
+      background:#7c3aed;
+      color:white;
     }
 
     .total-valor{
-      background:#1a1a2e;
-      color:#e94560;
-      padding:16px 32px;
-      font-family:'Bebas Neue', sans-serif;
-      letter-spacing:1px;
+      background:white;
+      color:#1a1a2e;
+      padding:12px 24px;
     }
 
     /* OBSERVAÇÕES */
 
     .observacoes{
       min-height:150px;
-      background:rgba(15,52,96,0.4);
-      border-radius:8px;
-      border:3px solid rgba(233,69,96,0.5);
-      margin-top:12px;
-      padding:14px;
+      background:#f3e8ff;
+      border-radius:10px;
+      border:1px dashed #7c3aed;
+      margin-top:16px;
+      padding:16px;
       font-size:13px;
-      color:#e0e0e0;
+      color:#555;
       white-space:pre-wrap;
-      line-height:1.4;
-      font-weight:500;
-      word-wrap:break-word;
+      line-height:1.6;
+    }
+
+    .layout-shell{
+      width:100%;
+      max-width:900px;
+      margin:0 auto;
+      padding:0 20px;
+      display:flex;
+      justify-content:center;
+    }
+
+    .layout-shell--actions{
+      position:sticky;
+      top:24px;
+      z-index:90;
+      justify-content:flex-end;
+      padding:0 20px 8px;
+    }
+
+    .layout-shell--hint{
+      justify-content:flex-start;
     }
 
     .action-buttons {
+      position: relative;
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      align-items: flex-end;
+      gap: 12px;
+      max-width:100%;
     }
+
+    .actions-toggle {
+      display: inline-flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 14px 20px;
+      border-radius: 18px;
+      border: none;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      color:#ffffff;
+      background: linear-gradient(135deg, #7c3aed 0%, #4c51bf 45%, #0ea5e9 100%);
+      box-shadow: 0 18px 40px rgba(76, 81, 191, 0.35);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .actions-toggle:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 26px 52px rgba(76, 81, 191, 0.42);
+    }
+
+    .actions-toggle__content{
+      display:flex;
+      align-items:center;
+      gap:12px;
+    }
+
+    .actions-toggle__glyph{
+      width:30px;
+      height:30px;
+      border-radius:50%;
+      background:rgba(255,255,255,0.18);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      backdrop-filter:blur(8px);
+    }
+
+    .actions-toggle__glyph svg{
+      width:16px;
+      height:16px;
+      stroke-width:2;
+      stroke:#ffffff;
+    }
+
+    .actions-toggle__label{
+      letter-spacing:0.3px;
+    }
+
+    .actions-toggle__chevron{
+      width:18px;
+      height:18px;
+      transition: transform 0.2s ease;
+    }
+
+    .action-buttons.open .actions-toggle__chevron{
+      transform: rotate(180deg);
+    }
+
+    .actions-dropdown {
+      position: absolute;
+      top: calc(100% + 16px);
+      right: 0;
+      display: none;
+      flex-direction: column;
+      gap: 12px;
+      width: min(320px, calc(100vw - 64px));
+      padding: 20px;
+      border-radius: 22px;
+      background: rgba(20, 17, 45, 0.92);
+      border: 1px solid rgba(124, 58, 237, 0.38);
+      box-shadow: 0 40px 80px rgba(30, 27, 75, 0.55);
+      backdrop-filter: blur(18px);
+      transform-origin: top right;
+      animation: dropdownFade 0.3s ease forwards;
+    }
+
+    .action-buttons.open .actions-dropdown,
+    .action-buttons.desktop-open .actions-dropdown {
+      display: flex;
+    }
+
     .action-btn {
-      background: white;
-      border: 1px solid #ddd;
-      padding: 12px 16px;
-      border-radius: 8px;
+      background: rgba(124, 58, 237, 0.12);
+      border: 1px solid rgba(124, 58, 237, 0.25);
+      padding: 14px 16px;
+      border-radius: 14px;
       cursor: pointer;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 12px;
       font-size: 14px;
       font-weight: 500;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      color: #ede9fe;
+      box-shadow: 0 12px 24px rgba(88, 28, 135, 0.25);
+      transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+      width: 100%;
+      text-decoration: none;
     }
-    .action-btn:hover { background: #f5f5f5; }
+
+    .action-btn svg {
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+    }
+
+    .action-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 26px 36px rgba(88, 28, 135, 0.28);
+      background: rgba(124, 58, 237, 0.2);
+    }
+
+    .action-btn span{
+      flex: 1;
+      text-align: left;
+    }
+
+    .mobile-scroll-hint {
+      display: none;
+      text-align: left;
+      color: #6b21a8;
+      font-size: 13px;
+      margin-top: 6px;
+      animation: pulse 2s infinite;
+      font-weight: 500;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 0.55; }
+      50% { opacity: 1; }
+    }
+
+    @keyframes dropdownFade {
+      0% { opacity: 0; transform: translateY(-8px) scale(0.98); }
+      100% { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
     @media (max-width: 768px) {
-      .orcamento {
-        width: 100%;
-        padding: 20px;
+      body{
+        padding:28px 0 40px;
+        gap:12px;
+      }
+
+      .layout-shell{
+        padding:0 12px;
+        max-width:100%;
+      }
+
+      .layout-shell--actions{
+        padding:0 12px;
+      }
+
+      .actions-dropdown {
+        left: 12px;
+        right: 12px;
+        width: auto;
+        max-width:none;
+      }
+
+      .mobile-scroll-hint {
+        display: block;
       }
     }
+
+    @media (min-width: 1024px) {
+      .action-buttons {
+        flex-direction: row;
+        align-items: center;
+        gap: 16px;
+        background: rgba(255, 255, 255, 0.85);
+        padding: 12px 16px;
+        border-radius: 999px;
+        box-shadow: 0 30px 60px rgba(76, 29, 149, 0.2);
+        backdrop-filter: blur(18px);
+      }
+
+      .action-buttons.desktop-open .actions-toggle {
+        display: none;
+      }
+
+      .action-buttons.desktop-open .actions-dropdown {
+        position: static;
+        flex-direction: row;
+        gap: 12px;
+        width: auto;
+        padding: 0;
+        background: transparent;
+        border: none;
+        box-shadow: none;
+        backdrop-filter: none;
+      }
+
+      .action-buttons.desktop-open .action-btn {
+        background: rgba(124, 58, 237, 0.1);
+        border: 1px solid rgba(124, 58, 237, 0.15);
+        color: #4c1d95;
+        box-shadow: none;
+        border-radius: 999px;
+        padding: 10px 18px;
+      }
+
+      .action-buttons.desktop-open .action-btn:hover {
+        background: rgba(124, 58, 237, 0.18);
+        transform: translateY(-1px);
+      }
+    }
+
     @media print { 
       body { background: white; padding: 0; } 
       .orcamento { border: none; box-shadow: none; }
-      .action-buttons { display: none !important; }
+      .layout-shell--actions { display: none !important; }
     }
 
     @media(max-width:900px){
 
       .orcamento{
-        padding:20px;
+        padding:24px;
       }
 
       .topo{
@@ -365,6 +572,10 @@
 
       .infos-topo{
         text-align:left;
+      }
+
+      .cliente-info{
+        grid-template-columns:1fr;
       }
 
       table{
@@ -384,32 +595,61 @@
 {% set currency_symbol = 'R$' if quotation.currency == 'BRL' else '£' %}
 {% set discount_amount = quotation.discount|default(0, true)|float %}
 
-  <div class="action-buttons" id="actionButtons">
-    {% if current_user.is_authenticated and quotation.user_id == current_user.id|string %}
-    <a href="{{ url_for('dashboard.dashboard_view') }}" class="action-btn" style="text-decoration: none; display: flex; align-items: center; gap: 8px;">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-      <span>VOLTAR</span>
-    </a>
-    <button class="action-btn" onclick="openEditModal()">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-      <span>EDITAR</span>
-    </button>
-    {% endif %}
-    <button class="action-btn" onclick="downloadImage()">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-      <span>Baixar Imagem</span>
-    </button>
-    <button class="action-btn" onclick="downloadPDF()">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-      <span>Baixar PDF</span>
-    </button>
-    <button class="action-btn" onclick="shareQuotation(event)">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-      <span>Compartilhar</span>
-    </button>
+  <div class="layout-shell layout-shell--actions">
+    <div class="action-buttons" id="actionButtons">
+      <button class="actions-toggle" type="button" onclick="toggleActionsMenu(event)">
+        <span class="actions-toggle__content">
+          <span class="actions-toggle__glyph">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 4v4"></path>
+              <path d="M6.93 6.93l2.83 2.83"></path>
+              <path d="M4 12h4"></path>
+              <path d="M6.93 17.07l2.83-2.83"></path>
+              <path d="M12 16v4"></path>
+              <path d="M17.07 17.07l-2.83-2.83"></path>
+              <path d="M16 12h4"></path>
+              <path d="M17.07 6.93l-2.83 2.83"></path>
+              <circle cx="12" cy="12" r="2.5"></circle>
+            </svg>
+          </span>
+          <span class="actions-toggle__label">Ações</span>
+        </span>
+        <svg class="actions-toggle__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="actions-dropdown">
+        {% if current_user.is_authenticated and quotation.user_id == current_user.id|string %}
+        <a href="{{ url_for('dashboard.dashboard_view') }}" class="action-btn">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+          <span>Voltar</span>
+        </a>
+        <button class="action-btn" type="button" onclick="openEditModal()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          <span>Editar</span>
+        </button>
+        {% endif %}
+        <button class="action-btn" type="button" onclick="downloadImage()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          <span>Baixar Imagem</span>
+        </button>
+        <button class="action-btn" type="button" onclick="downloadPDF()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+          <span>Baixar PDF</span>
+        </button>
+        <button class="action-btn" type="button" onclick="shareQuotation(event)">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+          <span>Compartilhar</span>
+        </button>
+      </div>
+    </div>
   </div>
 
-  <div class="orcamento" id="quotationContainer">
+  <div class="layout-shell layout-shell--hint">
+    <div class="mobile-scroll-hint">👆 mexa na tela para ver o orçamento</div>
+  </div>
+
+  <div class="viewport-pan">
+    <div class="layout-shell">
+      <div class="orcamento" id="quotationContainer">
 
     <!-- TOPO -->
 
@@ -454,7 +694,7 @@
 
         <div class="icone-secao">👤</div>
 
-        <h3>Cliente</h3>
+        <h3>Informações do cliente</h3>
 
       </div>
 
@@ -564,16 +804,65 @@
     </section>
     {% endif %}
 
+      </div>
+    </div>
   </div>
 
   <script>
+    const actionButtons = document.getElementById('actionButtons');
+
+    function closeActionsMenuOnMobile() {
+      if (!actionButtons) return;
+      if (window.innerWidth <= 1024) {
+        actionButtons.classList.remove('open');
+      }
+    }
+
+    function toggleActionsMenu(event) {
+      if (!actionButtons) return;
+      if (actionButtons.classList.contains('desktop-open')) {
+        return;
+      }
+      event.stopPropagation();
+      const willOpen = !actionButtons.classList.contains('open');
+      actionButtons.classList.toggle('open', willOpen);
+    }
+
+    function syncActionsMenu() {
+      if (!actionButtons) return;
+      if (window.innerWidth >= 1024) {
+        actionButtons.classList.add('desktop-open');
+        actionButtons.classList.remove('open');
+      } else {
+        actionButtons.classList.remove('desktop-open');
+      }
+    }
+
+    document.addEventListener('click', (event) => {
+      if (!actionButtons) return;
+      if (actionButtons.contains(event.target)) {
+        return;
+      }
+      actionButtons.classList.remove('open');
+    });
+
+    window.addEventListener('resize', syncActionsMenu);
+    document.addEventListener('DOMContentLoaded', () => {
+      syncActionsMenu();
+      actionButtons?.querySelectorAll('.action-btn').forEach(btn => {
+        btn.addEventListener('click', closeActionsMenuOnMobile);
+      });
+    });
+    syncActionsMenu();
+
     async function downloadImage() {
+      closeActionsMenuOnMobile();
       const container = document.getElementById('quotationContainer');
 
       await (window.LuminaFlow?.withToolbarHidden?.(async () => {
         try {
           const canvas = await html2canvas(container, {
-            backgroundColor: '#000',
+            backgroundColor: '#faf5ff',
             scale: 2,
             useCORS: true,
             logging: false
@@ -592,12 +881,13 @@
     }
 
     async function downloadPDF() {
+      closeActionsMenuOnMobile();
       const container = document.getElementById('quotationContainer');
 
       await (window.LuminaFlow?.withToolbarHidden?.(async () => {
         try {
           const canvas = await html2canvas(container, {
-            backgroundColor: '#000',
+            backgroundColor: '#faf5ff',
             scale: 2,
             useCORS: true,
             logging: false
@@ -639,6 +929,7 @@
           setTimeout(() => btn.querySelector('span').textContent = originalText, 2000);
         });
       }
+      closeActionsMenuOnMobile();
     }
   </script>
 
@@ -762,6 +1053,7 @@ let currentStep = 1;
 const totalSteps = 3;
 
 function openEditModal() {
+  closeActionsMenuOnMobile();
   const modal = document.getElementById('editModal');
   modal.style.display = 'flex';
   currentStep = 1;
@@ -790,11 +1082,15 @@ function prevStep() {
 }
 
 function updateWizardUI() {
+  // Hide all steps
   for (let i = 1; i <= totalSteps; i++) {
     document.getElementById(`step${i}`).style.display = 'none';
   }
+  
+  // Show current step
   document.getElementById(`step${currentStep}`).style.display = 'block';
   
+  // Update step indicators
   document.querySelectorAll('.step-indicator').forEach((indicator, index) => {
     const stepNum = index + 1;
     const circle = indicator.querySelector('div');
@@ -815,6 +1111,7 @@ function updateWizardUI() {
     }
   });
   
+  // Update buttons
   const prevBtn = document.getElementById('prevBtn');
   const nextBtn = document.getElementById('nextBtn');
   const saveBtn = document.getElementById('saveBtn');
@@ -858,6 +1155,7 @@ function saveEdit() {
   const expiryDate = document.getElementById('editExpiryDate').value;
   const notes = document.getElementById('editNotes').value;
   
+  // Collect items
   const items = [];
   document.querySelectorAll('.item-row').forEach(row => {
     const name = row.querySelector('.item-name').value;

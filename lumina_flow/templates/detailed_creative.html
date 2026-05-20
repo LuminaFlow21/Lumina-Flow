@@ -7,7 +7,7 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/quotation_viewer.css') }}">
   <script defer src="{{ url_for('static', filename='js/quotation_viewer.js') }}"></script>
 
@@ -20,26 +20,36 @@
     }
 
     body{
-      background:#000;
-      font-family:'Roboto', sans-serif;
+      background:#fffbeb;
+      font-family:'Poppins', sans-serif;
       display:flex;
       flex-direction:column;
       align-items:center;
       padding:24px;
       gap:24px;
       min-height:100vh;
-      color:#fff;
+      color:#333;
     }
 
     .orcamento{
       width:min(100%, 760px);
-      background:linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-      border-radius:8px;
-      padding:25px;
-      border:4px solid #e94560;
-      box-shadow:0 0 50px rgba(233,69,96,0.3);
+      background:#ffffff;
+      border-radius:16px;
+      padding:30px;
+      box-shadow:0 10px 40px rgba(0,0,0,0.08);
       display:flex;
       flex-direction:column;
+      position:relative;
+    }
+
+    .orcamento::before{
+      content:'';
+      position:absolute;
+      top:0;
+      left:0;
+      right:0;
+      height:6px;
+      background:linear-gradient(90deg, #f59e0b 0%, #d97706 100%);
     }
 
     /* HEADER */
@@ -48,7 +58,7 @@
       display:flex;
       justify-content:space-between;
       align-items:flex-start;
-      margin-bottom:20px;
+      margin-bottom:30px;
     }
 
     .empresa{
@@ -60,16 +70,15 @@
     .foto{
       width:70px;
       height:70px;
-      border-radius:8px;
-      border:3px solid #e94560;
+      border-radius:12px;
+      border:2px solid #f59e0b;
       display:flex;
       align-items:center;
       justify-content:center;
-      font-size:28px;
-      color:#e94560;
-      background:#0f3460;
+      font-size:26px;
+      color:#f59e0b;
+      background:#fef3c7;
       overflow:hidden;
-      box-shadow:0 0 20px rgba(233,69,96,0.4);
     }
 
     .foto img{
@@ -78,134 +87,119 @@
       object-fit:cover;
       object-position:center;
       display:block;
-      border-radius:4px;
+      border-radius:10px;
       image-rendering:auto;
     }
 
     .foto span{
-      font-weight:900;
-      font-size:32px;
-      font-family:'Bebas Neue', sans-serif;
+      font-weight:700;
+      font-size:26px;
     }
 
     .titulo h1{
-      font-family:'Bebas Neue', sans-serif;
-      font-size:28px;
-      font-weight:900;
-      color:#fff;
-      line-height:1;
-      letter-spacing:2px;
+      font-size:22px;
+      font-weight:700;
+      color:#1a1a2e;
+      line-height:1.2;
     }
 
     .titulo h2{
-      color:#e94560;
-      font-size:16px;
-      font-weight:900;
+      color:#f59e0b;
+      font-size:14px;
+      font-weight:600;
       text-transform:uppercase;
-      letter-spacing:3px;
-      margin-top:4px;
+      letter-spacing:1px;
+      margin-top:2px;
     }
 
     .infos-topo{
       text-align:right;
       display:flex;
       flex-direction:column;
-      gap:12px;
+      gap:8px;
     }
 
     .info-item{
-      font-size:16px;
-      color:#a0a0a0;
-      font-weight:700;
-      text-transform:uppercase;
-      letter-spacing:1px;
+      font-size:13px;
+      color:#666;
+      font-weight:500;
     }
 
     .info-item span{
-      color:#fff;
-      font-weight:900;
+      color:#1a1a2e;
+      font-weight:600;
     }
 
     /* SEÇÕES */
 
     .secao{
-      margin-bottom:12px;
+      margin-bottom:25px;
     }
 
     .secao-titulo{
       display:flex;
       align-items:center;
       gap:12px;
-      margin-bottom:12px;
-      padding-bottom:8px;
-      border-bottom:3px solid #e94560;
+      margin-bottom:16px;
+      padding-bottom:12px;
+      border-bottom:2px solid #fffbeb;
     }
 
     .icone-secao{
       width:32px;
       height:32px;
       border-radius:8px;
-      background:#e94560;
+      background:linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
       display:flex;
       align-items:center;
       justify-content:center;
-      color:#000;
-      font-size:16px;
+      color:white;
+      font-size:14px;
       flex-shrink:0;
-      font-weight:900;
     }
 
     .secao-titulo h3{
-      font-family:'Bebas Neue', sans-serif;
-      font-size:22px;
-      font-weight:900;
-      color:#fff;
-      text-transform:uppercase;
-      letter-spacing:2px;
+      font-size:16px;
+      font-weight:600;
+      color:#1a1a2e;
     }
 
     /* CLIENTE */
 
     .cliente-info{
-      display:flex;
-      flex-direction:column;
-      gap:10px;
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:16px;
     }
 
     .cliente-item{
-      display:flex;
-      align-items:center;
-      gap:12px;
-      background:rgba(15,52,96,0.6);
-      padding:12px 16px;
-      border-radius:8px;
-      border-left:5px solid #e94560;
+      background:#fef3c7;
+      padding:14px 16px;
+      border-radius:10px;
+      border-left:3px solid #f59e0b;
     }
 
     .cliente-item .label{
-      font-size:12px;
-      color:#a0a0a0;
+      font-size:11px;
+      color:#888;
       text-transform:uppercase;
-      letter-spacing:1px;
-      font-weight:700;
-      min-width:90px;
+      letter-spacing:0.5px;
+      margin-bottom:4px;
+      font-weight:500;
     }
 
     .cliente-item .valor{
-      font-size:18px;
-      color:#fff;
-      font-weight:900;
-      text-transform:uppercase;
-      letter-spacing:0.5px;
+      font-size:14px;
+      color:#1a1a2e;
+      font-weight:600;
     }
 
     /* TABELA */
 
     .tabela-box{
       overflow:hidden;
-      border-radius:8px;
-      border:3px solid #e94560;
-      box-shadow:0 0 20px rgba(233,69,96,0.2);
+      border-radius:12px;
+      border:1px solid #e8e8e8;
     }
 
     table{
@@ -214,37 +208,34 @@
     }
 
     thead{
-      background:#e94560;
-      color:#000;
+      background:linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+      color:white;
     }
 
     thead th{
-      padding:10px 8px;
+      padding:14px 12px;
       font-size:12px;
-      font-weight:900;
+      font-weight:600;
       text-transform:uppercase;
-      letter-spacing:1px;
-      border-bottom:3px solid #c73e54;
+      letter-spacing:0.5px;
     }
 
     tbody td{
-      padding:8px 6px;
+      padding:14px 12px;
       text-align:center;
-      border-bottom:2px solid rgba(233,69,96,0.3);
-      font-size:12px;
-      color:#e0e0e0;
-      font-weight:700;
+      border-bottom:1px solid #fffbeb;
+      font-size:13px;
+      color:#555;
     }
 
     tbody tr:hover{
-      background:rgba(233,69,96,0.1);
+      background:#fef3c7;
     }
 
     tbody td:first-child{
       text-align:left;
-      font-weight:900;
-      color:#fff;
-      font-size:16px;
+      font-weight:600;
+      color:#1a1a2e;
     }
 
     /* TOTAL */
@@ -254,71 +245,63 @@
       flex-direction:column;
       gap:12px;
       align-items:flex-end;
-      margin-top:15px;
+      margin-top:20px;
     }
 
     .discount-info{
-      background:rgba(233,69,96,0.2);
-      border:3px solid #e94560;
-      color:#e94560;
-      padding:16px 24px;
+      background:#fff3cd;
+      border:1px solid #ffc107;
+      color:#856404;
+      padding:12px 18px;
       border-radius:8px;
-      font-size:16px;
-      font-weight:900;
+      font-size:13px;
+      font-weight:600;
       display:flex;
-      gap:16px;
+      gap:12px;
       align-items:center;
-      text-transform:uppercase;
-      letter-spacing:1px;
     }
 
     .discount-info .discount-label{
-      font-size:12px;
-      letter-spacing:2px;
+      text-transform:uppercase;
+      letter-spacing:0.5px;
+      font-size:11px;
     }
 
     .total-box{
       display:flex;
       align-items:center;
-      border-radius:8px;
+      border-radius:10px;
       overflow:hidden;
-      font-weight:900;
-      font-size:28px;
-      border:4px solid #e94560;
-      box-shadow:0 0 25px rgba(233,69,96,0.4);
+      font-weight:700;
+      font-size:18px;
+      box-shadow:0 4px 12px rgba(102,126,234,0.2);
     }
 
     .total-label{
-      padding:16px 28px;
-      background:#e94560;
-      color:#000;
-      font-family:'Bebas Neue', sans-serif;
-      letter-spacing:2px;
+      padding:12px 20px;
+      background:#f59e0b;
+      color:white;
     }
 
     .total-valor{
-      background:#1a1a2e;
-      color:#e94560;
-      padding:16px 32px;
-      font-family:'Bebas Neue', sans-serif;
-      letter-spacing:1px;
+      background:white;
+      color:#1a1a2e;
+      padding:12px 24px;
     }
 
     /* OBSERVAÇÕES */
 
     .observacoes{
       min-height:150px;
-      background:rgba(15,52,96,0.4);
-      border-radius:8px;
-      border:3px solid rgba(233,69,96,0.5);
-      margin-top:12px;
-      padding:14px;
+      background:#fef3c7;
+      border-radius:10px;
+      border:1px dashed #f59e0b;
+      margin-top:16px;
+      padding:16px;
       font-size:13px;
-      color:#e0e0e0;
+      color:#555;
       white-space:pre-wrap;
-      line-height:1.4;
-      font-weight:500;
-      word-wrap:break-word;
+      line-height:1.6;
     }
 
     .action-buttons {
@@ -355,7 +338,7 @@
     @media(max-width:900px){
 
       .orcamento{
-        padding:20px;
+        padding:24px;
       }
 
       .topo{
@@ -365,6 +348,10 @@
 
       .infos-topo{
         text-align:left;
+      }
+
+      .cliente-info{
+        grid-template-columns:1fr;
       }
 
       table{
@@ -388,11 +375,11 @@
     {% if current_user.is_authenticated and quotation.user_id == current_user.id|string %}
     <a href="{{ url_for('dashboard.dashboard_view') }}" class="action-btn" style="text-decoration: none; display: flex; align-items: center; gap: 8px;">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-      <span>VOLTAR</span>
+      <span>Voltar</span>
     </a>
     <button class="action-btn" onclick="openEditModal()">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-      <span>EDITAR</span>
+      <span>Editar</span>
     </button>
     {% endif %}
     <button class="action-btn" onclick="downloadImage()">
@@ -454,7 +441,7 @@
 
         <div class="icone-secao">👤</div>
 
-        <h3>Cliente</h3>
+        <h3>Informações do cliente</h3>
 
       </div>
 
@@ -573,7 +560,7 @@
       await (window.LuminaFlow?.withToolbarHidden?.(async () => {
         try {
           const canvas = await html2canvas(container, {
-            backgroundColor: '#000',
+            backgroundColor: '#fffbeb',
             scale: 2,
             useCORS: true,
             logging: false
@@ -597,7 +584,7 @@
       await (window.LuminaFlow?.withToolbarHidden?.(async () => {
         try {
           const canvas = await html2canvas(container, {
-            backgroundColor: '#000',
+            backgroundColor: '#fffbeb',
             scale: 2,
             useCORS: true,
             logging: false
@@ -790,11 +777,15 @@ function prevStep() {
 }
 
 function updateWizardUI() {
+  // Hide all steps
   for (let i = 1; i <= totalSteps; i++) {
     document.getElementById(`step${i}`).style.display = 'none';
   }
+  
+  // Show current step
   document.getElementById(`step${currentStep}`).style.display = 'block';
   
+  // Update step indicators
   document.querySelectorAll('.step-indicator').forEach((indicator, index) => {
     const stepNum = index + 1;
     const circle = indicator.querySelector('div');
@@ -815,6 +806,7 @@ function updateWizardUI() {
     }
   });
   
+  // Update buttons
   const prevBtn = document.getElementById('prevBtn');
   const nextBtn = document.getElementById('nextBtn');
   const saveBtn = document.getElementById('saveBtn');
@@ -858,6 +850,7 @@ function saveEdit() {
   const expiryDate = document.getElementById('editExpiryDate').value;
   const notes = document.getElementById('editNotes').value;
   
+  // Collect items
   const items = [];
   document.querySelectorAll('.item-row').forEach(row => {
     const name = row.querySelector('.item-name').value;

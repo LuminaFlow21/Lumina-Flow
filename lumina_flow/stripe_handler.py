@@ -46,7 +46,7 @@ class StripeHandler:
         
         return price_id
     
-    def create_checkout_session(self, price_id: str, user_id: str, user_email: str, currency: str, customer_id: str = None) -> dict:
+    def create_checkout_session(self, price_id: str, user_id: str, user_email: str, currency: str = 'brl', customer_id: str = None) -> dict:
         """
         Create a Stripe checkout session
         
@@ -63,7 +63,7 @@ class StripeHandler:
         try:
             
             # Determine locale based on currency for Stripe Checkout UI
-            locale_code = 'pt-BR' if currency.lower() == 'brl' else 'en-GB'
+            locale_code = 'pt-BR' if (currency or '').lower() == 'brl' else 'en-GB'
 
             session_params = {
                 'payment_method_types': ['card'],

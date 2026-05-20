@@ -2,6 +2,9 @@ from flask import Blueprint, render_template, session, redirect, url_for, reques
 from flask_login import login_required, current_user
 from datetime import datetime
 from ..supabase_handler import get_supabase_handler
+from ..stripe_handler import get_stripe_handler
+from ..auth_handler import get_auth_handler
+from .main import PRICING
 import os
 import base64
 import uuid
@@ -172,7 +175,12 @@ def select_template(quotation_type):
             {'name': 'Clássico Profissional', 'template_file': 'quick_classic.html', 'preview_image': '/static/images/previews/quick_classic.png'},
             {'name': 'Bold Impactante', 'template_file': 'quick_bold.html', 'preview_image': '/static/images/previews/quick_bold.png'},
             {'name': 'Elegante Sofisticado', 'template_file': 'quick_elegant.html', 'preview_image': '/static/images/previews/quick_elegant.png'},
-            {'name': 'Vibrante Energético', 'template_file': 'quick_vibrant.html', 'preview_image': '/static/images/previews/quick_vibrant.png'}
+            {'name': 'Vibrante Energético', 'template_file': 'quick_vibrant.html', 'preview_image': '/static/images/previews/quick_vibrant.png'},
+            {'name': 'Limpo Minimalista', 'template_file': 'quick_clean.html', 'preview_image': '/static/images/previews/quick_clean.png'},
+            {'name': 'Criativo Colorido', 'template_file': 'quick_creative.html', 'preview_image': '/static/images/previews/quick_creative.png'},
+            {'name': 'Luxo Premium', 'template_file': 'quick_luxury.html', 'preview_image': '/static/images/previews/quick_luxury.png'},
+            {'name': 'Tech Moderno', 'template_file': 'quick_tech.html', 'preview_image': '/static/images/previews/quick_tech.png'},
+            {'name': 'Premium Dark', 'template_file': 'quick_premium.html', 'preview_image': '/static/images/previews/quick_premium.png'}
         ]
     else:
         templates = [
@@ -180,7 +188,12 @@ def select_template(quotation_type):
             {'name': 'Moderno Minimalista', 'template_file': 'detailed_modern.html', 'preview_image': '/static/images/previews/detailed_modern.png'},
             {'name': 'Clássico Profissional', 'template_file': 'detailed_classic.html', 'preview_image': '/static/images/previews/detailed_classic.png'},
             {'name': 'Bold Impactante', 'template_file': 'detailed_bold.html', 'preview_image': '/static/images/previews/detailed_bold.png'},
-            {'name': 'Elegante Sofisticado', 'template_file': 'detailed_elegant.html', 'preview_image': '/static/images/previews/detailed_elegant.png'}
+            {'name': 'Elegante Sofisticado', 'template_file': 'detailed_elegant.html', 'preview_image': '/static/images/previews/detailed_elegant.png'},
+            {'name': 'Limpo Minimalista', 'template_file': 'detailed_clean.html', 'preview_image': '/static/images/previews/detailed_clean.png'},
+            {'name': 'Criativo Colorido', 'template_file': 'detailed_creative.html', 'preview_image': '/static/images/previews/detailed_creative.png'},
+            {'name': 'Luxo Premium', 'template_file': 'detailed_luxury.html', 'preview_image': '/static/images/previews/detailed_luxury.png'},
+            {'name': 'Tech Moderno', 'template_file': 'detailed_tech.html', 'preview_image': '/static/images/previews/detailed_tech.png'},
+            {'name': 'Vibrante Energético', 'template_file': 'detailed_vibrant.html', 'preview_image': '/static/images/previews/detailed_vibrant.png'}
         ]
     
     return render_template('select_template.html', templates=templates, quotation_type=quotation_type, profile_data=profile_data, subscription=subscription)
@@ -194,7 +207,12 @@ def get_templates_api():
         {'name': 'Clássico Profissional', 'template_file': 'quick_classic.html', 'preview_image': '/static/images/previews/quick_classic.png'},
         {'name': 'Bold Impactante', 'template_file': 'quick_bold.html', 'preview_image': '/static/images/previews/quick_bold.png'},
         {'name': 'Elegante Sofisticado', 'template_file': 'quick_elegant.html', 'preview_image': '/static/images/previews/quick_elegant.png'},
-        {'name': 'Vibrante Energético', 'template_file': 'quick_vibrant.html', 'preview_image': '/static/images/previews/quick_vibrant.png'}
+        {'name': 'Vibrante Energético', 'template_file': 'quick_vibrant.html', 'preview_image': '/static/images/previews/quick_vibrant.png'},
+        {'name': 'Limpo Minimalista', 'template_file': 'quick_clean.html', 'preview_image': '/static/images/previews/quick_clean.png'},
+        {'name': 'Criativo Colorido', 'template_file': 'quick_creative.html', 'preview_image': '/static/images/previews/quick_creative.png'},
+        {'name': 'Luxo Premium', 'template_file': 'quick_luxury.html', 'preview_image': '/static/images/previews/quick_luxury.png'},
+        {'name': 'Tech Moderno', 'template_file': 'quick_tech.html', 'preview_image': '/static/images/previews/quick_tech.png'},
+        {'name': 'Premium Dark', 'template_file': 'quick_premium.html', 'preview_image': '/static/images/previews/quick_premium.png'}
     ]
 
     detailed_templates = [
@@ -202,7 +220,12 @@ def get_templates_api():
         {'name': 'Moderno Minimalista', 'template_file': 'detailed_modern.html', 'preview_image': '/static/images/previews/detailed_modern.png'},
         {'name': 'Clássico Profissional', 'template_file': 'detailed_classic.html', 'preview_image': '/static/images/previews/detailed_classic.png'},
         {'name': 'Bold Impactante', 'template_file': 'detailed_bold.html', 'preview_image': '/static/images/previews/detailed_bold.png'},
-        {'name': 'Elegante Sofisticado', 'template_file': 'detailed_elegant.html', 'preview_image': '/static/images/previews/detailed_elegant.png'}
+        {'name': 'Elegante Sofisticado', 'template_file': 'detailed_elegant.html', 'preview_image': '/static/images/previews/detailed_elegant.png'},
+        {'name': 'Limpo Minimalista', 'template_file': 'detailed_clean.html', 'preview_image': '/static/images/previews/detailed_clean.png'},
+        {'name': 'Criativo Colorido', 'template_file': 'detailed_creative.html', 'preview_image': '/static/images/previews/detailed_creative.png'},
+        {'name': 'Luxo Premium', 'template_file': 'detailed_luxury.html', 'preview_image': '/static/images/previews/detailed_luxury.png'},
+        {'name': 'Tech Moderno', 'template_file': 'detailed_tech.html', 'preview_image': '/static/images/previews/detailed_tech.png'},
+        {'name': 'Vibrante Energético', 'template_file': 'detailed_vibrant.html', 'preview_image': '/static/images/previews/detailed_vibrant.png'}
     ]
 
     all_templates = quick_templates + detailed_templates
@@ -244,7 +267,7 @@ def create_quotation_form(quotation_type):
         'status': sub_result.get('subscription_status', 'inactive') if sub_result.get('success') else 'inactive'
     }
     
-    template = request.args.get('template', 'quick_modern.html')
+    template = request.args.get('template', 'quick_modern_v2.html')
     
     if quotation_type == 'quick':
         return render_template('create_quick_quotation.html', template=template, profile_data=profile_data, subscription=subscription)
@@ -311,7 +334,21 @@ def profile():
     profile_data = profile_result.get('data', {}) if profile_result.get('success') else {}
     profile_complete = bool(profile_data.get('profile_photo_url') and profile_data.get('whatsapp'))
     
-    return render_template('profile.html', subscription=subscription, user_email=current_user.email, profile_complete=profile_complete, profile_data=profile_data)
+    subscription.update({
+        'stripe_customer_id': sub_result.get('stripe_customer_id') if sub_result.get('success') else None,
+        'stripe_subscription_id': sub_result.get('stripe_subscription_id') if sub_result.get('success') else None,
+        'next_billing': sub_result.get('next_billing_date') if sub_result.get('success') else None
+    })
+    
+    return render_template(
+        'profile.html',
+        subscription=subscription,
+        user_email=current_user.email,
+        profile_complete=profile_complete,
+        profile_data=profile_data,
+        pricing=PRICING,
+        user_region=session.get('user_region', 'BR')
+    )
 
 @dashboard_bp.route('/history')
 @login_required
@@ -483,7 +520,7 @@ def create_quick_quotation():
         expiry_date=data.get('expiry_date'),
         quotation_type='quick',
         phone=data.get('phone'),
-        template=data.get('template', 'quick_modern.html')
+        template=data.get('template', 'quick_modern_v2.html')
     )
     
     if result.get('success'):
@@ -639,4 +676,42 @@ def update_profile():
         # No data to update
         print("[Dashboard API] No profile data provided for update.")
         return jsonify({'success': False, 'error': 'No data to update'}), 400
+
+
+@dashboard_bp.route('/api/subscription/cancel', methods=['POST'])
+@login_required
+def cancel_subscription():
+    user_id = current_user.id
+    supabase = get_supabase_handler()
+    stripe_handler = get_stripe_handler()
+    auth_handler = get_auth_handler()
+
+    profile_result = supabase.get_user_profile(user_id)
+    if not profile_result.get('success'):
+        return jsonify({'success': False, 'error': 'Não foi possível localizar o perfil do usuário.'}), 400
+
+    profile_data = profile_result.get('data') or {}
+    subscription_id = profile_data.get('stripe_subscription_id')
+    customer_id = profile_data.get('stripe_customer_id')
+
+    if not subscription_id:
+        return jsonify({'success': False, 'error': 'Nenhuma assinatura ativa foi encontrada.'}), 400
+
+    cancel_result = stripe_handler.cancel_subscription(subscription_id)
+    if not cancel_result.get('success'):
+        return jsonify({'success': False, 'error': cancel_result.get('error', 'Falha ao cancelar a assinatura no Stripe.')}), 500
+
+    supabase.update_user_subscription(
+        user_id=user_id,
+        plan='free',
+        subscription_status='canceled',
+        stripe_customer_id=customer_id,
+        stripe_subscription_id=None,
+        next_billing_date=None
+    )
+
+    auth_handler.update_user_plan(user_id, 'free')
+    current_user.plan = 'free'
+
+    return jsonify({'success': True})
 

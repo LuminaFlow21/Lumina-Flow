@@ -128,26 +128,116 @@
             </div>
         </div>
     </div>
+    
+    <!-- Mobile Bottom Navigation Bar -->
+    <nav class="mobile-bottom-nav" style="display: none;">
+        <a href="{{ url_for('dashboard.history') }}" class="mobile-nav-item mobile-nav-item--history {% if request.endpoint == 'dashboard.history' %}active{% endif %}">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+            </svg>
+        </a>
+        <a href="{{ url_for('dashboard.dashboard_view') }}" class="mobile-nav-item mobile-nav-item--home {% if request.endpoint == 'dashboard.dashboard_view' %}active{% endif %}">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                <polyline points="9 22 9 12 15 12 15 22"></polyline>
+            </svg>
+        </a>
+        <a href="{{ url_for('dashboard.profile') }}" class="mobile-nav-item mobile-nav-item--profile {% if request.endpoint == 'dashboard.profile' %}active{% endif %}">
+            <div class="mobile-nav-profile">
+                {% if profile_data and profile_data.get('profile_photo_url') %}
+                <img src="{{ profile_data.get('profile_photo_url') }}" alt="Profile">
+                {% else %}
+                <span>{{ session.get('user_email', 'U')[0].upper() }}</span>
+                {% endif %}
+            </div>
+        </a>
+    </nav>
+    
+    <!-- Mobile Floating Theme Button -->
+    <button class="mobile-theme-float" id="themeToggleMobileFloat" style="display: none;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="5"></circle>
+            <line x1="12" y1="1" x2="12" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="23"></line>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+            <line x1="1" y1="12" x2="3" y2="12"></line>
+            <line x1="21" y1="12" x2="23" y2="12"></line>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+        </svg>
+    </button>
+    
+    <!-- Mobile Floating Language Selector -->
+    <div class="mobile-lang-float" style="display: none;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="2" y1="12" x2="22" y2="12"></line>
+            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+        </svg>
+        <select id="language-selector-mobile" data-language-selector>
+            <option value="BR">PT</option>
+            <option value="UK">EN</option>
+        </select>
+    </div>
 
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', () => {
     const themeToggle = document.getElementById('themeToggle');
+    const themeToggleMobileFloat = document.getElementById('themeToggleMobileFloat');
+    
+    const themeHandler = typeof window.toggleTheme === 'function' ? window.toggleTheme : () => {
+        const html = document.documentElement;
+        const currentTheme = html.getAttribute('data-theme');
+        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        html.setAttribute('data-theme', newTheme);
+        localStorage.setItem('theme', newTheme);
+    };
+    
     if (themeToggle) {
-        themeToggle.addEventListener('click', () => {
-            const html = document.documentElement;
-            const currentTheme = html.getAttribute('data-theme');
-            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-            html.setAttribute('data-theme', newTheme);
-            localStorage.setItem('theme', newTheme);
-        });
+        themeToggle.addEventListener('click', themeHandler);
+    }
+    
+    if (themeToggleMobileFloat) {
+        themeToggleMobileFloat.addEventListener('click', themeHandler);
     }
 
     const savedTheme = localStorage.getItem('theme');
     if (savedTheme) {
-        document.documentElement.setAttribute('data-theme', savedTheme);
+        if (typeof window.applyTheme === 'function') {
+            window.applyTheme(savedTheme);
+        } else {
+            document.documentElement.setAttribute('data-theme', savedTheme);
+        }
     }
+    
+    // Mobile elements visibility
+    function checkMobile() {
+        const isMobile = window.innerWidth <= 768;
+        const mobileBottomNav = document.querySelector('.mobile-bottom-nav');
+        const mobileThemeFloat = document.querySelector('.mobile-theme-float');
+        const mobileLangFloat = document.querySelector('.mobile-lang-float');
+        
+        if (isMobile) {
+            if (mobileBottomNav) mobileBottomNav.style.display = 'flex';
+            if (mobileThemeFloat) mobileThemeFloat.style.display = 'flex';
+            if (mobileLangFloat) mobileLangFloat.style.display = 'flex';
+        } else {
+            if (mobileBottomNav) mobileBottomNav.style.display = 'none';
+            if (mobileThemeFloat) mobileThemeFloat.style.display = 'none';
+            if (mobileLangFloat) mobileLangFloat.style.display = 'none';
+        }
+    }
+    
+    // Check on load and resize
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
 });
 </script>
 {% endblock %}

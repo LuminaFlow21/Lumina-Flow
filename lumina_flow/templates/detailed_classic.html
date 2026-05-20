@@ -2,12 +2,14 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes"/>
   <title>Orçamento #{{ quotation.id[:8].upper() }}</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Source+Sans+Pro:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/quotation_viewer.css') }}">
+  <script defer src="{{ url_for('static', filename='js/quotation_viewer.js') }}"></script>
 
   <style>
 
@@ -21,13 +23,16 @@
       background:#2c3e50;
       font-family:'Source Sans Pro', sans-serif;
       display:flex;
-      justify-content:center;
-      padding:20px;
+      flex-direction:column;
+      align-items:center;
+      padding:24px;
+      gap:24px;
+      min-height:100vh;
       color:#333;
     }
 
     .orcamento{
-      width:600px;
+      width:min(100%, 760px);
       background:#fff;
       border-radius:4px;
       padding:40px;
@@ -311,13 +316,9 @@
     }
 
     .action-buttons {
-      position: fixed;
-      top: 20px;
-      right: 20px;
       display: flex;
       flex-direction: column;
       gap: 10px;
-      z-index: 1000;
     }
     .action-btn {
       background: white;
@@ -334,7 +335,10 @@
     }
     .action-btn:hover { background: #f5f5f5; }
     @media (max-width: 768px) {
-      .action-buttons { top: auto; bottom: 20px; flex-direction: row; }
+      .orcamento {
+        width: 100%;
+        padding: 20px;
+      }
     }
     @media print { 
       body { background: white; padding: 0; } 
@@ -557,66 +561,46 @@
   </div>
 
   <script>
-    function downloadImage() {
-      console.log('[downloadImage] Starting image download...');
+    async function downloadImage() {
       const container = document.getElementById('quotationContainer');
-      const buttons = document.getElementById('actionButtons');
-      
-      if (!container) {
-        console.error('[downloadImage] Container not found');
-        alert('Erro: Container do orçamento não encontrado');
-        return;
-      }
-      
-      buttons.style.display = 'none';
-      console.log('[downloadImage] Buttons hidden');
-      
-      html2canvas(container, {scale: 2, useCORS: true, backgroundColor: '#2c3e50'}).then(canvas => {
-        console.log('[downloadImage] Canvas generated successfully');
-        const link = document.createElement('a');
-        link.download = `orcamento-{{ quotation.id[:8].upper() }}.png`;
-        link.href = canvas.toDataURL('image/png');
-        link.click();
-        buttons.style.display = 'flex';
-      }).catch(err => {
-        console.error('[downloadImage] Error generating canvas:', err);
-        buttons.style.display = 'flex';
-        alert('Erro ao gerar imagem: ' + err.message);
-      });
+
+      await (window.LuminaFlow?.withToolbarHidden?.(async () => {
+        try {
+          const canvas = await html2canvas(container, {
+            backgroundColor: '#2c3e50',
+            scale: 2,
+            useCORS: true,
+            logging: false
+          });
+
+          const link = document.createElement('a');
+          link.download = `orcamento-{{ quotation.id[:8].upper() }}.png`;
+          link.href = canvas.toDataURL('image/png');
+          link.click();
+        } catch (error) {
+          console.error('Error generating image:', error);
+          alert('Erro ao gerar imagem');
+          throw error;
+        }
+      }) ?? Promise.resolve());
     }
 
-    function downloadPDF() {
-      console.log('[downloadPDF] Starting PDF download...');
+    async function downloadPDF() {
       const container = document.getElementById('quotationContainer');
-      const buttons = document.getElementById('actionButtons');
-      
-      if (!container) {
-        console.error('[downloadPDF] Container not found');
-        alert('Erro: Container do orçamento não encontrado');
-        return;
-      }
-      
-      buttons.style.display = 'none';
-      console.log('[downloadPDF] Buttons hidden');
-      
-      html2canvas(container, {scale: 2, useCORS: true, backgroundColor: '#2c3e50'}).then(canvas => {
-        console.log('[downloadPDF] Canvas generated successfully');
-        
+
+      await (window.LuminaFlow?.withToolbarHidden?.(async () => {
         try {
+          const canvas = await html2canvas(container, {
+            backgroundColor: '#2c3e50',
+            scale: 2,
+            useCORS: true,
+            logging: false
+          });
+
           const imgData = canvas.toDataURL('image/png');
-          console.log('[downloadPDF] Image data generated');
-          
-          if (typeof window.jspdf === 'undefined' || typeof window.jspdf.jsPDF === 'undefined') {
-            console.error('[downloadPDF] jsPDF not loaded');
-            buttons.style.display = 'flex';
-            alert('Erro: Biblioteca jsPDF não carregada. Verifique sua conexão.');
-            return;
-          }
-          
           const { jsPDF } = window.jspdf;
           const pdf = new jsPDF('p', 'mm', 'a4');
-          console.log('[downloadPDF] PDF created');
-          
+
           const imgProps = pdf.getImageProperties(imgData);
           const pdfWidth = 210;
           const pdfHeight = 297;
@@ -625,23 +609,15 @@
           const renderHeight = imgProps.height * scale;
           const marginX = (pdfWidth - renderWidth) / 2;
           const marginY = Math.max(0, (pdfHeight - renderHeight) / 2);
-          
+
           pdf.addImage(imgData, 'PNG', marginX, marginY, renderWidth, renderHeight);
-          
           pdf.save(`orcamento-{{ quotation.id[:8].upper() }}.pdf`);
-          console.log('[downloadPDF] PDF saved successfully');
-          
-          buttons.style.display = 'flex';
-        } catch (pdfError) {
-          console.error('[downloadPDF] Error creating PDF:', pdfError);
-          buttons.style.display = 'flex';
-          alert('Erro ao criar PDF: ' + pdfError.message);
+        } catch (error) {
+          console.error('Error generating PDF:', error);
+          alert('Erro ao gerar PDF');
+          throw error;
         }
-      }).catch(err => {
-        console.error('[downloadPDF] Error generating canvas:', err);
-        buttons.style.display = 'flex';
-        alert('Erro ao gerar imagem para PDF: ' + err.message);
-      });
+      }) ?? Promise.resolve());
     }
 
     function shareQuotation(event) {

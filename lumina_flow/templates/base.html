@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
     <meta name="description" content="Lumina Flow - Transform your workflow with intelligence">
     <title>{% block title %}Lumina Flow{% endblock %}</title>
     
@@ -18,53 +18,57 @@
 <body data-server-region="{{ session.get('user_region', 'UK') }}">
     <!-- Header -->
     <header class="bg-white shadow-md w-full z-sticky">
-        <nav class="container flex items-center justify-between" style="padding: var(--spacing-md) var(--spacing-lg);">
+        <nav class="landing-nav container">
             <!-- Logo -->
-            <a href="{{ url_for('main.index') }}" class="logo-link">
+            <a href="{{ url_for('main.index') }}" class="logo-link landing-nav__logo">
                 <img id="header-logo" src="{{ url_for('static', filename='images/Light_Theme_logo.png') }}" alt="Lumina Flow Logo" class="logo-image">
             </a>
             
             <!-- Navigation -->
-            <div class="flex items-center gap-lg">
-                <ul class="flex items-center gap-lg" style="display: none;">
+            <div class="landing-nav__actions">
+                <ul class="landing-nav__links">
                     <li><a href="{{ url_for('main.index') }}" data-i18n="nav.home">Home</a></li>
                     <li><a href="#features" data-i18n="nav.features">Features</a></li>
                     <li><a href="#pricing" data-i18n="nav.pricing">Pricing</a></li>
                 </ul>
                 
-                <!-- Theme Toggle -->
-                <button id="theme-toggle" class="theme-toggle" aria-label="Toggle theme">
-                    <svg class="sun-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="5"></circle>
-                        <line x1="12" y1="1" x2="12" y2="3"></line>
-                        <line x1="12" y1="21" x2="12" y2="23"></line>
-                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-                        <line x1="1" y1="12" x2="3" y2="12"></line>
-                        <line x1="21" y1="12" x2="23" y2="12"></line>
-                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-                    </svg>
-                    <svg class="moon-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: none;">
-                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-                    </svg>
-                </button>
-                
-                <!-- Language Selector -->
-                <div class="relative">
-                    <select id="language-selector" data-language-selector class="form-input" style="padding: var(--spacing-sm) var(--spacing-md); font-size: var(--font-size-sm); min-width: 120px; cursor: pointer;">
-                        <option value="BR">🇧🇷 BRL</option>
-                        <option value="UK">🇬🇧 GBP</option>
-                    </select>
+                <div class="landing-nav__controls">
+                    <!-- Theme Toggle -->
+                    <button id="theme-toggle" class="theme-toggle" aria-label="Toggle theme">
+                        <svg class="sun-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="5"></circle>
+                            <line x1="12" y1="1" x2="12" y2="3"></line>
+                            <line x1="12" y1="21" x2="12" y2="23"></line>
+                            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                            <line x1="1" y1="12" x2="3" y2="12"></line>
+                            <line x1="21" y1="12" x2="23" y2="12"></line>
+                            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                        </svg>
+                        <svg class="moon-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: none;">
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                        </svg>
+                    </button>
+                    
+                    <!-- Language Selector -->
+                    <div class="landing-nav__language">
+                        <select id="language-selector" data-language-selector class="landing-nav__select form-input">
+                            <option value="BR">🇧🇷 BRL</option>
+                            <option value="UK">🇬🇧 GBP</option>
+                        </select>
+                    </div>
                 </div>
-                
+
                 <!-- Auth Buttons -->
-                {% if session.get('user_id') %}
-                    <a href="{{ url_for('dashboard.dashboard_view') }}" class="btn btn-primary btn-sm" data-i18n="nav.dashboard">Dashboard</a>
-                {% else %}
-                    <a href="{{ url_for('auth.login_page') }}" class="btn btn-secondary btn-sm" data-i18n="nav.login">Login</a>
-                    <a href="{{ url_for('auth.login_page') }}?signup=true" class="btn btn-primary btn-sm" data-i18n="nav.signup">Sign Up</a>
-                {% endif %}
+                <div class="landing-nav__auth">
+                    {% if session.get('user_id') %}
+                        <a href="{{ url_for('dashboard.dashboard_view') }}" class="btn btn-primary btn-sm" data-i18n="nav.dashboard">Dashboard</a>
+                    {% else %}
+                        <a href="{{ url_for('auth.login_page') }}" class="btn btn-secondary btn-sm" data-i18n="nav.login">Login</a>
+                        <a href="{{ url_for('auth.login_page') }}?signup=true" class="btn btn-primary btn-sm" data-i18n="nav.signup">Sign Up</a>
+                    {% endif %}
+                </div>
             </div>
         </nav>
     </header>
@@ -149,15 +153,12 @@
         document.addEventListener('DOMContentLoaded', function() {
             const themeToggle = document.getElementById('theme-toggle');
             const headerLogo = document.getElementById('header-logo');
-            
-            if (!themeToggle) {
-                console.warn('[Theme] Toggle button not found');
-                return;
-            }
-            const sunIcon = themeToggle.querySelector('.sun-icon');
-            const moonIcon = themeToggle.querySelector('.moon-icon');
-            
+            const footerLogo = document.getElementById('footer-logo');
+            const sunIcon = themeToggle ? themeToggle.querySelector('.sun-icon') : null;
+            const moonIcon = themeToggle ? themeToggle.querySelector('.moon-icon') : null;
+
             function updateThemeIcons(theme) {
+                if (!sunIcon || !moonIcon) return;
                 if (theme === 'dark') {
                     sunIcon.style.display = 'none';
                     moonIcon.style.display = 'block';
@@ -166,33 +167,42 @@
                     moonIcon.style.display = 'none';
                 }
             }
-            
+
             function updateLogo(theme) {
                 const logoPath = theme === 'dark' ? "{{ url_for('static', filename='images/Dark_Theme_logo.png') }}" : "{{ url_for('static', filename='images/Light_Theme_logo.png') }}";
-                
                 if (headerLogo) {
                     headerLogo.src = logoPath;
                 }
-                
-                const footerLogo = document.getElementById('footer-logo');
                 if (footerLogo) {
                     footerLogo.src = logoPath;
                 }
             }
-            
+
+            function applyTheme(theme) {
+                document.documentElement.setAttribute('data-theme', theme);
+                localStorage.setItem('theme', theme);
+                updateThemeIcons(theme);
+                updateLogo(theme);
+                console.log('[Theme] Switched to:', theme);
+            }
+
+            window.applyTheme = applyTheme;
+            window.toggleTheme = function() {
+                const current = document.documentElement.getAttribute('data-theme') || 'light';
+                const next = current === 'light' ? 'dark' : 'light';
+                applyTheme(next);
+            };
+
             const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
             updateThemeIcons(currentTheme);
             updateLogo(currentTheme);
-            
-            themeToggle.addEventListener('click', function() {
-                const current = document.documentElement.getAttribute('data-theme');
-                const newTheme = current === 'light' ? 'dark' : 'light';
-                document.documentElement.setAttribute('data-theme', newTheme);
-                localStorage.setItem('theme', newTheme);
-                updateThemeIcons(newTheme);
-                updateLogo(newTheme);
-                console.log('[Theme] Switched to:', newTheme);
-            });
+
+            if (!themeToggle) {
+                console.warn('[Theme] Sidebar toggle button not found on this page');
+                return;
+            }
+
+            themeToggle.addEventListener('click', window.toggleTheme);
         });
     </script>
     {% block extra_js %}{% endblock %}

@@ -8,9 +8,11 @@ payments_bp = Blueprint('payments', __name__)
 @payments_bp.route('/create-checkout-session', methods=['POST'])
 @login_required
 def create_checkout_session():
-    data = request.get_json()
-    price_id_key = data.get('priceIdKey')  # e.g., 'br_monthly'
-    
+    data = request.get_json() or {}
+    price_id_key = data.get('priceIdKey') or data.get('price_id_key')  # e.g., 'br_monthly'
+    explicit_price_id = data.get('price_id')
+    currency = data.get('currency')
+
     user_id = session['user_id']
     user_email = session['user_email']
 
@@ -19,7 +21,12 @@ def create_checkout_session():
     customer_id = profile.get('stripe_customer_id') if profile.get('success') else None
 
     stripe_handler = get_stripe_handler()
-    price_id = stripe_handler.get_price_id_by_key(price_id_key)
+
+    price_id = explicit_price_id
+    if not price_id and price_id_key:
+        price_id = stripe_handler.get_price_id_by_key(price_id_key)
+        if not currency:
+            currency = 'brl' if price_id_key.startswith('br_') else 'gbp'
 
     if not price_id:
         return jsonify({'success': False, 'error': 'Invalid price configuration'}), 400
@@ -28,6 +35,7 @@ def create_checkout_session():
         price_id=price_id,
         user_id=user_id,
         user_email=user_email,
+        currency=currency or 'brl',
         customer_id=customer_id
     )
 
