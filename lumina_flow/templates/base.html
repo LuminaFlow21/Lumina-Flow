@@ -15,7 +15,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/global.css') }}">
     {% block extra_css %}{% endblock %}
 </head>
-<body data-server-region="{{ session.get('user_region', 'UK') }}">
+<body data-server-region="{{ session.get('user_region', 'UK') }}" {% block body_attr %}{% endblock %}>
     <!-- Header -->
     <header class="landing-header">
         <div class="landing-header__bar container">
@@ -29,15 +29,8 @@
                 <img id="header-logo" src="{{ url_for('static', filename='images/Light_Theme_logo.png') }}" alt="Lumina Flow Logo" class="logo-image">
             </a>
 
-            <a
-                href="{% if session.get('user_id') %}{{ url_for('dashboard.dashboard_view') }}{% else %}{{ url_for('auth.login_page') }}{% endif %}"
-                class="btn btn-primary btn-sm landing-header__dashboard"
-                data-i18n="nav.dashboard"
-            >Dashboard</a>
-        </div>
-
-        <div class="landing-header__panel" id="landingNavPanel">
-            <nav class="landing-nav container">
+            <!-- Desktop Navigation -->
+            <nav class="landing-nav">
                 <ul class="landing-nav__links">
                     <li><a href="{{ url_for('main.index') }}" data-i18n="nav.home">Home</a></li>
                     <li><a href="#features" data-i18n="nav.features">Features</a></li>
@@ -81,6 +74,26 @@
                     {% endif %}
                 </div>
             </nav>
+        </div>
+
+        <!-- Mobile Panel -->
+        <div class="landing-header__panel" id="landingNavPanel">
+            <div class="landing-nav__mobile-links">
+                <ul class="landing-nav__links">
+                    <li><a href="{{ url_for('main.index') }}" data-i18n="nav.home">Home</a></li>
+                    <li><a href="#features" data-i18n="nav.features">Features</a></li>
+                    <li><a href="#pricing" data-i18n="nav.pricing">Pricing</a></li>
+                </ul>
+
+                <div class="landing-nav__auth">
+                    {% if session.get('user_id') %}
+                        <a href="{{ url_for('dashboard.dashboard_view') }}" class="btn btn-secondary btn-sm" data-i18n="nav.dashboard">Dashboard</a>
+                    {% else %}
+                        <a href="{{ url_for('auth.login_page') }}" class="btn btn-secondary btn-sm" data-i18n="nav.login">Login</a>
+                        <a href="{{ url_for('auth.login_page') }}?signup=true" class="btn btn-primary btn-sm" data-i18n="nav.signup">Sign Up</a>
+                    {% endif %}
+                </div>
+            </div>
         </div>
     </header>
 

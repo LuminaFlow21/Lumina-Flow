@@ -13,35 +13,16 @@ html {
 /* Deixe os estilos de action-buttons com os templates para preservar o dropdown customizado */
 
 body.quotation-viewer {
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: flex-start !important;
-    justify-content: flex-start !important;
-    padding: 0 !important;
-    padding-bottom: clamp(64px, 7vw, 112px) !important;
-    gap: clamp(16px, 4vw, 28px) !important;
-    min-height: 100vh !important;
-    height: auto !important;
-    max-height: none !important;
     position: relative;
     isolation: isolate;
+    min-height: 100vh;
     width: 100%;
-    overflow-x: hidden !important;
-    overflow-y: auto !important;
-    touch-action: pan-y !important;
+    overflow-x: hidden;
+    overflow-y: auto;
+    touch-action: pan-y;
     overscroll-behavior-y: contain;
     -webkit-overflow-scrolling: touch;
 }
-
-body.quotation-viewer::after {
-    content: '';
-    position: fixed;
-    inset: 0;
-    pointer-events: none;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0) 40%);
-    z-index: -1;
-}
-
 
 body.quotation-viewer .viewport-pan {
     width: 100%;
@@ -54,6 +35,8 @@ body.quotation-viewer .viewport-pan {
     padding-inline: clamp(12px, 4vw, 32px);
     -webkit-overflow-scrolling: touch;
     max-height: none;
+    display: flex;
+    justify-content: center;
 }
 
 body.quotation-viewer .viewport-pan.static-preview-mode {
@@ -175,14 +158,11 @@ body.quotation-viewer .layout-shell .orcamento {
 
 body.quotation-viewer .orcamento {
     --viewer-scale: 1;
-    transform-origin: top left;
-    width: calc(var(--viewer-base-width, 760px));
-    min-width: calc(var(--viewer-base-width, 760px));
-    max-width: calc(var(--viewer-base-width, 760px));
+    transform-origin: top center;
     transform: scale(var(--viewer-scale, 1));
-    margin: 0;
     transition: transform 0.15s ease-out;
     will-change: transform;
+    margin-inline: auto;
 }
 
 body.quotation-viewer .mobile-scroll-hint {
@@ -260,19 +240,22 @@ body.quotation-viewer .mobile-scroll-hint {
 }
 
 body.quotation-viewer .layout-shell {
-    width: 100% !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    justify-content: flex-start !important;
-    max-width: 100% !important;
+    width: auto;
+    margin: 0 auto;
+    padding: 0;
 }
 
 body.quotation-viewer .layout-shell--hint {
     display: none !important;
 }
 
-body.quotation-viewer .layout-shell--actions {
+body.quotation-viewer .layout-shell--actions,
+body.quotation-viewer .layout-shell--hint {
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
     justify-content: flex-start !important;
+    max-width: 100% !important;
 }
 
 @keyframes viewerHintPulse {
@@ -308,16 +291,6 @@ margin: 0 auto !important;
 transform: none !important;
 }
 
-@media (min-width: 300px) {
-body.quotation-viewer .orcamento {
-width: 760px !important;
-max-width: 760px !important;
-min-width: 760px !important;
-flex: 0 0 760px !important;
-margin: 0;
-}
-}
-
 @media (min-width: 1024px) {
     body.quotation-viewer {
         align-items: center !important;
@@ -328,6 +301,12 @@ margin: 0;
         margin-left: auto !important;
         margin-right: auto !important;
         padding-inline: clamp(32px, 5vw, 64px) !important;
+    }
+
+    body.quotation-viewer .viewport-pan {
+        overflow: visible;
+        min-height: auto;
+        padding-inline: 0;
     }
 }
 
