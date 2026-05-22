@@ -44,6 +44,11 @@ PRICING = {
     }
 }
 
+
+@main_bp.route('/health')
+def health():
+    return "ok", 200
+
 @main_bp.route('/')
 def index():
     if 'user_region' not in session:
