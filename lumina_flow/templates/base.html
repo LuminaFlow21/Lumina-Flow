@@ -13,6 +13,7 @@
     
     <!-- Global CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/global.css') }}">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/logo_sidebar.png') }}">
     {% block extra_css %}{% endblock %}
 </head>
 <body data-server-region="{{ session.get('user_region', 'UK') }}" {% block body_attr %}{% endblock %}>
