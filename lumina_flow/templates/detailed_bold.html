@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=0.5, maximum-scale=5.0, user-scalable=yes, shrink-to-fit=no"/>
   <title>Orçamento #{{ quotation.id[:8].upper() }}</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -567,63 +567,30 @@
   </div>
 
   <script>
+    const exportBaseName = `orcamento-{{ quotation.id[:8].upper() }}`;
+    const exportOptions = {
+      fileName: exportBaseName,
+      backgroundColor: '#000'
+    };
+
     async function downloadImage() {
-      const container = document.getElementById('quotationContainer');
-
-      await (window.LuminaFlow?.withToolbarHidden?.(async () => {
-        try {
-          const canvas = await html2canvas(container, {
-            backgroundColor: '#000',
-            scale: 2,
-            useCORS: true,
-            logging: false
-          });
-
-          const link = document.createElement('a');
-          link.download = `orcamento-{{ quotation.id[:8].upper() }}.png`;
-          link.href = canvas.toDataURL('image/png');
-          link.click();
-        } catch (error) {
-          console.error('Error generating image:', error);
-          alert('Erro ao gerar imagem');
-          throw error;
-        }
-      }) ?? Promise.resolve());
+      try {
+        await window.LuminaFlow.downloadQuotationImage(exportOptions);
+      } catch (error) {
+        console.error('Erro ao gerar imagem:', error);
+        alert('Erro ao gerar imagem');
+        throw error;
+      }
     }
 
     async function downloadPDF() {
-      const container = document.getElementById('quotationContainer');
-
-      await (window.LuminaFlow?.withToolbarHidden?.(async () => {
-        try {
-          const canvas = await html2canvas(container, {
-            backgroundColor: '#000',
-            scale: 2,
-            useCORS: true,
-            logging: false
-          });
-
-          const imgData = canvas.toDataURL('image/png');
-          const { jsPDF } = window.jspdf;
-          const pdf = new jsPDF('p', 'mm', 'a4');
-
-          const imgProps = pdf.getImageProperties(imgData);
-          const pdfWidth = 210;
-          const pdfHeight = 297;
-          const scale = Math.min(pdfWidth / imgProps.width, pdfHeight / imgProps.height);
-          const renderWidth = imgProps.width * scale;
-          const renderHeight = imgProps.height * scale;
-          const marginX = (pdfWidth - renderWidth) / 2;
-          const marginY = Math.max(0, (pdfHeight - renderHeight) / 2);
-
-          pdf.addImage(imgData, 'PNG', marginX, marginY, renderWidth, renderHeight);
-          pdf.save(`orcamento-{{ quotation.id[:8].upper() }}.pdf`);
-        } catch (error) {
-          console.error('Error generating PDF:', error);
-          alert('Erro ao gerar PDF');
-          throw error;
-        }
-      }) ?? Promise.resolve());
+      try {
+        await window.LuminaFlow.downloadQuotationPdf(exportOptions);
+      } catch (error) {
+        console.error('Erro ao gerar PDF:', error);
+        alert(error.message || 'Erro ao gerar PDF');
+        throw error;
+      }
     }
 
     function shareQuotation(event) {

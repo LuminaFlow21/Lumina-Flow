@@ -608,6 +608,22 @@
     margin-bottom: 48px;
 }
 
+.dashboard-header--center {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 12px;
+}
+
+.dashboard-header--center .header-actions {
+    justify-content: center;
+    width: 100%;
+}
+
+.dashboard-header--center .stats-card {
+    margin: 0 auto;
+}
+
 .header-actions {
     display: flex;
     gap: 16px;
@@ -807,6 +823,11 @@
     display: flex;
     flex-direction: column;
     gap: 8px;
+}
+
+.form-group > label {
+    color: var(--color-text-main);
+    font-weight: 600;
 }
 
 .form-label {
