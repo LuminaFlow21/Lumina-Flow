@@ -3,9 +3,13 @@ Email Handler for Lumina Flow
 Uses Brevo API for sending transactional emails
 """
 
+import logging
 import requests
 from typing import Dict, Optional
 from flask import current_app
+
+
+logger = logging.getLogger(__name__)
 
 
 class EmailHandler:
@@ -28,12 +32,12 @@ class EmailHandler:
             Dictionary with success status
         """
         try:
-            print(f'[Email] Sending verification email to: {email}')
-            print(f'[Email] API Key configured: {bool(self.api_key)}')
+            logger.info('[Email] Sending verification email', extra={'email': email})
+            logger.debug('[Email] API key configured', extra={'has_key': bool(self.api_key)})
             
             # Build verification URL
             verification_url = f"{current_app.config.get('BASE_URL', 'http://localhost:5000')}/verify/{verification_token}"
-            print(f'[Email] Verification URL: {verification_url}')
+            logger.debug('[Email] Verification URL built', extra={'email': email})
             
             # Prepare email data
             email_data = {
@@ -89,7 +93,7 @@ If you didn't create an account, please ignore this email.
                 """
             }
             
-            print(f'[Email] Email data prepared, sending to Brevo API...')
+            logger.debug('[Email] Email payload prepared', extra={'email': email})
             
             # Send email via Brevo API
             headers = {
@@ -104,8 +108,7 @@ If you didn't create an account, please ignore this email.
                 headers=headers
             )
             
-            print(f'[Email] Brevo API response status: {response.status_code}')
-            print(f'[Email] Brevo API response body: {response.text}')
+            logger.info('[Email] Brevo API response', extra={'status': response.status_code})
             
             if response.status_code in [200, 201, 202]:
                 return {
@@ -119,9 +122,7 @@ If you didn't create an account, please ignore this email.
                 }
                 
         except Exception as e:
-            print(f'[Email] Exception: {str(e)}')
-            import traceback
-            traceback.print_exc()
+            logger.exception('[Email] Exception sending verification email', extra={'email': email})
             return {
                 'success': False,
                 'error': str(e)
@@ -188,6 +189,8 @@ If you didn't create an account, please ignore this email.
                 headers=headers
             )
             
+            logger.info('[Email] Welcome email response', extra={'status': response.status_code})
+
             if response.status_code in [200, 201, 202]:
                 return {
                     'success': True,
@@ -200,6 +203,7 @@ If you didn't create an account, please ignore this email.
                 }
                 
         except Exception as e:
+            logger.exception('[Email] Exception sending welcome email', extra={'email': email})
             return {
                 'success': False,
                 'error': str(e)

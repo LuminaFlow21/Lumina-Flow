@@ -5,6 +5,7 @@ from flask_login import LoginManager
 
 from .config import get_config
 from .auth_handler import User
+from .logging_config import setup_logging, register_request_logging
 
 def create_app(config_name=None):
     """
@@ -15,6 +16,9 @@ def create_app(config_name=None):
     # Carrega a configuração apropriada (dev, prod, test)
     config_obj = get_config(config_name)
     app.config.from_object(config_obj)
+
+    setup_logging(app.config)
+    register_request_logging(app)
 
     # Inicializa extensões de segurança
     # O CSP é desabilitado por padrão para não interferir com scripts inline/externos
@@ -58,7 +62,8 @@ def create_app(config_name=None):
         return {
             'user_region': user_region,
             'app_name': app.config['APP_NAME'],
-            'app_version': app.config['APP_VERSION']
+            'app_version': app.config['APP_VERSION'],
+            'whatsapp_url': app.config.get('LINKS_WHATSAPP_URL')
         }
 
     return app

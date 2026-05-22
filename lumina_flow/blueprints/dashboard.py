@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, session, redirect, url_for, request, jsonify
+﻿from flask import Blueprint, render_template, session, redirect, url_for, request, jsonify
 from flask_login import login_required, current_user
 from datetime import datetime
 from ..supabase_handler import get_supabase_handler
@@ -8,9 +8,11 @@ from .main import PRICING
 import os
 import base64
 import uuid
+import logging
 from werkzeug.utils import secure_filename
 
 dashboard_bp = Blueprint('dashboard', __name__)
+logger = logging.getLogger(__name__)
 
 def check_and_update_expired_quotations(quotations: list, user_id: str) -> list:
     """Check if quotations have expired and update status to 'expired'"""
@@ -36,14 +38,23 @@ def get_user_quotations(user_id: str, access_token: str = None) -> list:
     quotations = result.get('data', []) if result.get('success') else []
     return check_and_update_expired_quotations(quotations, user_id)
 
+ALLOWED_DELETE_PLANS = {'basic', 'pro', 'enterprise'}
+
+
 def can_create_quotation(user_id: str, plan: str) -> bool:
-    if plan == 'pro':
+    normalized_plan = (plan or 'free').lower()
+    if normalized_plan in ('basic', 'pro'):
         return True
     supabase = get_supabase_handler()
     count_result = supabase.count_user_quotations(user_id)
     if count_result.get('success'):
         return count_result.get('count', 0) < 3
     return False
+
+
+def can_delete_quotation(plan: str) -> bool:
+    normalized_plan = (plan or 'free').lower()
+    return normalized_plan in ALLOWED_DELETE_PLANS
 
 @dashboard_bp.route('/test-dashboard')
 def test_dashboard():
@@ -72,7 +83,7 @@ def test_dashboard():
             session['user_email'] = user.email
             # Update profile with test data
             supabase.update_user_profile(test_user_id, full_name='Test User')
-            supabase.update_user_subscription(test_user_id, plan='pro', subscription_status='active')
+            supabase.update_user_subscription(test_user_id, plan='basic', subscription_status='active')
         else:
             # Fallback - use a placeholder (will fail for quotations but dashboard will work)
             test_user_id = '11111111-1111-1111-1111-111111111111'
@@ -81,7 +92,7 @@ def test_dashboard():
     # Get real subscription data from Supabase
     sub_result = supabase.get_user_subscription(test_user_id)
     subscription = {
-        'plan': sub_result.get('plan', 'pro') if sub_result.get('success') else 'pro',
+        'plan': sub_result.get('plan', 'basic') if sub_result.get('success') else 'basic',
         'status': sub_result.get('subscription_status', 'active') if sub_result.get('success') else 'active',
         'next_billing': '2026-06-06'
     }
@@ -368,7 +379,13 @@ def history():
     profile_result = supabase.get_user_profile(user_id)
     profile_data = profile_result.get('data', {}) if profile_result.get('success') else {}
     
-    return render_template('history.html', quotations=quotations, subscription=subscription, profile_data=profile_data)
+    return render_template(
+        'history.html',
+        quotations=quotations,
+        subscription=subscription,
+        profile_data=profile_data,
+        can_delete_quotations=can_delete_quotation(current_user.plan)
+    )
 
 @dashboard_bp.route('/quotation/edit/<quotation_id>', methods=['POST'])
 @login_required
@@ -396,7 +413,15 @@ def edit_quotation(quotation_id):
 def delete_quotation(quotation_id):
     user_id = current_user.id
     supabase = get_supabase_handler()
-    
+    plan = (current_user.plan or 'free').lower()
+
+    if not can_delete_quotation(plan):
+        logger.warning(
+            '[delete_quotation] User without delete permission attempted action',
+            extra={'user_id': user_id, 'plan': plan, 'quotation_id': quotation_id}
+        )
+        return jsonify({'success': False, 'error': 'Somente planos Pro ou Enterprise podem excluir or�amentos.'}, 403)
+
     result = supabase.delete_quotation(user_id, str(quotation_id))
     
     if result.get('success'):
@@ -571,7 +596,7 @@ def create_detailed_quotation():
         else:
             return jsonify({'success': False, 'error': result.get('error', 'Failed to create quotation')}), 400
     except Exception as e:
-        print(f"Error creating detailed quotation: {str(e)}")
+        logger.exception('Error creating detailed quotation', extra={'user_id': getattr(current_user, 'id', None)})
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @dashboard_bp.route('/api/quotations', methods=['POST'])
@@ -616,12 +641,12 @@ def update_profile():
     # Save WhatsApp to the database
     if data.get('whatsapp'):
         profile_data['whatsapp'] = data.get('whatsapp')
-        print(f"[Dashboard API] Saving WhatsApp: {data.get('whatsapp')}")
+        logger.info('[Dashboard API] Updating WhatsApp', extra={'user_id': user_id})
 
     # Save Full Name to the database
     if data.get('full_name'):
         profile_data['full_name'] = data.get('full_name')
-        print(f"[Dashboard API] Saving Full Name: {data.get('full_name')}")
+        logger.info('[Dashboard API] Updating full name', extra={'user_id': user_id})
 
     # Handle profile photo upload to Supabase Storage
     profile_photo_url = None
@@ -644,7 +669,7 @@ def update_profile():
             file_extension = "jpg"
             filename = f"{uuid.uuid4()}.{file_extension}"
 
-            print(f"[Dashboard API] Uploading image to Supabase Storage bucket 'avatars' with filename: {filename}")
+            logger.info('[Dashboard API] Uploading profile image', extra={'user_id': user_id, 'filename': filename})
 
             # Upload to Supabase Storage using the handler's method
             uploaded_url = supabase.upload_file_to_storage(file_content, filename, bucket_name='avatars')
@@ -652,12 +677,12 @@ def update_profile():
             if uploaded_url:
                 profile_photo_url = uploaded_url
                 profile_data['profile_photo_url'] = profile_photo_url
-                print(f"[Dashboard API] Image uploaded successfully. URL: {profile_photo_url}")
+                logger.info('[Dashboard API] Profile image uploaded', extra={'user_id': user_id})
             else:
-                print("[Dashboard API] Failed to upload image to Supabase Storage.")
+                logger.error('[Dashboard API] Failed to upload profile image', extra={'user_id': user_id})
 
         except Exception as e:
-            print(f"[Dashboard API] Error processing profile photo upload: {str(e)}")
+            logger.exception('[Dashboard API] Error processing profile photo upload', extra={'user_id': user_id})
             # Optionally return an error
             # return jsonify({'success': False, 'error': 'Error processing profile photo'}), 500
 
@@ -667,14 +692,14 @@ def update_profile():
         result = supabase.update_user_profile(user_id, **profile_data)
 
         if result.get('success'):
-            print(f"[Dashboard API] Profile updated successfully for user {user_id}")
+            logger.info('[Dashboard API] Profile updated successfully', extra={'user_id': user_id})
             return jsonify({'success': True})
         else:
-            print(f"[Dashboard API] Failed to update profile in database: {result.get('error')}")
+            logger.error('[Dashboard API] Failed to update profile in database', extra={'user_id': user_id, 'error': result.get('error')})
             return jsonify({'success': False, 'error': result.get('error', 'Failed to update profile')}), 400
     else:
         # No data to update
-        print("[Dashboard API] No profile data provided for update.")
+        logger.warning('[Dashboard API] No profile data provided for update', extra={'user_id': user_id})
         return jsonify({'success': False, 'error': 'No data to update'}), 400
 
 
@@ -714,4 +739,5 @@ def cancel_subscription():
     current_user.plan = 'free'
 
     return jsonify({'success': True})
+
 

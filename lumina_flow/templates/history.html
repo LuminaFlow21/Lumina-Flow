@@ -81,12 +81,14 @@
                             <td class="actions-cell" data-label="Ações" data-i18n-label="dashboard.actions">
                                 {% if quotation.status == 'expired' %}
                                 <button class="btn btn-primary btn-reactivate" data-id="{{ quotation.id }}" data-i18n="dashboard.reactivate">Ativar Orçamento</button>
+                                {% if can_delete_quotations %}
                                 <button class="icon-btn btn-delete" data-id="{{ quotation.id }}" title="Excluir">
                                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                         <polyline points="3 6 5 6 21 6"></polyline>
                                         <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
                                     </svg>
                                 </button>
+                                {% endif %}
                                 {% else %}
                                 <button class="icon-btn btn-accept" data-id="{{ quotation.id }}" title="Aceitar">
                                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -108,12 +110,14 @@
                                         <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
                                     </svg>
                                 </button>
+                                {% if can_delete_quotations %}
                                 <button class="icon-btn btn-delete" data-id="{{ quotation.id }}" title="Excluir">
                                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                         <polyline points="3 6 5 6 21 6"></polyline>
                                         <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
                                     </svg>
                                 </button>
+                                {% endif %}
                                 {% endif %}
                             </td>
                         </tr>
@@ -427,7 +431,13 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    const allowDelete = JSON.parse('{{ can_delete_quotations | tojson }}');
     document.querySelectorAll('.btn-delete').forEach(btn => {
+        if (!allowDelete) {
+            btn.setAttribute('disabled', 'disabled');
+            btn.classList.add('is-disabled');
+            return;
+        }
         btn.addEventListener('click', async (e) => {
             e.preventDefault();
             e.stopPropagation();

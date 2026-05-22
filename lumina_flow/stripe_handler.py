@@ -4,9 +4,13 @@ Isolated logic for Stripe payment processing
 """
 
 import os
+import logging
 import stripe
 from datetime import datetime, timedelta
 from .config import Config
+
+
+logger = logging.getLogger(__name__)
 
 
 class StripeHandler:
@@ -40,10 +44,11 @@ class StripeHandler:
         """
         key = f"{currency.replace('gbp', 'uk')}_{billing}"
         price_id = self.price_ids.get(key)
-        
+
         if not price_id:
+            logger.error("Missing Stripe price ID", extra={'currency': currency, 'billing': billing, 'key': key})
             raise ValueError(f"No price ID found for {currency} {billing}")
-        
+
         return price_id
     
     def create_checkout_session(self, price_id: str, user_id: str, user_email: str, currency: str = 'brl', customer_id: str = None) -> dict:
@@ -61,7 +66,6 @@ class StripeHandler:
             Dictionary with checkout session URL or error
         """
         try:
-            
             # Determine locale based on currency for Stripe Checkout UI
             locale_code = 'pt-BR' if (currency or '').lower() == 'brl' else 'en-GB'
 
@@ -89,8 +93,18 @@ class StripeHandler:
                 session_params['customer'] = customer_id
                 session_params.pop('customer_email', None)
             
+            logger.info(
+                "Creating Stripe checkout session",
+                extra={'user_id': user_id, 'price_id': price_id, 'currency': currency, 'customer_id': customer_id}
+            )
+
             session = stripe.checkout.Session.create(**session_params)
-            
+
+            logger.info(
+                "Stripe checkout session created",
+                extra={'user_id': user_id, 'session_id': session.id, 'customer_id': session.customer}
+            )
+
             return {
                 'success': True,
                 'checkout_url': session.url,
@@ -98,6 +112,10 @@ class StripeHandler:
                 'customer_id': session.customer
             }
         except Exception as e:
+            logger.exception(
+                "Failed to create checkout session",
+                extra={'user_id': user_id, 'price_id': price_id, 'currency': currency}
+            )
             return {
                 'success': False,
                 'error': str(e)
@@ -123,13 +141,16 @@ class StripeHandler:
                 customer_params['name'] = name
             
             customer = stripe.Customer.create(**customer_params)
-            
+
+            logger.info("Stripe customer created", extra={'customer_id': customer.id, 'email': email})
+
             return {
                 'success': True,
                 'customer_id': customer.id,
                 'customer': customer
             }
         except Exception as e:
+            logger.exception("Failed to create Stripe customer", extra={'email': email})
             return {
                 'success': False,
                 'error': str(e)
@@ -147,11 +168,13 @@ class StripeHandler:
         """
         try:
             customer = stripe.Customer.retrieve(customer_id)
+            logger.debug("Retrieved Stripe customer", extra={'customer_id': customer_id})
             return {
                 'success': True,
                 'customer': customer
             }
         except Exception as e:
+            logger.exception("Failed to retrieve Stripe customer", extra={'customer_id': customer_id})
             return {
                 'success': False,
                 'error': str(e)
@@ -169,7 +192,12 @@ class StripeHandler:
         """
         try:
             subscription = stripe.Subscription.retrieve(subscription_id)
-            
+
+            logger.debug(
+                "Retrieved Stripe subscription",
+                extra={'subscription_id': subscription_id, 'status': subscription.status}
+            )
+
             return {
                 'success': True,
                 'subscription': subscription,
@@ -178,6 +206,7 @@ class StripeHandler:
                 'current_period_end': subscription.current_period_end
             }
         except Exception as e:
+            logger.exception("Failed to retrieve subscription", extra={'subscription_id': subscription_id})
             return {
                 'success': False,
                 'error': str(e)
@@ -195,11 +224,13 @@ class StripeHandler:
         """
         try:
             subscription = stripe.Subscription.delete(subscription_id)
+            logger.info("Cancelled Stripe subscription", extra={'subscription_id': subscription_id})
             return {
                 'success': True,
                 'subscription': subscription
             }
         except Exception as e:
+            logger.exception("Failed to cancel subscription", extra={'subscription_id': subscription_id})
             return {
                 'success': False,
                 'error': str(e)
@@ -220,7 +251,9 @@ class StripeHandler:
             event = stripe.Webhook.construct_event(
                 payload, sig_header, Config.STRIPE_WEBHOOK_SECRET
             )
-            
+
+            logger.info("Stripe webhook received", extra={'event_type': event.type, 'event_id': event.id})
+
             return {
                 'success': True,
                 'event': event,
@@ -228,11 +261,13 @@ class StripeHandler:
                 'event_data': event.data
             }
         except ValueError as e:
+            logger.warning("Invalid Stripe webhook payload", extra={'error': str(e)})
             return {
                 'success': False,
                 'error': f'Invalid payload: {str(e)}'
             }
         except stripe.error.SignatureVerificationError as e:
+            logger.warning("Invalid Stripe webhook signature", extra={'error': str(e)})
             return {
                 'success': False,
                 'error': f'Invalid signature: {str(e)}'
@@ -253,6 +288,7 @@ class StripeHandler:
             timestamp = subscription.current_period_end
             return datetime.fromtimestamp(timestamp).isoformat()
         except Exception:
+            logger.exception("Failed to fetch next billing date", extra={'subscription_id': subscription_id})
             return None
 
     def get_price_id_by_key(self, key: str) -> str:

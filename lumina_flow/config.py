@@ -21,6 +21,14 @@ class Config:
     # App
     APP_NAME = 'Lumina Flow'
     APP_VERSION = '1.0.0'
+
+    # Logging
+    LOG_LEVEL = os.getenv('LOG_LEVEL', 'INFO').upper()
+    LOG_JSON = os.getenv('LOG_JSON', 'False').lower() == 'true'
+    LOG_TO_FILE = os.getenv('LOG_TO_FILE', 'True').lower() == 'true'
+    LOG_DIR = os.getenv('LOG_DIR') or os.path.join(os.path.dirname(__file__), '..', 'logs')
+    LOG_MAX_BYTES = int(os.getenv('LOG_MAX_BYTES', 5 * 1024 * 1024))
+    LOG_BACKUP_COUNT = int(os.getenv('LOG_BACKUP_COUNT', 5))
     
     # Supabase
     SUPABASE_URL = os.getenv('SUPABASE_URL')

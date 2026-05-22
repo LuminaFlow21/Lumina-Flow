@@ -126,14 +126,14 @@
         </div>
 
         {% set region_key = 'br' if user_region == 'BR' else 'uk' %}
-        {% set pro_price_label = pricing['pro']['%s_monthly' % region_key] if pricing and pricing.get('pro') else ('R$ 49' if region_key == 'br' else '£19') %}
-        {% set pro_price_id = pricing['pro'].get('price_id_%s_monthly' % region_key) if pricing and pricing.get('pro') else None %}
+        {% set basic_price_label = pricing['basic']['%s_monthly' % region_key] if pricing and pricing.get('basic') else ('R$ 49' if region_key == 'br' else '£19') %}
+        {% set basic_price_id = pricing['basic'].get('price_id_%s_monthly' % region_key) if pricing and pricing.get('basic') else None %}
 
-        {% if subscription.plan == 'pro' %}
+        {% if subscription.plan == 'basic' %}
         <div class="subscription-card subscription-card--manage">
             <div class="subscription-card__headline">
                 <span class="subscription-card__badge" data-i18n="dashboard.current_plan">Plano Atual</span>
-                <h2 class="subscription-card__title" data-i18n="dashboard.plan_pro">Plano Pro</h2>
+                <h2 class="subscription-card__title" data-i18n="dashboard.plan_basic">Plano Basic</h2>
             </div>
 
             <div class="subscription-card__layout">
@@ -143,7 +143,7 @@
 
                 <div class="subscription-card__aside">
                     <div class="subscription-price">
-                        <span class="subscription-price__amount">{{ pro_price_label }}</span>
+                        <span class="subscription-price__amount">{{ basic_price_label }}</span>
                         <span class="subscription-price__period" data-i18n="pricing.per_month">/mês</span>
                     </div>
 
@@ -171,7 +171,7 @@
         {% else %}
         <div class="subscription-card subscription-card--upgrade">
             <div class="subscription-card__headline">
-                <span class="subscription-card__badge" data-i18n="dashboard.upgrade_badge">Plano Pro</span>
+                <span class="subscription-card__badge" data-i18n="dashboard.upgrade_badge">Plano Basic</span>
                 <h2 class="subscription-card__title" data-i18n="dashboard.upgrade_card_title">Desbloqueie o melhor da Lumina Flow</h2>
             </div>
 
@@ -187,7 +187,7 @@
 
                 <div class="subscription-card__aside">
                     <div class="subscription-price">
-                        <span class="subscription-price__amount">{{ pro_price_label }}</span>
+                        <span class="subscription-price__amount">{{ basic_price_label }}</span>
                         <span class="subscription-price__period" data-i18n="pricing.per_month">/mês</span>
                     </div>
                     <p class="subscription-card__note" data-i18n="dashboard.cancel_anytime">Cancele quando quiser.</p>
@@ -196,7 +196,7 @@
                             data-checkout
                             data-price-key-br="br_monthly"
                             data-price-key-uk="uk_monthly"
-                            {% if pro_price_id %}data-price-id="{{ pro_price_id }}"{% endif %}
+                            {% if basic_price_id %}data-price-id="{{ basic_price_id }}"{% endif %}
                             data-i18n="dashboard.upgrade_now">
                         Fazer upgrade agora
                     </button>

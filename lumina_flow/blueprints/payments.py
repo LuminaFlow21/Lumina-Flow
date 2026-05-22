@@ -1,9 +1,11 @@
+import logging
 from flask import Blueprint, request, jsonify, session
 from ..supabase_handler import get_supabase_handler
 from ..stripe_handler import get_stripe_handler
 from .dashboard import login_required
 
 payments_bp = Blueprint('payments', __name__)
+logger = logging.getLogger(__name__)
 
 @payments_bp.route('/create-checkout-session', methods=['POST'])
 @login_required
@@ -29,6 +31,7 @@ def create_checkout_session():
             currency = 'brl' if price_id_key.startswith('br_') else 'gbp'
 
     if not price_id:
+        logger.warning('Invalid price configuration for checkout', extra={'user_id': user_id, 'price_id_key': price_id_key})
         return jsonify({'success': False, 'error': 'Invalid price configuration'}), 400
 
     session_result = stripe_handler.create_checkout_session(
@@ -40,8 +43,10 @@ def create_checkout_session():
     )
 
     if session_result.get('success'):
+        logger.info('Stripe checkout session created', extra={'user_id': user_id})
         return jsonify({'success': True, 'checkout_url': session_result['checkout_url']})
     else:
+        logger.error('Stripe checkout session failed', extra={'user_id': user_id, 'error': session_result.get('error')})
         return jsonify({'success': False, 'error': session_result.get('error', 'Failed to create checkout session')}), 500
 
 @payments_bp.route('/webhook/stripe', methods=['POST'])
@@ -53,9 +58,11 @@ def stripe_webhook():
     event_result = stripe_handler.handle_webhook(payload, sig_header)
     
     if not event_result.get('success'):
+        logger.warning('Stripe webhook rejected', extra={'error': event_result.get('error')})
         return jsonify({'error': event_result.get('error')}), 400
     
     event = event_result['event']
+    logger.info('Stripe webhook processed', extra={'event_type': event['type'], 'event_id': event['id']})
     
     # Lógica de manipulação de eventos será adicionada aqui
     

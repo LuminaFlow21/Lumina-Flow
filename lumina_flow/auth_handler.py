@@ -3,12 +3,16 @@ Custom Authentication Handler for Lumina Flow
 Uses bcrypt for password hashing and PostgreSQL for user storage
 """
 
+import logging
 import bcrypt
 import secrets
 from datetime import datetime, timedelta
 from typing import Optional, Dict
 from flask_login import UserMixin
 from .supabase_handler import get_supabase_handler
+
+
+logger = logging.getLogger(__name__)
 
 
 class User(UserMixin):
@@ -132,7 +136,7 @@ class AuthHandler:
             Dictionary with success status
         """
         try:
-            print(f'[Auth] Verifying email with token: {token}')
+            logger.info('[Auth] Verifying email token')
             
             # Find user by verification token
             response = self.supabase.admin_client.table('users') \
@@ -140,28 +144,27 @@ class AuthHandler:
                 .eq('verification_token', token) \
                 .execute()
             
-            print(f'[Auth] User lookup result: {len(response.data) if response.data else 0} users found')
+            logger.debug('[Auth] User lookup result', extra={'count': len(response.data) if response.data else 0})
             
             if not response.data or len(response.data) == 0:
-                print(f'[Auth] No user found with this token')
+                logger.warning('[Auth] Invalid verification token')
                 return {
                     'success': False,
                     'error': 'Invalid or expired verification token'
                 }
             
             user = response.data[0]
-            print(f'[Auth] User found: {user["email"]}, verified: {user.get("verified")}')
+            logger.debug('[Auth] User found for verification', extra={'email': user['email'], 'verified': user.get('verified')})
             
             # Check if already verified
             if user.get('verified'):
-                print(f'[Auth] User already verified')
+                logger.info('[Auth] User already verified', extra={'email': user['email']})
                 return {
                     'success': False,
                     'error': 'Email already verified'
                 }
             
             # Mark user as verified
-            print(f'[Auth] Marking user as verified...')
             update_result = self.supabase.admin_client.table('users') \
                 .update({
                     'verified': True,
@@ -171,7 +174,7 @@ class AuthHandler:
                 .eq('id', user['id']) \
                 .execute()
             
-            print(f'[Auth] Update result: {update_result.data}')
+            logger.info('[Auth] User verified successfully', extra={'user_id': str(user['id'])})
             
             return {
                 'success': True,
@@ -179,9 +182,7 @@ class AuthHandler:
             }
             
         except Exception as e:
-            print(f'[Auth] Exception in verify_email: {str(e)}')
-            import traceback
-            traceback.print_exc()
+            logger.exception('[Auth] Exception in verify_email')
             return {
                 'success': False,
                 'error': str(e)
@@ -199,7 +200,7 @@ class AuthHandler:
             Dictionary with success status and user data or error
         """
         try:
-            print(f'[Auth] Authenticating user: {email}')
+            logger.info('[Auth] Authenticating user', extra={'email': email})
             
             # Find user by email
             response = self.supabase.admin_client.table('users') \
@@ -207,21 +208,21 @@ class AuthHandler:
                 .eq('email', email) \
                 .execute()
             
-            print(f'[Auth] User lookup result: {len(response.data) if response.data else 0} users found')
+            logger.debug('[Auth] Lookup result', extra={'email': email, 'count': len(response.data) if response.data else 0})
             
             if not response.data or len(response.data) == 0:
-                print(f'[Auth] No user found with this email')
+                logger.warning('[Auth] User not found during authentication', extra={'email': email})
                 return {
                     'success': False,
                     'error': 'Invalid email or password'
                 }
             
             user = response.data[0]
-            print(f'[Auth] User found: {user["email"]}, verified: {user.get("verified")}')
+            logger.debug('[Auth] User record fetched', extra={'email': user['email'], 'verified': user.get('verified')})
             
             # Check if email is verified
             if not user.get('verified'):
-                print(f'[Auth] User email not verified')
+                logger.warning('[Auth] Email not verified', extra={'email': user['email']})
                 return {
                     'success': False,
                     'error': 'Please verify your email before logging in'
@@ -229,22 +230,20 @@ class AuthHandler:
             
             # Verify password
             if not self.verify_password(password, user['password_hash']):
-                print(f'[Auth] Password verification failed')
+                logger.warning('[Auth] Password verification failed', extra={'email': user['email']})
                 return {
                     'success': False,
                     'error': 'Invalid email or password'
                 }
             
-            print(f'[Auth] Authentication successful')
+            logger.info('[Auth] Authentication successful', extra={'user_id': str(user['id'])})
             return {
                 'success': True,
                 'user': user
             }
             
         except Exception as e:
-            print(f'[Auth] Exception in authenticate_user: {str(e)}')
-            import traceback
-            traceback.print_exc()
+            logger.exception('[Auth] Exception in authenticate_user', extra={'email': email})
             return {
                 'success': False,
                 'error': str(e)

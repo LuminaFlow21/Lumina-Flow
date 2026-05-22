@@ -17,32 +17,22 @@
     <div class="container">
         <div class="hero-content">
             <div class="hero-text">
-                <div class="badge badge-indigo mb-md" data-i18n="hero.new_badge">New</div>
+                <div class="hero-pill-group">
+                    <span class="badge badge-indigo" data-i18n="hero.new_badge">New</span>
+                </div>
                 <h1 data-i18n="hero.headline">Transforme seu fluxo de trabalho com inteligência</h1>
                 <p class="hero-subtitle" data-i18n="hero.subheadline">A plataforma tudo-em-um para otimizar sua produtividade e escalar seu negócio.</p>
+            
                 <div class="hero-cta">
                     <a href="#pricing" class="btn btn-primary btn-lg" data-i18n="hero.cta_primary">Começar Gratuitamente</a>
-                    <a href="#features" class="btn btn-secondary btn-lg" data-i18n="hero.cta_secondary">Ver Demonstração</a>
+                    <a href="#features" class="btn btn-ghost btn-lg" data-i18n="hero.cta_secondary">Ver Demonstração</a>
                 </div>
                 <div class="hero-trust">
-                    <p style="color: var(--color-slate-medium); font-size: var(--font-size-sm);">Trusted by 10,000+ teams worldwide</p>
-                    <div class="hero-logos">
-                        <div class="logo-placeholder">Company 1</div>
-                        <div class="logo-placeholder">Company 2</div>
-                        <div class="logo-placeholder">Company 3</div>
-                        <div class="logo-placeholder">Company 4</div>
-                    </div>
+                    <p class="hero-trust__label" data-i18n="hero.trust_label">Mais de 1000 usuarios confiam na Lumina Flow</p>
                 </div>
             </div>
             <div class="hero-visual">
                 <div class="glass-card">
-                    <div class="card-header">
-                        <div class="card-dots">
-                            <span></span>
-                            <span></span>
-                            <span></span>
-                        </div>
-                    </div>
                     <div class="card-body">
                         <div class="stat-row">
                             <div class="stat-item">
@@ -67,6 +57,37 @@
     </div>
 </section>
 
+<!-- Impact Section -->
+<section class="impact" id="impact">
+    <div class="container impact-grid">
+        <div class="impact-text">
+            <h2 data-i18n="impact.title">Mais Velocidade e profissionalismo para prestadores de serviços</h2>
+            <p data-i18n="impact.subtitle">Mapeie seus orçamentos, acompanhe os status e crie novos orçamentos em um só lugar, ofereça essa experiência premium para seus clientes.</p>
+            <div class="impact-actions">
+                <a href="#pricing" class="btn btn-secondary" data-i18n="impact.cta_compare">Comparar planos</a>
+                <button class="impact-link" type="button" data-scroll-to="#workflow" data-i18n="impact.cta_flow">Ver fluxo na prática →</button>
+            </div>
+        </div>
+        <div class="impact-metrics">
+            <article class="impact-card">
+                <div class="impact-icon" aria-hidden="true">⚡</div>
+                <h3 data-i18n="impact.card_automation_title">Mapeie seus Orçamentos</h3>
+                <p data-i18n="impact.card_automation_desc">veja todo o historico de orçamentos que você ja gerou no nossos sistema</p>
+            </article>
+            <article class="impact-card">
+                <div class="impact-icon" aria-hidden="true">📊</div>
+                <h3 data-i18n="impact.card_visibility_title">Acompanhe os status</h3>
+                <p data-i18n="impact.card_visibility_desc">Você pode aceitar, recusar, ou editar os orçamentos gerados para seus clientes.</p>
+            </article>
+            <article class="impact-card">
+                <div class="impact-icon" aria-hidden="true">🔒</div>
+                <h3 data-i18n="impact.card_security_title">Crie Novos Orçamentos</h3>
+                <p data-i18n="impact.card_security_desc">você pode criar novos orçamentos, profissionais e com muitas variedades, em poucos minutos</p>
+            </article>
+        </div>
+    </div>
+</section>
+
 <!-- Features Section -->
 <section id="features" class="features">
     <div class="container">
@@ -82,8 +103,11 @@
                         <path d="M12 2v20M2 12h20"/>
                     </svg>
                 </div>
-                <h3 data-i18n="features.feature_1_title">Automação Inteligente</h3>
-                <p data-i18n="features.feature_1_desc">Automatize tarefas repetitivas e foque no que realmente importa.</p>
+                <div class="feature-card__body">
+                    <h3 data-i18n="features.feature_1_title">Automação Inteligente</h3>
+                    <p data-i18n="features.feature_1_desc">Automatize tarefas repetitivas e foque no que realmente importa.</p>
+                    <span class="feature-tag" data-i18n="features.feature_1_tag">Geração de Orçamentos</span>
+                </div>
             </div>
             
             <div class="feature-card">
@@ -92,8 +116,11 @@
                         <path d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/>
                     </svg>
                 </div>
-                <h3 data-i18n="features.feature_2_title">Análise em Tempo Real</h3>
-                <p data-i18n="features.feature_2_desc">Acompanhe métricas importantes com dashboards interativos.</p>
+                <div class="feature-card__body">
+                    <h3 data-i18n="features.feature_2_title">Análise em Tempo Real</h3>
+                    <p data-i18n="features.feature_2_desc">Acompanhe todos seus Orçamentos gerados, organize seus clientes e valores</p>
+                    <span class="feature-tag" data-i18n="features.feature_2_tag">Historico de Orçamentos</span>
+                </div>
             </div>
             
             <div class="feature-card">
@@ -102,9 +129,57 @@
                         <path d="M13 10V3L4 14h7v7l9-11h-7z"/>
                     </svg>
                 </div>
-                <h3 data-i18n="features.feature_3_title">Integração Perfeita</h3>
-                <p data-i18n="features.feature_3_desc">Conecte-se com suas ferramentas favoritas em segundos.</p>
+                <div class="feature-card__body">
+                    <h3 data-i18n="features.feature_3_title">Mais contratos</h3>
+                    <p data-i18n="features.feature_3_desc">foi comprovado pelos nossos usuários, que ao passar mais profissionalismo no orçamento, a taxa de vendas aumentou significativamente</p>
+                    <span class="feature-tag" data-i18n="features.feature_3_tag">alta conversão de vendas</span>
+                </div>
             </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 1l3 5 5 .75-3.75 3.65.9 5.6-5.15-2.7-5.15 2.7.9-5.6L4 6.75 9 6z"/>
+                    </svg>
+                </div>
+                <div class="feature-card__body">
+                    <h3 data-i18n="features.feature_4_title">Experiência do Cliente</h3>
+                    <p data-i18n="features.feature_4_desc">orçamentos organizados, informações claras e um processo transparente</p>
+                    <span class="feature-tag" data-i18n="features.feature_4_tag">mais profissionalismo</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Workflow Section -->
+<section class="workflow" id="workflow">
+    <div class="container">
+        <div class="section-header text-center">
+            <h2 data-i18n="workflow.title">Um fluxo moderno em quatro etapas</h2>
+            <p class="section-subtitle" data-i18n="workflow.subtitle">Crie um orçamento em poucos segundos</p>
+        </div>
+        <div class="workflow-steps">
+            <article class="workflow-step">
+                <div class="workflow-step__number">1</div>
+                <h3 data-i18n="workflow.step_1_title">crie um novo orçamento</h3>
+                <p data-i18n="workflow.step_1_desc">Crie um novo orçamento com poucos cliques no nosso sistema</p>
+            </article>
+            <article class="workflow-step">
+                <div class="workflow-step__number">2</div>
+                <h3 data-i18n="workflow.step_2_title">Escolha entre varios templates</h3>
+                <p data-i18n="workflow.step_2_desc">Nosso sistema oferece uma variedade de "desenhos" prontos para o orçamento</p>
+            </article>
+            <article class="workflow-step">
+                <div class="workflow-step__number">3</div>
+                <h3 data-i18n="workflow.step_3_title">Compartilhe com clientes</h3>
+                <p data-i18n="workflow.step_3_desc">Envie o Link Publico do orçamento, ou baixe uma imagem/pdf e envie para o cliente</p>
+            </article>
+            <article class="workflow-step">
+                <div class="workflow-step__number">4</div>
+                <h3 data-i18n="workflow.step_4_title">Seja mais profissional e produtivo</h3>
+                <p data-i18n="workflow.step_4_desc">passe muito mais profissionalismo para seus clientes, com velocidade e orçamentos muito bem projetados</p>
+            </article>
         </div>
     </div>
 </section>
@@ -145,25 +220,25 @@
                         <svg class="check-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M5 13l4 4L19 7"/>
                         </svg>
-                        <span data-i18n="pricing.free_feat_2">Análise básica</span>
+                        <span data-i18n="pricing.free_feat_2">20 templates customizados</span>
                     </div>
                     <div class="feature-item">
                         <svg class="check-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M5 13l4 4L19 7"/>
                         </svg>
-                        <span data-i18n="pricing.free_feat_3">Suporte por e-mail</span>
+                        <span data-i18n="pricing.free_feat_3">suporte para dúvidas</span>
                     </div>
                 </div>
                 <a href="{{ url_for('auth.login_page') }}?signup=true" class="btn btn-secondary btn-lg" style="width: 100%;" data-i18n="common.get_started">Começar</a>
             </div>
             
-            <!-- Pro Plan -->
+            <!-- Basic Plan -->
             <div class="pricing-card pricing-card-popular">
                 <div class="popular-badge" data-i18n="pricing.popular">Mais Popular</div>
                 <div class="pricing-header">
-                    <h3 data-i18n="pricing.pro_plan">Pro</h3>
+                    <h3 data-i18n="pricing.basic_plan">Basic</h3>
                     <div class="pricing-price">
-                        <span class="price-amount" data-price data-price-br-monthly="{{ pricing.pro.br_monthly }}" data-price-uk-monthly="{{ pricing.pro.uk_monthly }}" data-price-br-annual="{{ pricing.pro.br_annual }}" data-price-uk-annual="{{ pricing.pro.uk_annual }}">{{ pricing.pro.br_monthly }}</span>
+                        <span class="price-amount" data-price data-price-br-monthly="{{ pricing.basic.br_monthly }}" data-price-uk-monthly="{{ pricing.basic.uk_monthly }}" data-price-br-annual="{{ pricing.basic.br_annual }}" data-price-uk-annual="{{ pricing.basic.uk_annual }}">{{ pricing.basic.br_monthly }}</span>
                         <span class="price-period" data-period data-i18n="pricing.per_month">/mês</span>
                     </div>
                 </div>
@@ -172,67 +247,103 @@
                         <svg class="check-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M5 13l4 4L19 7"/>
                         </svg>
-                        <span data-i18n="pricing.pro_feat_1">Orçamentos ilimitados</span>
+                        <span data-i18n="pricing.basic_feat_1">Orçamentos ilimitados</span>
                     </div>
                     <div class="feature-item">
                         <svg class="check-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M5 13l4 4L19 7"/>
                         </svg>
-                        <span data-i18n="pricing.pro_feat_2">Análise avançada</span>
+                        <span data-i18n="pricing.basic_feat_2">Templates premium desbloqueados</span>
                     </div>
                     <div class="feature-item">
                         <svg class="check-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M5 13l4 4L19 7"/>
                         </svg>
-                        <span data-i18n="pricing.pro_feat_3">Suporte prioritário</span>
+                        <span data-i18n="pricing.basic_feat_3">acesso a gerenciamento de orçamentos</span>
                     </div>
                     <div class="feature-item">
                         <svg class="check-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M5 13l4 4L19 7"/>
                         </svg>
-                        <span data-i18n="pricing.pro_feat_4">Acesso à API</span>
+                        <span data-i18n="pricing.basic_feat_4">Suporte prioritário</span>
                     </div>
                 </div>
-                <button class="btn btn-primary btn-lg" style="width: 100%;" data-checkout data-price-id-br-monthly="{{ pricing.pro.price_id_br_monthly }}" data-price-id-uk-monthly="{{ pricing.pro.price_id_uk_monthly }}" data-price-id-br-annual="{{ pricing.pro.price_id_br_annual }}" data-price-id-uk-annual="{{ pricing.pro.price_id_uk_annual }}" data-i18n="common.get_started">Começar</button>
+                <button class="btn btn-primary btn-lg" style="width: 100%;" data-checkout data-price-id-br-monthly="{{ pricing.basic.price_id_br_monthly }}" data-price-id-uk-monthly="{{ pricing.basic.price_id_uk_monthly }}" data-price-id-br-annual="{{ pricing.basic.price_id_br_annual }}" data-price-id-uk-annual="{{ pricing.basic.price_id_uk_annual }}" data-i18n="common.get_started">Começar</button>
             </div>
-            
-            <!-- Enterprise Plan -->
+
+            <!-- Pro Contact Plan -->
             <div class="pricing-card">
                 <div class="pricing-header">
-                    <h3 data-i18n="pricing.enterprise_plan">Enterprise</h3>
-                    <div class="pricing-price">
-                        <span class="price-amount" data-price data-price-br-monthly="{{ pricing.enterprise.br_monthly }}" data-price-uk-monthly="{{ pricing.enterprise.uk_monthly }}" data-price-br-annual="{{ pricing.enterprise.br_annual }}" data-price-uk-annual="{{ pricing.enterprise.uk_annual }}">{{ pricing.enterprise.br_monthly }}</span>
-                        <span class="price-period" data-period data-i18n="pricing.per_month">/mês</span>
-                    </div>
+                    <h3 data-i18n="pricing.pro_contact_plan">Pro</h3>
+                    <p class="pricing-description" data-i18n="pricing.pro_contact_desc">Customizações exclusivas, integrações dedicadas e acompanhamento consultivo.</p>
                 </div>
                 <div class="pricing-features">
                     <div class="feature-item">
                         <svg class="check-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M5 13l4 4L19 7"/>
                         </svg>
-                        <span data-i18n="pricing.ent_feat_1">Tudo do Pro</span>
+                        <span data-i18n="pricing.pro_contact_feat_1">Implantação guiada pela nossa equipe</span>
                     </div>
                     <div class="feature-item">
                         <svg class="check-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M5 13l4 4L19 7"/>
                         </svg>
-                        <span data-i18n="pricing.ent_feat_2">Integrações personalizadas</span>
+                        <span data-i18n="pricing.pro_contact_feat_2">acesso a sistema para a criação de novos templates</span>
                     </div>
                     <div class="feature-item">
                         <svg class="check-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M5 13l4 4L19 7"/>
                         </svg>
-                        <span data-i18n="pricing.ent_feat_3">Suporte dedicado</span>
+                        <span data-i18n="pricing.pro_contact_feat_3">suporte prioritário 24H</span>
                     </div>
                     <div class="feature-item">
                         <svg class="check-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M5 13l4 4L19 7"/>
                         </svg>
-                        <span data-i18n="pricing.ent_feat_4">Garantia SLA</span>
+                        <span data-i18n="pricing.pro_contact_feat_4">Fluxos automáticos exclusivos</span>
                     </div>
                 </div>
-                <a href="mailto:sales@luminaflow.com" class="btn btn-secondary btn-lg" style="width: 100%;" data-i18n="common.contact_us">Fale Conosco</a>
+                <a href="{{ pricing.pro.cta_url }}" target="_blank" rel="noopener" class="btn btn-secondary btn-lg" style="width: 100%;" data-i18n="pricing.pro_contact_cta">Fale Conosco</a>
             </div>
+        </div>
+    </div>
+</section>
+
+<!-- Testimonials Section -->
+<section class="testimonials" id="testimonials">
+    <div class="container">
+        <div class="section-header text-center">
+            <h2 data-i18n="testimonials.title">Histórias reais de equipes de alta performance</h2>
+            <p class="section-subtitle" data-i18n="testimonials.subtitle">Veja como empresas e prestadores de diferentes setores usam a Lumina Flow</p>
+        </div>
+        <div class="testimonial-grid">
+            <article class="testimonial-card">
+                <p class="testimonial-quote" data-i18n="testimonials.quote_1">“Antes a gente perdia muito tempo montando proposta manual no Word e ajustando preços toda hora. Com o sistema de orçamentos, conseguimos gerar propostas em menos de 2 minutos com layout profissional e enviar direto pro cliente. Isso aumentou nossa taxa de fechamento em quase 30%.”</p>
+                <div class="testimonial-author">
+                    <div>
+                        <strong>Rafael M.</strong>
+                        <span data-i18n="testimonials.author_1_role">CEO, Agência de Marketing Digital — PixelBoost</span>
+                    </div>
+                </div>
+            </article>
+            <article class="testimonial-card">
+                <p class="testimonial-quote" data-i18n="testimonials.quote_2">“Eu não tinha nada formal pra enviar pros clientes, só mensagem no WhatsApp. Agora consigo gerar orçamento organizado, com descrição do serviço e valores claros. Passa muito mais confiança e já percebi que parei de perder cliente por falta de profissionalismo.”</p>
+                <div class="testimonial-author">
+                    <div>
+                        <strong>Carlos Henrique</strong>
+                        <span data-i18n="testimonials.author_2_role">Eletricista Autônomo</span>
+                    </div>
+                </div>
+            </article>
+            <article class="testimonial-card">
+                <p class="testimonial-quote" data-i18n="testimonials.quote_3">“O que mais gostei foi a rapidez. Em vez de ficar editando PDF toda hora, eu só seleciono o tipo de serviço e o orçamento sai pronto. Parece coisa de empresa grande, mas uso sozinho no dia a dia.”</p>
+                <div class="testimonial-author">
+                    <div>
+                        <strong>Mariana Limeira</strong>
+                        <span data-i18n="testimonials.author_3_role">Designer Freelancer</span>
+                    </div>
+                </div>
+            </article>
         </div>
     </div>
 </section>
@@ -241,9 +352,9 @@
 <section class="cta-section">
     <div class="container">
         <div class="cta-content">
-            <h2 data-i18n="hero.headline">Pronto para transformar seu fluxo de trabalho?</h2>
-            <p data-i18n="hero.subheadline">Junte-se a milhares de equipes que já estão usando Lumina Flow.</p>
-            <a href="#pricing" class="btn btn-primary btn-lg" data-i18n="hero.cta_primary">Começar Gratuitamente</a>
+            <h2 data-i18n="cta.title">Pronto para transformar seu fluxo de trabalho?</h2>
+            <p data-i18n="cta.subtitle">Junte-se a centenas de usuarios que já estão usando Lumina Flow.</p>
+            <a href="#pricing" class="btn btn-primary btn-lg" data-i18n="cta.cta_primary">Começar Gratuitamente</a>
         </div>
     </div>
 </section>

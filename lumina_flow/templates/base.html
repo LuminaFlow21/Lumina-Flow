@@ -29,6 +29,13 @@
                 <img id="header-logo" src="{{ url_for('static', filename='images/Light_Theme_logo.png') }}" alt="Lumina Flow Logo" class="logo-image">
             </a>
 
+            <div class="landing-header__mobile-auth">
+                <a href="{{ url_for('dashboard.dashboard_view') }}" class="btn btn-primary btn-sm" data-i18n="nav.dashboard">Dashboard</a>
+                {% if not session.get('user_id') %}
+                    <a href="{{ url_for('auth.login_page') }}" class="btn btn-secondary btn-sm" data-i18n="nav.login">Login</a>
+                {% endif %}
+            </div>
+
             <!-- Desktop Navigation -->
             <nav class="landing-nav">
                 <ul class="landing-nav__links">
@@ -158,6 +165,14 @@
             </div>
         </div>
     </div>
+
+    {% if whatsapp_url %}
+    <a class="whatsapp-fab" href="{{ whatsapp_url }}" target="_blank" rel="noopener noreferrer" aria-label="Falar com a Lumina Flow no WhatsApp">
+        <svg viewBox="0 0 32 32" aria-hidden="true">
+            <path d="M16.01 3.2C9.4 3.2 4 8.58 4 15.16c0 2.51.83 4.84 2.25 6.73L4.3 28.7l7.02-1.84a11.9 11.9 0 0 0 4.68.94c6.61 0 12.01-5.38 12.01-11.96 0-6.58-5.4-11.95-12-11.95zm0 21.48c-1.51 0-2.99-.38-4.3-1.12l-.31-.17-4.16 1.09 1.11-4.05-.2-.32a8.86 8.86 0 0 1-1.37-4.73c0-4.88 4-8.85 8.92-8.85 4.9 0 8.89 3.97 8.89 8.85 0 4.88-3.99 8.85-8.88 8.85zm5.14-6.59c-.28-.14-1.63-.8-1.88-.89-.25-.09-.43-.14-.6.14-.18.27-.69.89-.84 1.08-.16.18-.31.2-.59.07-.28-.14-1.21-.44-2.31-1.41-.85-.76-1.42-1.69-1.58-1.97-.16-.27-.02-.42.12-.55.12-.12.28-.32.42-.48.14-.16.18-.27.28-.45.09-.18.05-.34-.02-.48-.07-.14-.6-1.42-.82-1.94-.22-.53-.44-.45-.6-.46h-.51c-.18 0-.48.07-.73.34-.25.27-.96.94-.96 2.3 0 1.36.99 2.68 1.12 2.86.14.18 1.95 3.12 4.8 4.37.67.29 1.19.46 1.6.59.67.21 1.27.18 1.74.11.53-.08 1.63-.66 1.86-1.29.23-.63.23-1.17.16-1.29-.07-.11-.25-.18-.53-.32z"/>
+        </svg>
+    </a>
+    {% endif %}
 
     <!-- Apply theme early to avoid flash -->
     <script>

@@ -7,11 +7,15 @@ import os
 import io
 import base64
 import uuid
+import logging
 from datetime import datetime
 from werkzeug.utils import secure_filename
 from supabase import create_client, Client
 from .config import Config
 from PIL import Image, ImageOps
+
+
+logger = logging.getLogger(__name__)
 
 
 class SupabaseHandler:
@@ -57,7 +61,7 @@ class SupabaseHandler:
                     user_id = auth_response.user.id  # Use the actual UUID from Supabase
             except Exception as auth_error:
                 # User might already exist, that's OK
-                print(f"Auth user creation (may already exist): {auth_error}")
+                logger.info("Auth user creation (may already exist): %s", auth_error)
 
             # Check if profile already exists
             response = self.admin_client.table('profiles') \
@@ -445,9 +449,15 @@ class SupabaseHandler:
             # Supabase client for storage operations. Using the public key.
             # For more security, consider using service key or presigned URLs.
             storage_client = create_client(self.supabase_url, self.supabase_key)
-            
-            print(f"[Supabase Storage] Attempting to upload {filename} to bucket '{bucket_name}'")
-            print(f"[Supabase Storage] File content size: {len(file_content)} bytes")
+
+            logger.info(
+                "[Supabase Storage] Upload attempt",
+                extra={
+                    'filename': filename,
+                    'bucket': bucket_name,
+                    'size_bytes': len(file_content)
+                }
+            )
             
             # Upload the file
             upload_response = storage_client.storage.from_(bucket_name).upload(filename, file_content, {
@@ -457,21 +467,27 @@ class SupabaseHandler:
 
             # Check for errors - storage3 uses different API
             if hasattr(upload_response, 'error') and upload_response.error:
-                print(f"[Supabase Storage] Upload error: {upload_response.error}")
-                print(f"[Supabase Storage] Error details: {upload_response.error}")
+                logger.error(
+                    "[Supabase Storage] Upload error",
+                    extra={'filename': filename, 'bucket': bucket_name, 'error': upload_response.error}
+                )
                 return None
 
-            print(f"[Supabase Storage] Upload successful")
+            logger.info(
+                "[Supabase Storage] Upload successful",
+                extra={'filename': filename, 'bucket': bucket_name}
+            )
 
             # Construct the public URL (requires the bucket to be public)
             public_url = f"{self.supabase_url}/storage/v1/object/public/{bucket_name}/{filename}"
-            print(f"[Supabase Storage] Public URL: {public_url}")
+            logger.debug(
+                "[Supabase Storage] Generated public URL",
+                extra={'filename': filename, 'bucket': bucket_name, 'public_url': public_url}
+            )
 
             return public_url
         except Exception as e:
-            print(f"[Supabase Storage] Exception during upload: {str(e)}")
-            import traceback
-            traceback.print_exc()
+            logger.exception("[Supabase Storage] Exception during upload", extra={'filename': filename})
             return None
 
     def upload_profile_image(self, user_id: str, image_file, filename: str) -> dict:
@@ -510,7 +526,7 @@ class SupabaseHandler:
                         options={'public': True, 'file_size_limit': 157286}  # 150KB in bytes
                     )
                 except Exception as bucket_error:
-                    print(f"Bucket creation (may already exist): {bucket_error}")
+                    logger.info("Bucket creation (may already exist): %s", bucket_error)
             
             # Upload file
             result = self.admin_client.storage \

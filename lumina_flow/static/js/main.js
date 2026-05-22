@@ -256,6 +256,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     updatePlaceholderTranslations();
     updateDataLabels();
     initBillingToggle();
+    initWhatsAppDrag();
 
     if (!hasSavedLanguage) {
         showLanguageModal();
@@ -283,6 +284,131 @@ function updateDataLabels() {
             element.setAttribute('data-label', translation);
         }
     });
+}
+
+function initWhatsAppDrag() {
+    const fab = document.querySelector('.whatsapp-fab');
+    if (!fab || !window.PointerEvent) {
+        return;
+    }
+
+    let isDragging = false;
+    let movedDuringDrag = false;
+    let suppressClick = false;
+    let offsetX = 0;
+    let offsetY = 0;
+    const STORAGE_KEY = 'whatsapp_fab_position';
+
+    const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+    const isTouchPointer = (event) => !event.pointerType || event.pointerType === 'touch' || event.pointerType === 'pen';
+
+    const loadSavedPosition = () => {
+        try {
+            const raw = localStorage.getItem(STORAGE_KEY);
+            if (!raw) return null;
+            const saved = JSON.parse(raw);
+            if (typeof saved.left === 'number' && typeof saved.top === 'number') {
+                return saved;
+            }
+        } catch (error) {
+            console.warn('[WhatsApp FAB] Failed to parse saved position', error);
+        }
+        return null;
+    };
+
+    const applyPosition = (left, top) => {
+        fab.style.left = `${left}px`;
+        fab.style.top = `${top}px`;
+        fab.style.right = 'auto';
+        fab.style.bottom = 'auto';
+        fab.style.position = 'fixed';
+    };
+
+    const savedPosition = loadSavedPosition();
+    if (savedPosition) {
+        const minMargin = 12;
+        const maxX = window.innerWidth - fab.offsetWidth - minMargin;
+        const maxY = window.innerHeight - fab.offsetHeight - minMargin;
+        const clampedLeft = clamp(savedPosition.left, minMargin, maxX);
+        const clampedTop = clamp(savedPosition.top, minMargin, maxY);
+        applyPosition(clampedLeft, clampedTop);
+    } else {
+        // Ensure the button keeps its default CSS position until the user drags it
+        fab.style.left = '';
+        fab.style.top = '';
+        fab.style.right = '';
+        fab.style.bottom = '';
+        fab.style.position = '';
+    }
+
+    const startDrag = (event) => {
+        if (!isTouchPointer(event)) return;
+
+        const rect = fab.getBoundingClientRect();
+        offsetX = event.clientX - rect.left;
+        offsetY = event.clientY - rect.top;
+        applyPosition(rect.left, rect.top);
+
+        isDragging = true;
+        movedDuringDrag = false;
+        fab.classList.add('whatsapp-fab--hold');
+        fab.setPointerCapture?.(event.pointerId);
+    };
+
+    const moveDrag = (event) => {
+        if (!isDragging) return;
+        // Only block default scrolling once we've actually moved
+        if (event.cancelable) {
+            event.preventDefault();
+        }
+
+        const minMargin = 12;
+        const maxX = window.innerWidth - fab.offsetWidth - minMargin;
+        const maxY = window.innerHeight - fab.offsetHeight - minMargin;
+        const nextX = clamp(event.clientX - offsetX, minMargin, maxX);
+        const nextY = clamp(event.clientY - offsetY, minMargin, maxY);
+
+        fab.style.left = `${nextX}px`;
+        fab.style.top = `${nextY}px`;
+        fab.classList.add('whatsapp-fab--dragging');
+        movedDuringDrag = true;
+        suppressClick = true;
+    };
+
+    const endDrag = (event) => {
+        if (!isDragging) return;
+        isDragging = false;
+        fab.classList.remove('whatsapp-fab--dragging', 'whatsapp-fab--hold');
+        fab.releasePointerCapture?.(event.pointerId);
+
+        if (movedDuringDrag) {
+            try {
+                const rect = fab.getBoundingClientRect();
+                const data = { left: rect.left, top: rect.top };
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+            } catch (error) {
+                console.warn('[WhatsApp FAB] Failed to persist position', error);
+            }
+            setTimeout(() => {
+                suppressClick = false;
+            }, 150);
+        } else {
+            suppressClick = false;
+        }
+
+        movedDuringDrag = false;
+    };
+
+    fab.addEventListener('pointerdown', startDrag);
+    fab.addEventListener('pointermove', moveDrag);
+    fab.addEventListener('pointerup', endDrag);
+    fab.addEventListener('pointercancel', endDrag);
+    fab.addEventListener('click', (event) => {
+        if (suppressClick) {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+        }
+    }, true);
 }
 
 // Export functions for use in other scripts

@@ -1,27 +1,47 @@
 import json
 import os
+import logging
 from flask import Blueprint, render_template, session, jsonify, request, redirect, url_for, flash, current_app
 from flask_login import login_user
 from ..auth_handler import get_auth_handler, User
 
 main_bp = Blueprint('main', __name__)
+logger = logging.getLogger(__name__)
+
+SALES_CONTACT_URL = os.getenv('SALES_CONTACT_URL', os.getenv('LINKS_WHATSAPP_URL', 'https://wa.me/5511999999999'))
 
 PRICING = {
-    'free': {'br_monthly': 'R$ 0', 'uk_monthly': '£0', 'br_annual': 'R$ 0', 'uk_annual': '£0'},
-    'pro': {
-        'br_monthly': 'R$ 49', 'uk_monthly': '£19', 'br_annual': 'R$ 89', 'uk_annual': '£29',
+    'free': {
+        'br_monthly': 'R$ 0',
+        'uk_monthly': '£0',
+        'br_annual': 'R$ 0',
+        'uk_annual': '£0'
+    },
+    'basic': {
+        'br_monthly': 'R$ 49',
+        'uk_monthly': '£19',
+        'br_annual': 'R$ 89',
+        'uk_annual': '£29',
         'price_id_br_monthly': os.getenv('STRIPE_PRICE_ID_BR_MONTHLY'),
         'price_id_uk_monthly': os.getenv('STRIPE_PRICE_ID_UK_MONTHLY'),
         'price_id_br_annual': os.getenv('STRIPE_PRICE_ID_BR_YEARLY'),
         'price_id_uk_annual': os.getenv('STRIPE_PRICE_ID_UK_YEARLY'),
     },
-    'enterprise': {
-        'br_monthly': 'R$ 159', 'uk_monthly': '£69', 'br_annual': 'R$ 199', 'uk_annual': '£99',
-        'price_id_br_monthly': os.getenv('STRIPE_PRICE_ID_BR_ENT_MONTHLY'),
-        'price_id_uk_monthly': os.getenv('STRIPE_PRICE_ID_UK_ENT_MONTHLY'),
-        'price_id_br_annual': os.getenv('STRIPE_PRICE_ID_BR_ENT_YEARLY'),
-        'price_id_uk_annual': os.getenv('STRIPE_PRICE_ID_UK_ENT_YEARLY'),
-    },
+    'pro': {
+        'label': {
+            'pt': 'Pro Corporativo',
+            'en': 'Pro Enterprise'
+        },
+        'description': {
+            'pt': 'Implantações customizadas para equipes com alto volume.',
+            'en': 'Custom deployments for high-volume teams.'
+        },
+        'cta_label': {
+            'pt': 'Fale conosco',
+            'en': 'Talk to us'
+        },
+        'cta_url': SALES_CONTACT_URL
+    }
 }
 
 @main_bp.route('/')
@@ -46,20 +66,18 @@ def translations():
         # Get absolute path to translations.json in project root
         current_dir = os.path.dirname(os.path.abspath(__file__))
         translations_path = os.path.normpath(os.path.join(current_dir, '..', '..', 'translations.json'))
-        print(f'[Translations] Loading from: {translations_path}')
+        logger.debug('Loading translations', extra={'path': translations_path})
 
         if not os.path.exists(translations_path):
-            print(f'[Translations] File not found!')
+            logger.error('Translations file not found', extra={'path': translations_path})
             return jsonify({'error': 'Translations file not found'}), 500
 
         with open(translations_path, 'r', encoding='utf-8') as f:
             data = json.load(f)
-            print(f'[Translations] Loaded {len(data)} languages')
+            logger.info('Translations loaded', extra={'languages': len(data)})
             return jsonify(data)
     except Exception as e:
-        print(f'[Translations] Error: {str(e)}')
-        import traceback
-        traceback.print_exc()
+        logger.exception('Failed to load translations')
         return jsonify({'error': str(e)}), 500
 
 @main_bp.route('/set-region', methods=['POST'])
@@ -79,7 +97,7 @@ def set_region():
                 currency = 'BRL' if region == 'BR' else 'GBP'
                 supabase.update_user_quotation_currency(current_user.id, currency)
             except Exception as e:
-                print(f"[set-region] Error updating quotation currency: {str(e)}")
+                logger.exception('[set-region] Error updating quotation currency', extra={'user_id': current_user.id})
         
         return jsonify({'success': True, 'region': region})
     return jsonify({'success': False, 'error': 'Invalid region'}), 400
