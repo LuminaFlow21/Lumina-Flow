@@ -17,6 +17,12 @@ body.quotation-viewer {
     isolation: isolate;
     min-height: 100vh;
     width: 100%;
+    display: block;
+    margin: 0 !important;
+    padding: 0 !important;
+    gap: 0 !important;
+    align-items: stretch !important;
+    justify-content: flex-start !important;
     overflow-x: hidden;
     overflow-y: auto;
     touch-action: pan-y;
@@ -24,14 +30,15 @@ body.quotation-viewer {
     -webkit-overflow-scrolling: touch;
 }
 
+
 body.quotation-viewer .viewport-pan {
     width: 100%;
     overflow-x: auto;
     overflow-y: auto;
     min-height: calc(var(--viewer-base-height, 0px) * var(--viewer-scale, 1));
     padding-bottom: clamp(12px, 3vw, 18px);
-    touch-action: pan-x pan-y;
-    overscroll-behavior: contain;
+    touch-action: auto;
+    overscroll-behavior: auto;
     padding-inline: clamp(12px, 4vw, 32px);
     -webkit-overflow-scrolling: touch;
     max-height: none;
@@ -158,11 +165,18 @@ body.quotation-viewer .layout-shell .orcamento {
 
 body.quotation-viewer .orcamento {
     --viewer-scale: 1;
+    margin-inline: auto;
+    transform: none !important;
+    width: auto !important;
+    max-width: 100% !important;
+    min-width: auto !important;
+}
+
+body.quotation-viewer.is-scaled .orcamento {
     transform-origin: top center;
-    transform: scale(var(--viewer-scale, 1));
+    transform: scale(var(--viewer-scale, 1)) !important;
     transition: transform 0.15s ease-out;
     will-change: transform;
-    margin-inline: auto;
 }
 
 body.quotation-viewer .mobile-scroll-hint {
@@ -245,6 +259,47 @@ body.quotation-viewer .layout-shell {
     padding: 0;
 }
 
+/* Mobile table scroll helper */
+@media (max-width: 768px) {
+    .tabela-box {
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch;
+        display: block;
+        padding-bottom: 20px;
+        position: relative;
+        border-radius: 16px;
+    }
+
+    .tabela-box table {
+        min-width: 640px;
+    }
+
+    .tabela-box::after {
+        content: 'Arraste para o lado para ver todos os itens';
+        display: block;
+        margin-top: 12px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        color: rgba(15, 23, 42, 0.75);
+        text-align: right;
+    }
+
+    .tabela-box::-webkit-scrollbar {
+        height: 6px;
+    }
+
+    .tabela-box::-webkit-scrollbar-track {
+        background: rgba(148, 163, 184, 0.25);
+        border-radius: 999px;
+    }
+
+    .tabela-box::-webkit-scrollbar-thumb {
+        background: rgba(15, 23, 42, 0.4);
+        border-radius: 999px;
+    }
+}
+
 body.quotation-viewer .layout-shell--hint {
     display: none !important;
 }
@@ -256,6 +311,96 @@ body.quotation-viewer .layout-shell--hint {
     padding: 0 !important;
     justify-content: flex-start !important;
     max-width: 100% !important;
+}
+
+@media (min-width: 1024px) {
+    body.quotation-viewer .layout-shell--actions {
+        max-width: 1120px !important;
+        margin: clamp(16px, 4vw, 32px) auto !important;
+        padding-inline: clamp(20px, 4vw, 48px) !important;
+        display: flex !important;
+        justify-content: flex-end !important;
+        position: relative !important;
+        z-index: 1000 !important;
+    }
+
+    body.quotation-viewer .layout-shell--actions .action-buttons {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: flex-end !important;
+        gap: clamp(10px, 1.5vw, 16px) !important;
+        width: auto !important;
+        position: relative !important;
+    }
+
+}
+
+/* Sidebar with action buttons for devices above 516px */
+@media (min-width: 516px) {
+    body.quotation-viewer .action-buttons {
+        position: fixed !important;
+        top: clamp(16px, 4vw, 32px) !important;
+        right: clamp(12px, 4vw, 32px) !important;
+        z-index: 1200 !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 14px !important;
+        width: min(320px, 28vw) !important;
+        max-height: calc(100vh - clamp(24px, 6vw, 48px)) !important;
+        padding: 18px clamp(14px, 3vw, 22px) !important;
+        border-radius: 18px !important;
+        background: rgba(15, 23, 42, 0.82) !important;
+        box-shadow: 0 20px 55px rgba(15, 23, 42, 0.45) !important;
+        backdrop-filter: blur(16px) !important;
+        overflow-y: auto;
+    }
+
+    body.quotation-viewer .action-buttons::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    body.quotation-viewer .action-buttons::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.25);
+        border-radius: 999px;
+    }
+
+    body.quotation-viewer .action-buttons .action-buttons__head {
+        width: 100% !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 12px !important;
+    }
+
+    body.quotation-viewer .action-buttons .actions-contact {
+        width: 100% !important;
+        justify-content: center;
+    }
+
+    body.quotation-viewer .action-buttons .actions-toggle,
+    body.quotation-viewer .action-buttons .actions-inline-hint {
+        display: none !important;
+    }
+
+    body.quotation-viewer .action-buttons .actions-dropdown {
+        position: static !important;
+        display: flex !important;
+        flex-direction: column !important;
+        width: 100% !important;
+        gap: 12px !important;
+        padding: 0 !important;
+        border: none !important;
+        background: transparent !important;
+        box-shadow: none !important;
+        animation: none !important;
+    }
+
+    body.quotation-viewer .action-buttons .action-btn,
+    body.quotation-viewer .action-buttons .actions-contact {
+        width: 100% !important;
+        justify-content: flex-start;
+    }
 }
 
 @keyframes viewerHintPulse {
@@ -293,20 +438,39 @@ transform: none !important;
 
 @media (min-width: 1024px) {
     body.quotation-viewer {
-        align-items: center !important;
+        align-items: stretch !important;
+        overflow-y: auto !important;
     }
 
     body.quotation-viewer .layout-shell {
-        max-width: 960px !important;
-        margin-left: auto !important;
-        margin-right: auto !important;
-        padding-inline: clamp(32px, 5vw, 64px) !important;
+        max-width: none !important;
+        margin: 0 auto !important;
+        padding-inline: clamp(20px, 4vw, 48px) !important;
+        width: 100% !important;
     }
 
     body.quotation-viewer .viewport-pan {
-        overflow: visible;
-        min-height: auto;
-        padding-inline: 0;
+        overflow: visible !important;
+        min-height: auto !important;
+        padding-inline: 0 !important;
+        display: block !important;
+    }
+
+    body.quotation-viewer .orcamento {
+        transform: none !important;
+        width: auto !important;
+        max-width: 100% !important;
+        min-width: auto !important;
+        flex: none !important;
+    }
+
+    body.quotation-viewer .orcamento,
+    body.quotation-viewer .viewport-pan .orcamento,
+    body.quotation-viewer .layout-shell .orcamento {
+        width: auto !important;
+        max-width: 100% !important;
+        min-width: auto !important;
+        transform: none !important;
     }
 }
 

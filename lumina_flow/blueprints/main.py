@@ -1,6 +1,6 @@
 import json
 import os
-from flask import Blueprint, render_template, session, jsonify, request, redirect, url_for, flash
+from flask import Blueprint, render_template, session, jsonify, request, redirect, url_for, flash, current_app
 from flask_login import login_user
 from ..auth_handler import get_auth_handler, User
 
@@ -29,6 +29,16 @@ def index():
     if 'user_region' not in session:
         session['user_region'] = 'UK'
     return render_template('index.html', pricing=PRICING)
+
+
+@main_bp.route('/links')
+def links_page():
+    links = {
+        'home': current_app.config.get('LINKS_HOME_URL', '/'),
+        'whatsapp': current_app.config.get('LINKS_WHATSAPP_URL', 'https://wa.me/5511999999999'),
+        'instagram': current_app.config.get('LINKS_INSTAGRAM_URL', 'https://instagram.com/luminaflow')
+    }
+    return render_template('links.html', links=links)
 
 @main_bp.route('/translations.json')
 def translations():

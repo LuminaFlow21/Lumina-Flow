@@ -1,2338 +1,916 @@
-<!DOCTYPE html>
-
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
-
 <head>
-
   <meta charset="UTF-8" />
-
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=0.5, maximum-scale=5.0, user-scalable=yes, shrink-to-fit=no"/>
-
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Orçamento #{{ quotation.id[:8].upper() }}</title>
-
-
-
   <link rel="preconnect" href="https://fonts.googleapis.com">
-
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/quotation_viewer.css') }}">
-
-  <script defer src="{{ url_for('static', filename='js/quotation_viewer.js') }}"></script>
-
-
-
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
-
-
-
-    *{
-
-      margin:0;
-
-      padding:0;
-
-      box-sizing:border-box;
-
+    :root {
+      --bg-body: #ecf1ff;
+      --fg-primary: #0f172a;
+      --fg-muted: #64748b;
+      --accent: #4f46e5;
+      --accent-soft: #e0e7ff;
+      --border: #e2e8f0;
+      --card-bg: #ffffff;
+      --hint-bg: #f8fafc;
     }
 
-
-
-    body{
-
-      background:#0f172a;
-
-      font-family:'Poppins', sans-serif;
-
-      display:flex;
-
-      flex-direction:column;
-
-      align-items:center;
-
-      padding:32px 0 48px;
-
-      gap:18px;
-
-      min-height:100vh;
-
-      color:#e2e8f0;
-
-      overflow-x:hidden;
-
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
     }
 
-
-
-    .viewport-pan{
-
-      width:100%;
-
-      overflow-x:auto;
-
-      touch-action:pinch-zoom pan-x pan-y;
-
-      padding-bottom:16px;
-
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: var(--bg-body);
+      color: var(--fg-primary);
+      line-height: 1.5;
+      padding: clamp(24px, 6vw, 48px) 16px 64px;
+      min-height: 100vh;
+      display: block;
+      overflow-x: hidden;
+      overflow-y: auto;
     }
 
-
-
-    .orcamento{
-
-      width:760px;
-
-      max-width:760px;
-
-      min-width:760px;
-
-      flex:0 0 760px;
-
-      background:#ffffff;
-
-      border-radius:16px;
-
-      padding:30px;
-
-      box-shadow:0 10px 40px rgba(0,0,0,0.08);
-
-      display:flex;
-
-      flex-direction:column;
-
-      position:relative;
-
-      margin:0 auto;
-
-    }
-
-
-
-    .orcamento::before{
-
-      content:'';
-
-      position:absolute;
-
-      top:0;
-
-      left:0;
-
-      right:0;
-
-      height:6px;
-
-      background:linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-
-    }
-
-
-
-    /* HEADER */
-
-
-
-    .topo{
-
-      display:flex;
-
-      justify-content:space-between;
-
-      align-items:flex-start;
-
-      margin-bottom:30px;
-
-    }
-
-
-
-    .empresa{
-
-      display:flex;
-
-      gap:16px;
-
-      align-items:center;
-
-    }
-
-
-
-    .foto{
-
-      width:70px;
-
-      height:70px;
-
-      border-radius:12px;
-
-      border:2px solid #667eea;
-
-      display:flex;
-
-      align-items:center;
-
-      justify-content:center;
-
-      font-size:26px;
-
-      color:#667eea;
-
-      background:#f8f9ff;
-
-      overflow:hidden;
-
-    }
-
-
-
-    .foto img{
-
-      width:100%;
-
-      height:100%;
-
-      object-fit:cover;
-
-      object-position:center;
-
-      display:block;
-
-      border-radius:10px;
-
-      image-rendering:auto;
-
-    }
-
-
-
-    .foto span{
-
-      font-weight:700;
-
-      font-size:26px;
-
-    }
-
-
-
-    .titulo h1{
-
-      font-size:22px;
-
-      font-weight:700;
-
-      color:#1a1a2e;
-
-      line-height:1.2;
-
-    }
-
-
-
-    .titulo h2{
-
-      color:#667eea;
-
-      font-size:14px;
-
-      font-weight:600;
-
-      text-transform:uppercase;
-
-      letter-spacing:1px;
-
-      margin-top:2px;
-
-    }
-
-
-
-    .infos-topo{
-
-      text-align:right;
-
-      display:flex;
-
-      flex-direction:column;
-
-      gap:8px;
-
-    }
-
-
-
-    .info-item{
-
-      font-size:13px;
-
-      color:#666;
-
-      font-weight:500;
-
-    }
-
-
-
-    .info-item span{
-
-      color:#1a1a2e;
-
-      font-weight:600;
-
-    }
-
-
-
-    /* SEÇÕES */
-
-
-
-    .secao{
-
-      margin-bottom:25px;
-
-    }
-
-
-
-    .secao-titulo{
-
-      display:flex;
-
-      align-items:center;
-
-      gap:12px;
-
-      margin-bottom:16px;
-
-      padding-bottom:12px;
-
-      border-bottom:2px solid #f0f2f5;
-
-    }
-
-
-
-    .icone-secao{
-
-      width:32px;
-
-      height:32px;
-
-      border-radius:8px;
-
-      background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-
-      display:flex;
-
-      align-items:center;
-
-      justify-content:center;
-
-      color:white;
-
-      font-size:14px;
-
-      flex-shrink:0;
-
-    }
-
-
-
-    .secao-titulo h3{
-
-      font-size:16px;
-
-      font-weight:600;
-
-      color:#1a1a2e;
-
-    }
-
-
-
-    /* CLIENTE */
-
-
-
-    .cliente-info{
-
-      display:grid;
-
-      grid-template-columns:1fr 1fr;
-
-      gap:16px;
-
-    }
-
-
-
-    .cliente-item{
-
-      background:#f8f9ff;
-
-      padding:14px 16px;
-
-      border-radius:10px;
-
-      border-left:3px solid #667eea;
-
-    }
-
-
-
-    .cliente-item .label{
-
-      font-size:11px;
-
-      color:#888;
-
-      text-transform:uppercase;
-
-      letter-spacing:0.5px;
-
-      margin-bottom:4px;
-
-      font-weight:500;
-
-    }
-
-
-
-    .cliente-item .valor{
-
-      font-size:14px;
-
-      color:#1a1a2e;
-
-      font-weight:600;
-
-    }
-
-
-
-    /* TABELA */
-
-
-
-    .tabela-box{
-
-      overflow:hidden;
-
-      border-radius:12px;
-
-      border:1px solid #e8e8e8;
-
-    }
-
-
-
-    table{
-
-      width:100%;
-
-      border-collapse:collapse;
-
-    }
-
-
-
-    thead{
-
-      background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-
-      color:white;
-
-    }
-
-
-
-    thead th{
-
-      padding:14px 12px;
-
-      font-size:12px;
-
-      font-weight:600;
-
-      text-transform:uppercase;
-
-      letter-spacing:0.5px;
-
-    }
-
-
-
-    tbody td{
-
-      padding:14px 12px;
-
-      text-align:center;
-
-      border-bottom:1px solid #f0f2f5;
-
-      font-size:13px;
-
-      color:#555;
-
-    }
-
-
-
-    tbody tr:hover{
-
-      background:#f8f9ff;
-
-    }
-
-
-
-    tbody td:first-child{
-
-      text-align:left;
-
-      font-weight:600;
-
-      color:#1a1a2e;
-
-    }
-
-
-
-    /* TOTAL */
-
-
-
-    .total-area{
-
-      display:flex;
-
-      flex-direction:column;
-
-      gap:12px;
-
-      align-items:flex-end;
-
-      margin-top:20px;
-
-    }
-
-
-
-    .discount-info{
-
-      background:#fff3cd;
-
-      border:1px solid #ffc107;
-
-      color:#856404;
-
-      padding:12px 18px;
-
-      border-radius:8px;
-
-      font-size:13px;
-
-      font-weight:600;
-
-      display:flex;
-
-      gap:12px;
-
-      align-items:center;
-
-    }
-
-
-
-    .discount-info .discount-label{
-
-      text-transform:uppercase;
-
-      letter-spacing:0.5px;
-
-      font-size:11px;
-
-    }
-
-
-
-    .total-box{
-
-      display:flex;
-
-      align-items:center;
-
-      border-radius:10px;
-
-      overflow:hidden;
-
-      font-weight:700;
-
-      font-size:18px;
-
-      box-shadow:0 4px 12px rgba(102,126,234,0.2);
-
-    }
-
-
-
-    .total-label{
-
-      padding:12px 20px;
-
-      background:#667eea;
-
-      color:white;
-
-    }
-
-
-
-    .total-valor{
-
-      background:white;
-
-      color:#1a1a2e;
-
-      padding:12px 24px;
-
-    }
-
-
-
-    /* OBSERVAÇÕES */
-
-
-
-    .observacoes{
-
-      min-height:150px;
-
-      background:#f8f9ff;
-
-      border-radius:10px;
-
-      border:1px dashed #667eea;
-
-      margin-top:16px;
-
-      padding:16px;
-
-      font-size:13px;
-
-      color:#555;
-
-      white-space:pre-wrap;
-
-      line-height:1.6;
-
-    }
-
-
-
-    .layout-shell{
-
-      width:100%;
-
-      max-width:900px;
-
-      margin:0 auto;
-
-      padding:0 20px;
-
-      display:flex;
-
-      justify-content:center;
-
-    }
-
-
-
-    .layout-shell--actions{
-
-      position:sticky;
-
-      top:24px;
-
-      z-index:90;
-
-      justify-content:flex-end;
-
-      padding:0 20px 8px;
-
-    }
-
-
-
-    .layout-shell--hint{
-
-      justify-content:flex-start;
-
-    }
-
-
-
-    .action-buttons {
-
-      position: relative;
-
+    #quotationContainer {
+      width: min(960px, 100%);
+      margin: 0 auto;
+      background: var(--card-bg);
+      border-radius: 32px;
+      box-shadow: 0 40px 90px rgba(15, 23, 42, 0.15);
+      padding: clamp(28px, 6vw, 64px);
       display: flex;
-
       flex-direction: column;
-
-      align-items: flex-end;
-
-      gap: 12px;
-
+      gap: 32px;
     }
 
-
+    .actions-mobile {
+      position: sticky;
+      top: 0;
+      z-index: 60;
+      width: min(960px, 100%);
+      margin: 0 auto 16px;
+      display: flex;
+      justify-content: flex-end;
+    }
 
     .actions-toggle {
-
-      display: inline-flex;
-
-      align-items: center;
-
-      justify-content: space-between;
-
-      gap: 16px;
-
-      padding: 14px 20px;
-
-      border-radius: 18px;
-
+      background: linear-gradient(135deg, #4f46e5, #0ea5e9);
+      color: #fff;
       border: none;
-
-      font-size: 15px;
-
+      border-radius: 999px;
       font-weight: 600;
-
+      letter-spacing: 0.5px;
+      padding: 12px 24px;
       cursor: pointer;
-
-      color:#e2e8f0;
-
-      background: linear-gradient(135deg, #6366f1 0%, #4f46e5 45%, #0ea5e9 100%);
-
-      box-shadow: 0 18px 40px rgba(79, 70, 229, 0.38);
-
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
-
+      box-shadow: 0 18px 30px rgba(79, 70, 229, 0.25);
     }
-
-
-
-    .actions-toggle:hover {
-
-      transform: translateY(-1px);
-
-      box-shadow: 0 26px 52px rgba(14, 165, 233, 0.42);
-
-    }
-
-
-
-    .actions-toggle__content{
-
-      display:flex;
-
-      align-items:center;
-
-      gap:12px;
-
-    }
-
-
-
-    .actions-toggle__glyph{
-
-      width:30px;
-
-      height:30px;
-
-      border-radius:50%;
-
-      background:rgba(255,255,255,0.12);
-
-      display:flex;
-
-      align-items:center;
-
-      justify-content:center;
-
-      backdrop-filter:blur(8px);
-
-    }
-
-
-
-    .actions-toggle__glyph svg{
-
-      width:16px;
-
-      height:16px;
-
-      stroke-width:2;
-
-      stroke:#e2e8f0;
-
-    }
-
-
-
-    .actions-toggle__label{
-
-      letter-spacing:0.3px;
-
-    }
-
-
-
-    .actions-toggle__chevron{
-
-      width:18px;
-
-      height:18px;
-
-      transition: transform 0.2s ease;
-
-    }
-
-
-
-    .action-buttons.open .actions-toggle__chevron{
-
-      transform: rotate(180deg);
-
-    }
-
-
 
     .actions-dropdown {
-
       position: absolute;
-
-      top: calc(100% + 16px);
-
+      top: calc(100% + 12px);
       right: 0;
-
+      width: min(320px, 90vw);
+      background: #fff;
+      border-radius: 20px;
+      box-shadow: 0 25px 60px rgba(15, 23, 42, 0.25);
+      border: 1px solid var(--border);
+      padding: 16px;
       display: none;
-
       flex-direction: column;
-
       gap: 12px;
-
-      width: min(320px, calc(100vw - 64px));
-
-      padding: 20px;
-
-      border-radius: 22px;
-
-      background: rgba(8, 15, 26, 0.92);
-
-      border: 1px solid rgba(59, 130, 246, 0.35);
-
-      box-shadow: 0 40px 80px rgba(8, 47, 73, 0.55);
-
-      backdrop-filter: blur(18px);
-
-      transform-origin: top right;
-
-      animation: dropdownFade 0.3s ease forwards;
-
     }
 
-
-
-    .action-buttons.open .actions-dropdown,
-
-    .action-buttons.desktop-open .actions-dropdown {
-
+    .actions-dropdown.open {
       display: flex;
-
     }
-
-
 
     .action-btn {
-
-      background: rgba(99, 102, 241, 0.14);
-
-      border: 1px solid rgba(59, 130, 246, 0.35);
-
-      padding: 14px 16px;
-
-      border-radius: 14px;
-
-      cursor: pointer;
-
-      display: flex;
-
-      align-items: center;
-
-      gap: 12px;
-
-      font-size: 14px;
-
-      font-weight: 500;
-
-      color: #e2e8f0;
-
-      box-shadow: 0 14px 28px rgba(12, 74, 110, 0.32);
-
-      transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
-
       width: 100%;
-
-      text-decoration: none;
-
+      border: 1px solid transparent;
+      border-radius: 16px;
+      padding: 12px 16px;
+      background: var(--hint-bg);
+      color: var(--fg-primary);
+      font-weight: 600;
+      text-align: left;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      transition: transform 0.15s ease, border 0.15s ease;
     }
-
-
-
-    .action-btn svg {
-
-      width: 18px;
-
-      height: 18px;
-
-      flex-shrink: 0;
-
-    }
-
-
 
     .action-btn:hover {
-
+      border-color: var(--accent);
       transform: translateY(-2px);
-
-      box-shadow: 0 28px 40px rgba(12, 74, 110, 0.35);
-
-      background: rgba(59, 130, 246, 0.28);
-
     }
 
-
-
-    .action-btn span{
-
-      flex: 1;
-
-      text-align: left;
-
-    }
-
-
-
-    .mobile-scroll-hint {
-
+    .actions-sidebar {
       display: none;
-
-      text-align: left;
-
-      color: #94a3b8;
-
-      font-size: 13px;
-
-      margin-top: 6px;
-
-      animation: pulse 2s infinite;
-
-      font-weight: 500;
-
     }
-
-
-
-    @keyframes pulse {
-
-      0%, 100% { opacity: 0.55; }
-
-      50% { opacity: 1; }
-
-    }
-
-
-
-    @keyframes dropdownFade {
-
-      0% { opacity: 0; transform: translateY(-8px) scale(0.98); }
-
-      100% { opacity: 1; transform: translateY(0) scale(1); }
-
-    }
-
-
-
-    @media (max-width: 768px) {
-
-      body{
-
-        padding:28px 0 40px;
-
-        gap:12px;
-
-      }
-
-
-
-      .layout-shell {
-
-        padding: 0 12px;
-
-        max-width:100%;
-
-      }
-
-
-
-      .layout-shell--actions {
-
-        padding:0 12px;
-
-      }
-
-
-
-      .actions-dropdown {
-
-        left: 12px;
-
-        right: 12px;
-
-        width: auto;
-
-      }
-
-
-
-      .mobile-scroll-hint {
-
-        display: block;
-
-      }
-
-    }
-
-
 
     @media (min-width: 1024px) {
-
-      .action-buttons {
-
-        flex-direction: row;
-
-        align-items: center;
-
-        gap: 16px;
-
-        background: rgba(15, 23, 42, 0.82);
-
-        padding: 12px 16px;
-
-        border-radius: 999px;
-
-        box-shadow: 0 36px 60px rgba(14, 165, 233, 0.28);
-
-        backdrop-filter: blur(18px);
-
-      }
-
-
-
-      .action-buttons.desktop-open .actions-toggle {
-
+      .actions-mobile {
         display: none;
-
       }
 
+      .actions-sidebar {
+        position: fixed;
+        top: clamp(24px, 6vw, 48px);
+        right: clamp(16px, 4vw, 40px);
+        width: min(160px, 16vw);
+        padding: 14px 16px;
+        border-radius: 28px;
+        background: radial-gradient(circle at top left, rgba(79,70,229,0.9), rgba(15,23,42,0.95));
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        color: #f8fafc;
+        box-shadow: 0 35px 80px rgba(15, 23, 42, 0.6);
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+        z-index: 90;
+        backdrop-filter: blur(14px);
+      }
 
+      .actions-sidebar h3 {
+        margin: 0;
+        font-size: 14px;
+        letter-spacing: 0.6px;
+        text-transform: uppercase;
+        color: rgba(248, 250, 252, 0.75);
+      }
 
-      .action-buttons.desktop-open .actions-dropdown {
+      .actions-sidebar .action-btn {
+        background: rgba(255, 255, 255, 0.08);
+        color: #f8fafc;
+        border-color: rgba(255, 255, 255, 0.15);
+        backdrop-filter: blur(6px);
+      }
 
-        position: static;
+      .actions-sidebar .action-btn:hover {
+        border-color: rgba(148, 197, 255, 0.7);
+        box-shadow: 0 10px 18px rgba(14, 165, 233, 0.25);
+      }
+    }
 
-        flex-direction: row;
+    .modern-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 32px;
+    }
 
-        gap: 12px;
+    .brand-block {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      flex: 1;
+      min-width: 260px;
+    }
 
-        width: auto;
+    .brand-avatar {
+      width: 86px;
+      height: 86px;
+      border-radius: 24px;
+      background: linear-gradient(135deg, rgba(79,70,229,0.12), rgba(14,165,233,0.12));
+      border: 2px solid var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      color: var(--accent);
+      font-weight: 700;
+      font-size: 28px;
+    }
 
+    .brand-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .brand-label {
+      font-size: 13px;
+      letter-spacing: 0.4px;
+      text-transform: uppercase;
+      color: var(--fg-muted);
+      font-weight: 600;
+    }
+
+    .brand-title {
+      font-size: clamp(26px, 4vw, 36px);
+      font-weight: 700;
+      margin-top: 4px;
+    }
+
+    .brand-company {
+      font-size: 14px;
+      color: var(--fg-muted);
+      margin-top: 4px;
+    }
+
+    .quote-meta {
+      min-width: 220px;
+      display: grid;
+      gap: 12px;
+      text-align: right;
+    }
+
+    .meta-label {
+      font-size: 12px;
+      color: var(--fg-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: block;
+    }
+
+    .info-card {
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 24px;
+      background: var(--card-bg);
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .section-heading {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .section-icon {
+      width: 34px;
+      height: 34px;
+      border-radius: 12px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+
+    .section-heading h2 {
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+    }
+
+    .info-item {
+      border-radius: 18px;
+      background: var(--hint-bg);
+      padding: 16px 18px;
+    }
+
+    .info-item span {
+      display: block;
+    }
+
+    .info-item .label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: var(--fg-muted);
+      margin-bottom: 6px;
+      font-weight: 600;
+    }
+
+    .info-item .value {
+      font-weight: 600;
+      font-size: 15px;
+      color: var(--fg-primary);
+      word-break: break-word;
+    }
+
+    .table-scroll {
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      overflow: hidden;
+      background: #fff;
+    }
+
+    .table-scroll-inner {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 560px;
+    }
+
+    thead {
+      background: linear-gradient(135deg, #4f46e5, #0ea5e9);
+      color: #fff;
+    }
+
+    th, td {
+      padding: 16px 18px;
+      text-align: left;
+      font-size: 14px;
+    }
+
+    th {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+    }
+
+    tbody tr {
+      border-bottom: 1px solid var(--border);
+    }
+
+    tbody tr:last-child {
+      border-bottom: none;
+    }
+
+    tbody td:nth-child(2),
+    tbody td:nth-child(3),
+    tbody td:nth-child(4) {
+      text-align: center;
+    }
+
+    tbody tr:hover {
+      background: rgba(79, 70, 229, 0.04);
+    }
+
+    .table-hint {
+      margin-top: 10px;
+      font-size: 13px;
+      color: var(--fg-muted);
+      display: none;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .price-summary {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-top: 20px;
+    }
+
+    .summary-card {
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      padding: 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--card-bg);
+    }
+
+    .summary-card.total {
+      background: linear-gradient(135deg, #4f46e5, #0ea5e9);
+      color: #fff;
+      border: none;
+      box-shadow: 0 20px 30px rgba(79, 70, 229, 0.35);
+    }
+
+    .notes-block {
+      border: 1px dashed var(--border);
+      border-radius: 24px;
+      padding: 24px;
+      background: var(--hint-bg);
+      color: var(--fg-primary);
+      white-space: pre-wrap;
+      line-height: 1.7;
+    }
+
+    .footer-hint {
+      font-size: 13px;
+      color: var(--fg-muted);
+      text-align: center;
+      margin-top: 8px;
+    }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 200;
+    }
+
+    .modal.is-open {
+      display: flex;
+    }
+
+    .modal-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.55);
+      backdrop-filter: blur(4px);
+    }
+
+    .modal-card {
+      position: relative;
+      background: #fff;
+      border-radius: 24px;
+      box-shadow: 0 30px 80px rgba(15, 23, 42, 0.3);
+      width: min(520px, 92vw);
+      padding: 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      z-index: 1;
+    }
+
+    .modal-card h3 {
+      margin: 0;
+      font-size: 22px;
+    }
+
+    .modal-form {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .modal-form label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--fg-muted);
+    }
+
+    .modal-form input,
+    .modal-form textarea {
+      width: 100%;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      padding: 12px 14px;
+      font-family: inherit;
+      font-size: 14px;
+      resize: vertical;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .btn-secondary,
+    .btn-primary {
+      border-radius: 12px;
+      padding: 10px 18px;
+      border: none;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .btn-secondary {
+      background: var(--hint-bg);
+      color: var(--fg-primary);
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+      min-width: 120px;
+    }
+
+    @media (max-width: 768px) {
+      body {
+        padding: 24px 12px 48px;
+      }
+
+      #quotationContainer {
+        border-radius: 24px;
+        padding: 28px 20px 36px;
+      }
+
+      .modern-header {
+        flex-direction: column;
+      }
+
+      .quote-meta {
+        text-align: left;
+      }
+
+      .table-hint {
+        display: flex;
+      }
+    }
+
+    @media print {
+      body {
+        background: #fff;
         padding: 0;
+      }
 
-        background: transparent;
-
-        border: none;
-
+      #quotationContainer {
         box-shadow: none;
-
-        backdrop-filter: none;
-
+        border-radius: 0;
+        padding: 0;
       }
-
-
-
-      .action-buttons.desktop-open .action-btn {
-
-        background: rgba(148, 163, 184, 0.16);
-
-        border: 1px solid rgba(148, 163, 184, 0.3);
-
-        color: #e2e8f0;
-
-        box-shadow: none;
-
-        border-radius: 999px;
-
-        padding: 10px 18px;
-
-      }
-
-
-
-      .action-buttons.desktop-open .action-btn:hover {
-
-        background: rgba(148, 163, 184, 0.26);
-
-        transform: translateY(-1px);
-
-      }
-
     }
-
-
-
-    @media print { 
-
-      body { background: white; padding: 0; } 
-
-      .orcamento { border: none; box-shadow: none; }
-
-      .layout-shell--actions { display: none !important; }
-
-    }
-
-
-
-    @media(max-width:900px){
-
-
-
-      .orcamento{
-
-        padding:24px;
-
-      }
-
-
-
-      .topo{
-
-        flex-direction:column;
-
-        gap:24px;
-
-      }
-
-
-
-      .infos-topo{
-
-        text-align:left;
-
-      }
-
-
-
-      .cliente-info{
-
-        grid-template-columns:1fr;
-
-      }
-
-
-
-      table{
-
-        min-width:700px;
-
-      }
-
-
-
-      .tabela-box{
-
-        overflow:auto;
-
-      }
-
-
-
-    }
-
-
-
   </style>
-
 </head>
-
 <body>
-
-
-
-{% set currency_symbol = 'R$' if quotation.currency == 'BRL' else '£' %}
-
+{% set currency_map = {'BRL': 'R$', 'USD': '$', 'EUR': '€', 'GBP': '£'} %}
+{% set base_symbol = currency_map.get(quotation.currency, currency_map['BRL']) %}
+{% set currency_symbol = quotation.currency_symbol or base_symbol %}
 {% set discount_amount = quotation.discount|default(0, true)|float %}
-{% set seller_whatsapp = '' %}
-{% if profile_data and profile_data.get('whatsapp') %}
-  {% set seller_whatsapp = profile_data.get('whatsapp')|replace(' ', '')|replace('(', '')|replace(')', '')|replace('-', '')|replace('+', '') %}
-{% endif %}
-{% set quotation_date_str = quotation.created_at[:10] if quotation.created_at else '' %}
-{% set quotation_code = quotation.id[:8].upper() %}
-{% set whatsapp_message = ('Olá ' ~ user_name ~ ' gostaria de falar referente ao orçamento #' ~ quotation_code ~ ' gerado em ' ~ quotation_date_str)|urlencode %}
-
-
-
-  <div class="layout-shell layout-shell--actions">
-
-    <div class="action-buttons" id="actionButtons">
-
-      <div class="action-buttons__head">
-        <a class="actions-contact{% if not seller_whatsapp %} actions-contact--disabled{% endif %}" {% if seller_whatsapp %}href="https://wa.me/{{ seller_whatsapp }}?text={{ whatsapp_message }}" target="_blank" rel="noopener noreferrer"{% else %}href="#" aria-disabled="true"{% endif %}>
-          <span class="actions-contact__icon">
-            <svg viewBox="0 0 24 24" fill="currentColor" role="img" aria-hidden="true">
-              <path d="M12.04 2a9.93 9.93 0 0 0-8.44 15.13L2 22l4.99-1.52A9.95 9.95 0 1 0 12.04 2Zm0 1.82a8.13 8.13 0 0 1 0 16.26 8.07 8.07 0 0 1-4.16-1.16l-.3-.18-2.95.9.95-2.87-.2-.29a8.13 8.13 0 0 1 6.66-12.66Zm4.48 4.73c-.24-.12-1.41-.7-1.63-.78s-.38-.12-.54.12-.62.78-.76.94-.28.18-.52.06a6.63 6.63 0 0 1-1.95-1.2 7.42 7.42 0 0 1-1.38-1.74c-.14-.24 0-.37.1-.49s.24-.28.36-.42.16-.24.24-.4.04-.3-.02-.42-.54-1.3-.74-1.78-.39-.4-.54-.4h-.46a.88.88 0 0 0-.64.3A2.68 2.68 0 0 0 7.2 6.2a4.66 4.66 0 0 0 1 2.47 10.7 10.7 0 0 0 4.34 3.93 14.83 14.83 0 0 0 1.52.56 3.66 3.66 0 0 0 1.68.1c.52-.08 1.64-.67 1.87-1.31s.23-1.2.16-1.31-.22-.18-.46-.3Z"/>
-            </svg>
-          </span>
-          <span class="actions-contact__label">{{ user_name }}</span>
-        </a>
-
-        <button class="actions-toggle" type="button" onclick="toggleActionsMenu(event)">
-
-        <span class="actions-toggle__content">
-
-          <span class="actions-toggle__glyph">
-
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-
-              <path d="M12 4v4"></path>
-
-              <path d="M6.93 6.93l2.83 2.83"></path>
-
-              <path d="M4 12h4"></path>
-
-              <path d="M6.93 17.07l2.83-2.83"></path>
-
-              <path d="M12 16v4"></path>
-
-              <path d="M17.07 17.07l-2.83-2.83"></path>
-
-              <path d="M16 12h4"></path>
-
-              <path d="M17.07 6.93l-2.83 2.83"></path>
-
-              <circle cx="12" cy="12" r="2.5"></circle>
-
-            </svg>
-
-          </span>
-
-          <span class="actions-toggle__label">Ações</span>
-
-        </span>
-
-        <svg class="actions-toggle__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-
-      </button>
-      </div>
-
-      <div class="actions-dropdown">
-
-        {% if current_user.is_authenticated and quotation.user_id == current_user.id|string %}
-
-        <a href="{{ url_for('dashboard.dashboard_view') }}" class="action-btn">
-
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-
-          <span>Voltar</span>
-
-        </a>
-
-        <button class="action-btn" type="button" onclick="openEditModal()">
-
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-
-          <span>Editar</span>
-
-        </button>
-
-        {% endif %}
-
-        <button class="action-btn" type="button" onclick="downloadImage()">
-
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-
-          <span>Baixar Imagem</span>
-
-        </button>
-
-        <button class="action-btn" type="button" onclick="downloadPDF()">
-
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-
-          <span>Baixar PDF</span>
-
-        </button>
-
-        <button class="action-btn" type="button" onclick="shareQuotation(event)">
-
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-
-          <span>Compartilhar</span>
-
-        </button>
-
-      </div>
-
+{% set items_list = quotation.get('items', []) %}
+{% set has_items = items_list and items_list is iterable and items_list is not string %}
+{% set total_value = quotation.value|float %}
+{% set gross_value = total_value + discount_amount %}
+  <div class="actions-mobile">
+    <button type="button" class="actions-toggle" id="actionToggle">Ações</button>
+    <div class="actions-dropdown" id="actionDropdown" aria-hidden="true">
+      <button type="button" class="action-btn" data-action-trigger="edit">Editar</button>
+      <button type="button" class="action-btn" data-action-trigger="image">Baixar imagem</button>
+      <button type="button" class="action-btn" data-action-trigger="pdf">Baixar PDF</button>
+      <button type="button" class="action-btn" data-action-trigger="share">Compartilhar</button>
     </div>
-
   </div>
 
-
-
-  <div class="layout-shell layout-shell--hint">
-
-    <div class="mobile-scroll-hint">👆 mexa na tela para ver o orçamento</div>
-
-  </div>
-
-
-
-  <div class="viewport-pan">
-
-    <div class="layout-shell">
-
-      <div class="orcamento" id="quotationContainer">
-
-
-
-    <!-- TOPO -->
-
-
-
-    <div class="topo">
-
-
-
-      <div class="empresa">
-
-
-
-        <div class="foto">
-
+  <aside class="actions-sidebar" id="actionSidebar">
+    <h3>Ações</h3>
+    <button type="button" class="action-btn" data-action-trigger="edit">Editar</button>
+    <button type="button" class="action-btn" data-action-trigger="image">Baixar imagem</button>
+    <button type="button" class="action-btn" data-action-trigger="pdf">Baixar PDF</button>
+    <button type="button" class="action-btn" data-action-trigger="share">Compartilhar</button>
+  </aside>
+  <main id="quotationContainer">
+    <header class="modern-header">
+      <div class="brand-block">
+        <div class="brand-avatar">
           {% if profile_data and profile_data.get('profile_photo_url') %}
-
-          <img src="{{ profile_data.profile_photo_url }}" alt="Foto de {{ user_name }}">
-
+            <img src="{{ profile_data.profile_photo_url }}" alt="Foto de {{ user_name }}">
           {% else %}
-
-          <span>{{ user_name[0]|upper }}</span>
-
+            <span>{{ user_name[:2]|upper }}</span>
           {% endif %}
-
         </div>
-
-
-
-        <div class="titulo">
-
-          <h1>{{ user_name|upper }}</h1>
-
-          <h2>Orçamento</h2>
-
+        <div>
+          <span class="brand-label">Orçamento</span>
+          <h1 class="brand-title">{{ user_name }}</h1>
+          {% if profile_data and profile_data.get('company_name') %}
+            <p class="brand-company">{{ profile_data.company_name }}</p>
+          {% endif %}
         </div>
-
-
-
       </div>
+      <div class="quote-meta">
+        <div>
+          <span class="meta-label">Código</span>
+          <strong>#{{ quotation.id[:8].upper() }}</strong>
+        </div>
+        {% if quotation.created_at %}
+        <div>
+          <span class="meta-label">Emitido em</span>
+          <strong>{{ quotation.created_at[:10] }}</strong>
+        </div>
+        {% endif %}
+        {% if quotation.expiry_date %}
+        <div>
+          <span class="meta-label">Válido até</span>
+          <strong>{{ quotation.expiry_date }}</strong>
+        </div>
+        {% endif %}
+      </div>
+    </header>
 
-
-
-      <div class="infos-topo">
-
-
-
+    <section class="info-card client-card">
+      <div class="section-heading">
+        <div class="section-icon">👤</div>
+        <h2>Informações do cliente</h2>
+      </div>
+      <div class="info-grid">
         <div class="info-item">
-
-          <span>#{{ quotation.id[:8].upper() }}</span>
-
+          <span class="label">Cliente</span>
+          <span class="value">{{ quotation.client_name or 'Não informado' }}</span>
         </div>
-
-
-
-        <div class="info-item">
-
-          <span>{{ quotation.created_at[:10] }}</span>
-
-        </div>
-
-
-
-      </div>
-
-
-
-    </div>
-
-
-
-    <!-- CLIENTE -->
-
-
-
-    <section class="secao">
-
-
-
-      <div class="secao-titulo">
-
-
-
-        <div class="icone-secao">👤</div>
-
-
-
-        <h3>Informações do cliente</h3>
-
-
-
-      </div>
-
-
-
-      <div class="cliente-info">
-
-
-
-        <div class="cliente-item">
-
-          <div class="label">Nome</div>
-
-          <div class="valor">{{ quotation.client_name }}</div>
-
-        </div>
-
-
-
         {% if quotation.phone %}
-
-        <div class="cliente-item">
-
-          <div class="label">Telefone</div>
-
-          <div class="valor">{{ quotation.phone }}</div>
-
+        <div class="info-item">
+          <span class="label">Telefone</span>
+          <span class="value">{{ quotation.phone }}</span>
         </div>
-
         {% endif %}
-
-
-
+        {% if quotation.email %}
+        <div class="info-item">
+          <span class="label">Email</span>
+          <span class="value">{{ quotation.email }}</span>
+        </div>
+        {% endif %}
         {% if quotation.address %}
-
-        <div class="cliente-item">
-
-          <div class="label">Endereço</div>
-
-          <div class="valor">{{ quotation.address }}</div>
-
+        <div class="info-item">
+          <span class="label">Endereço</span>
+          <span class="value">{{ quotation.address }}</span>
         </div>
-
         {% endif %}
-
-
-
       </div>
-
-
-
     </section>
 
-
-
-    <!-- TABELA -->
-
-
-
-    <section class="secao">
-
-
-
-      <div class="tabela-box">
-
-
-
-        <table>
-
-
-
-          <thead>
-
-            <tr>
-
-              <th>Descrição</th>
-
-              <th>Quantidade</th>
-
-              <th>Valor unitário</th>
-
-              <th>Subtotal</th>
-
-            </tr>
-
-          </thead>
-
-
-
-          <tbody>
-
-
-
-            {% set items_list = quotation.get('items', []) %}
-
-            {% if items_list and items_list is iterable and items_list is not string %}
-
-            {% for item in items_list %}
-
-            <tr>
-
-              <td>{{ item.name }}</td>
-
-              <td>{{ item.quantity }} {% if item.quantity == 1 %}Unidade{% else %}Unidades{% endif %}</td>
-
-              <td>{{ currency_symbol }} {{ item.value|round(2) }}</td>
-
-              <td>{{ currency_symbol }} {{ (item.quantity * item.value)|round(2) }}</td>
-
-            </tr>
-
-            {% endfor %}
-
-            {% elif quotation.service_description %}
-
-            <tr>
-
-              <td colspan="4">{{ quotation.service_description }}</td>
-
-            </tr>
-
-            {% else %}
-
-            <tr>
-
-              <td colspan="4">Serviço não especificado</td>
-
-            </tr>
-
-            {% endif %}
-
-
-
-          </tbody>
-
-
-
-        </table>
-
-
-
+    <section class="info-card">
+      <div class="section-heading">
+        <div class="section-icon">🧾</div>
+        <h2>Itens e serviços</h2>
       </div>
 
-
-
-      <div class="total-area">
-
-
-
-        {% if discount_amount > 0 %}
-
-        <div class="discount-info">
-
-          <span class="discount-label">Desconto aplicado</span>
-
-          <span>- {{ currency_symbol }} {{ discount_amount|round(2) }}</span>
-
+      <div class="table-scroll">
+        <div class="table-scroll-inner">
+          <table>
+            <thead>
+              <tr>
+                <th>Descrição</th>
+                <th>Quantidade</th>
+                <th>Valor unitário</th>
+                <th>Subtotal</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% if has_items %}
+                {% for item in items_list %}
+                <tr>
+                  <td>{{ item.name }}</td>
+                  <td>{{ item.quantity }} {{ 'unidade' if item.quantity == 1 else 'unidades' }}</td>
+                  <td>{{ currency_symbol }} {{ '%.2f' | format(item.value|float) }}</td>
+                  <td>{{ currency_symbol }} {{ '%.2f' | format(item.quantity * item.value) }}</td>
+                </tr>
+                {% endfor %}
+              {% elif quotation.service_description %}
+                <tr>
+                  <td colspan="4">{{ quotation.service_description }}</td>
+                </tr>
+              {% else %}
+                <tr>
+                  <td colspan="4">Itens não informados</td>
+                </tr>
+              {% endif %}
+            </tbody>
+          </table>
         </div>
-
-        {% endif %}
-
-
-
-        <div class="total-box">
-
-          <div class="total-label">Total:</div>
-
-          <div class="total-valor">{{ currency_symbol }} {{ quotation.value|round(2) }}</div>
-
-        </div>
-
-
-
       </div>
+      <p class="table-hint">↔ Arraste para o lado para ver todos os itens</p>
 
-
-
+      <div class="price-summary">
+        <div class="summary-card">
+          <span>Subtotal</span>
+          <strong>{{ currency_symbol }} {{ '%.2f' | format(gross_value) }}</strong>
+        </div>
+        <div class="summary-card">
+          <span>Desconto</span>
+          <strong>{% if discount_amount > 0 %}- {% endif %}{{ currency_symbol }} {{ '%.2f' | format(discount_amount) }}</strong>
+        </div>
+        <div class="summary-card total">
+          <span>Total</span>
+          <strong>{{ currency_symbol }} {{ '%.2f' | format(total_value) }}</strong>
+        </div>
+      </div>
     </section>
-
-
 
     {% if quotation.notes %}
-
-    <!-- OBSERVAÇÕES -->
-
-
-
-    <section class="secao">
-
-
-
-      <div class="secao-titulo">
-
-
-
-        <div class="icone-secao">📄</div>
-
-
-
-        <h3>Observações</h3>
-
-
-
+    <section class="info-card">
+      <div class="section-heading">
+        <div class="section-icon">📌</div>
+        <h2>Observações</h2>
       </div>
-
-
-
-      <div class="observacoes">{{ quotation.notes }}</div>
-
-
-
+      <div class="notes-block">
+        {{ quotation.notes }}
+      </div>
     </section>
-
     {% endif %}
+  </main>
+  <p class="footer-hint">Documento gerado automaticamente por Lumina Flow.</p>
 
-
-
-      </div>
-
+  <div class="modal" id="editModal" aria-hidden="true">
+    <div class="modal-backdrop" data-modal-close></div>
+    <div class="modal-card" role="dialog" aria-modal="true">
+      <h3>Editar orçamento</h3>
+      <form class="modal-form" id="editForm">
+        <div>
+          <label for="editClientName">Cliente</label>
+          <input type="text" id="editClientName" name="client_name" value="{{ quotation.client_name }}" required>
+        </div>
+        <div>
+          <label for="editDescription">Descrição do serviço</label>
+          <textarea id="editDescription" name="service_description" rows="3">{{ quotation.service_description or '' }}</textarea>
+        </div>
+        <div>
+          <label for="editValue">Valor total</label>
+          <input type="number" step="0.01" min="0" id="editValue" name="value" value="{{ '%.2f' | format(total_value) }}" required>
+        </div>
+        <div>
+          <label for="editExpiryDate">Validade (opcional)</label>
+          <input type="date" id="editExpiryDate" name="expiry_date" value="{{ quotation.expiry_date or '' }}">
+        </div>
+        <div>
+          <label for="editNotes">Observações</label>
+          <textarea id="editNotes" name="notes" rows="4">{{ quotation.notes or '' }}</textarea>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" data-modal-close>Cancelar</button>
+          <button type="submit" class="btn-primary" id="editSaveButton">Salvar</button>
+        </div>
+      </form>
     </div>
-
   </div>
-
-
 
   <script>
-
-    const actionButtons = document.getElementById('actionButtons');
-
-
-
-    function closeActionsMenuOnMobile() {
-
-      if (!actionButtons) return;
-
-      if (window.innerWidth <= 1024) {
-
-        actionButtons.classList.remove('open');
-
-      }
-
-    }
-
-
-
-    function toggleActionsMenu(event) {
-
-      if (!actionButtons) return;
-
-      if (actionButtons.classList.contains('desktop-open')) {
-
-        return;
-
-      }
-
-      event.stopPropagation();
-
-      const willOpen = !actionButtons.classList.contains('open');
-
-      actionButtons.classList.toggle('open', willOpen);
-
-    }
-
-
-
-    function syncActionsMenu() {
-
-      if (!actionButtons) return;
-
-      if (window.innerWidth >= 1024) {
-
-        actionButtons.classList.add('desktop-open');
-
-        actionButtons.classList.remove('open');
-
-      } else {
-
-        actionButtons.classList.remove('desktop-open');
-
-      }
-
-    }
-
-
-
-    document.addEventListener('click', (event) => {
-
-      if (!actionButtons) return;
-
-      if (actionButtons.contains(event.target)) {
-
-        return;
-
-      }
-
-      actionButtons.classList.remove('open');
-
-    });
-
-
-
-    window.addEventListener('resize', syncActionsMenu);
-
-    document.addEventListener('DOMContentLoaded', () => {
-
-      syncActionsMenu();
-
-      actionButtons?.querySelectorAll('.action-btn').forEach(btn => {
-
-        btn.addEventListener('click', closeActionsMenuOnMobile);
-
-      });
-
-    });
-
-    syncActionsMenu();
-
-
-
-    const exportBaseName = `orcamento-{{ quotation.id[:8].upper() }}`;
-    const exportOptions = {
-      fileName: exportBaseName,
-      backgroundColor: '#0f172a'
-    };
-
-
-
-    async function downloadImage() {
-
-      closeActionsMenuOnMobile();
-
-      try {
-
-        await window.LuminaFlow.downloadQuotationImage(exportOptions);
-
-      } catch (error) {
-
-        console.error('Erro ao gerar imagem:', error);
-
-        alert('Erro ao gerar imagem');
-
-        throw error;
-
-      }
-
-    }
-
-
-
-    async function downloadPDF() {
-
-      closeActionsMenuOnMobile();
-
-      try {
-
-        await window.LuminaFlow.downloadQuotationPdf(exportOptions);
-
-      } catch (error) {
-
-        console.error('Erro ao gerar PDF:', error);
-
-        alert(error.message || 'Erro ao gerar PDF');
-
-        throw error;
-
-      }
-
-    }
-
-
-
-    function shareQuotation(event) {
-
-      const url = window.location.href;
-
-      const currency = '{{ currency_symbol }}';
-
-      if (navigator.share) {
-
-        navigator.share({title: 'Orçamento de {{ quotation.client_name }}', text: `Orçamento no valor de ${currency} {{ quotation.value }}`, url: url});
-
-      } else {
-
-        navigator.clipboard.writeText(url).then(() => {
-
-          const btn = event.target.closest('.action-btn');
-
-          const originalText = btn.querySelector('span').textContent;
-
-          btn.querySelector('span').textContent = 'Link copiado!';
-
-          setTimeout(() => btn.querySelector('span').textContent = originalText, 2000);
-
+    (function() {
+      const dropdown = document.getElementById('actionDropdown');
+      const toggle = document.getElementById('actionToggle');
+      const editModal = document.getElementById('editModal');
+      const editForm = document.getElementById('editForm');
+      const saveButton = document.getElementById('editSaveButton');
+
+      const closeDropdown = () => {
+        if (dropdown) {
+          dropdown.classList.remove('open');
+          dropdown.setAttribute('aria-hidden', 'true');
+        }
+      };
+
+      if (toggle && dropdown) {
+        toggle.addEventListener('click', (event) => {
+          event.stopPropagation();
+          dropdown.classList.toggle('open');
+          dropdown.setAttribute('aria-hidden', dropdown.classList.contains('open') ? 'false' : 'true');
         });
 
+        document.addEventListener('click', (event) => {
+          if (!dropdown.contains(event.target) && event.target !== toggle) {
+            closeDropdown();
+          }
+        });
       }
 
-      closeActionsMenuOnMobile();
+      const actionHandlers = {
+        edit: () => openEditModal(),
+        image: () => downloadImage(),
+        pdf: () => downloadPDF(),
+        share: () => shareQuotation(),
+      };
 
-    }
+      const handleAction = (action) => {
+        const handler = actionHandlers[action];
+        if (typeof handler === 'function') {
+          handler();
+        }
+        if (window.innerWidth < 1024) {
+          closeDropdown();
+        }
+      };
 
+      document.querySelectorAll('[data-action-trigger]').forEach((button) => {
+        button.addEventListener('click', () => {
+          const action = button.getAttribute('data-action-trigger');
+          handleAction(action);
+        });
+      });
+
+      function openEditModal() {
+        if (!editModal) return;
+        editModal.classList.add('is-open');
+        editModal.setAttribute('aria-hidden', 'false');
+      }
+
+      function closeEditModal() {
+        if (!editModal) return;
+        editModal.classList.remove('is-open');
+        editModal.setAttribute('aria-hidden', 'true');
+      }
+
+      document.querySelectorAll('[data-modal-close]').forEach((element) => {
+        element.addEventListener('click', closeEditModal);
+      });
+
+      document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+          closeEditModal();
+        }
+      });
+
+      async function postEditForm(formData) {
+        try {
+          saveButton.disabled = true;
+          saveButton.textContent = 'Salvando...';
+          const response = await fetch(`/dashboard/quotation/{{ quotation.id }}/edit`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(formData),
+          });
+          const result = await response.json();
+          if (!response.ok || !result.success) {
+            throw new Error(result.error || 'Erro ao salvar');
+          }
+          window.location.reload();
+        } catch (error) {
+          alert(error.message || 'Erro ao salvar');
+        } finally {
+          if (saveButton) {
+            saveButton.disabled = false;
+            saveButton.textContent = 'Salvar';
+          }
+          closeEditModal();
+        }
+      }
+
+      if (editForm) {
+        editForm.addEventListener('submit', (event) => {
+          event.preventDefault();
+          const formData = {
+            client_name: editForm.client_name.value.trim(),
+            service_description: editForm.service_description.value.trim(),
+            value: parseFloat(editForm.value.value) || 0,
+            expiry_date: editForm.expiry_date.value || null,
+            notes: editForm.notes.value.trim(),
+          };
+          postEditForm(formData);
+        });
+      }
+
+      async function renderCanvas() {
+        if (typeof html2canvas !== 'function') {
+          alert('Ferramenta de captura não carregada. Tente novamente.');
+          throw new Error('html2canvas indisponível');
+        }
+        const target = document.getElementById('quotationContainer');
+        return html2canvas(target, {
+          backgroundColor: '#ffffff',
+          scale: Math.min(2, window.devicePixelRatio || 1.5),
+          useCORS: true,
+        });
+      }
+
+      async function downloadImage() {
+        try {
+          const canvas = await renderCanvas();
+          const link = document.createElement('a');
+          link.download = `orcamento-{{ quotation.id[:8].upper() }}.png`;
+          link.href = canvas.toDataURL('image/png');
+          link.click();
+        } catch (error) {
+          console.error(error);
+        }
+      }
+
+      async function downloadPDF() {
+        const jsPDF = window.jspdf && window.jspdf.jsPDF;
+        if (typeof jsPDF !== 'function') {
+          alert('Ferramenta de PDF não carregada.');
+          return;
+        }
+        try {
+          const canvas = await renderCanvas();
+          const imgData = canvas.toDataURL('image/png');
+          const pdf = new jsPDF('p', 'mm', 'a4');
+          const pageWidth = pdf.internal.pageSize.getWidth();
+          const pageHeight = pdf.internal.pageSize.getHeight();
+          const imageWidth = canvas.width;
+          const imageHeight = canvas.height;
+          const scale = Math.min(pageWidth / imageWidth, pageHeight / imageHeight);
+          const renderWidth = imageWidth * scale;
+          const renderHeight = imageHeight * scale;
+          const marginX = (pageWidth - renderWidth) / 2;
+          const marginY = Math.max(10, (pageHeight - renderHeight) / 2);
+          pdf.addImage(imgData, 'PNG', marginX, marginY, renderWidth, renderHeight);
+          pdf.save(`orcamento-{{ quotation.id[:8].upper() }}.pdf`);
+        } catch (error) {
+          console.error(error);
+        }
+      }
+
+      function shareQuotation() {
+        const shareData = {
+          title: 'Orçamento {{ quotation.client_name }}',
+          text: "Orçamento no valor de {{ currency_symbol }} {{ '%.2f' | format(total_value) }}",
+          url: window.location.href,
+        };
+        if (navigator.share) {
+          navigator.share(shareData).catch(() => {});
+          return;
+        }
+        navigator.clipboard?.writeText(window.location.href).then(() => {
+          alert('Link copiado para a área de transferência.');
+        }).catch(() => {
+          alert('Copie o link manualmente: ' + window.location.href);
+        });
+      }
+    })();
   </script>
-
-
-
-<!-- Edit Modal Wizard -->
-
-<div id="editModal" class="modal" style="display: none; z-index: 2000;">
-
-  <div class="modal-backdrop" onclick="closeEditModal()"></div>
-
-  <div class="modal-content card" style="max-width: 600px; max-height: 90vh; overflow-y: auto;">
-
-    <div class="modal-header">
-
-      <div style="display: flex; align-items: center; gap: 12px;">
-
-        <div style="width: 40px; height: 40px; background: linear-gradient(135deg, var(--color-primary), #818cf8); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
-
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
-
-            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-
-            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-
-          </svg>
-
-        </div>
-
-        <h3 data-i18n="dashboard.edit_quotation" style="margin: 0; font-size: 1.25rem; font-weight: 600;">Editar Orçamento</h3>
-
-      </div>
-
-      <button class="modal-close" onclick="closeEditModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--color-text-muted); padding: 4px 8px; border-radius: 4px; transition: all 0.2s;">×</button>
-
-    </div>
-
-
-
-    <!-- Wizard Steps Indicator -->
-
-    <div style="display: flex; justify-content: space-between; margin-bottom: 24px; padding: 0 24px;">
-
-      <div class="step-indicator" data-step="1" style="display: flex; align-items: center; gap: 8px; flex: 1;">
-
-        <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--color-primary); color: white; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 14px;">1</div>
-
-        <span style="font-size: 13px; font-weight: 500;">Básico</span>
-
-      </div>
-
-      <div style="flex: 1; height: 2px; background: var(--color-border); margin: 0 8px;"></div>
-
-      <div class="step-indicator" data-step="2" style="display: flex; align-items: center; gap: 8px; flex: 1;">
-
-        <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--color-border); color: var(--color-text-muted); display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 14px;">2</div>
-
-        <span style="font-size: 13px; font-weight: 500; color: var(--color-text-muted);">Itens</span>
-
-      </div>
-
-      <div style="flex: 1; height: 2px; background: var(--color-border); margin: 0 8px;"></div>
-
-      <div class="step-indicator" data-step="3" style="display: flex; align-items: center; gap: 8px; flex: 1;">
-
-        <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--color-border); color: var(--color-text-muted); display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 14px;">3</div>
-
-        <span style="font-size: 13px; font-weight: 500; color: var(--color-text-muted);">Obs</span>
-
-      </div>
-
-    </div>
-
-
-
-    <div class="modal-body" style="padding: 0 24px;">
-
-      <!-- Step 1: Basic Info -->
-
-      <div id="step1" class="wizard-step">
-
-        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
-
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" stroke-width="2">
-
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-
-            <circle cx="12" cy="7" r="4"></circle>
-
-          </svg>
-
-          <label data-i18n="dashboard.client_name" style="margin: 0; font-weight: 600;">Nome do Cliente</label>
-
-        </div>
-
-        <input type="text" id="editClientName" class="form-input" value="{{ quotation.client_name }}" placeholder="Digite o nome do cliente" style="width: 100%; padding: 12px 16px; border: 2px solid var(--color-border); border-radius: var(--radius-input); background: var(--color-bg); color: var(--color-text); font-size: 14px; transition: all 0.2s; margin-bottom: 20px;">
-
-        
-
-        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
-
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" stroke-width="2">
-
-            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-
-            <line x1="16" y1="2" x2="16" y2="6"></line>
-
-            <line x1="8" y1="2" x2="8" y2="6"></line>
-
-            <line x1="3" y1="10" x2="21" y2="10"></line>
-
-          </svg>
-
-          <label data-i18n="dashboard.expiry_date" style="margin: 0; font-weight: 600;">Data de Validade</label>
-
-        </div>
-
-        <input type="date" id="editExpiryDate" class="form-input" value="{{ quotation.expiry_date }}" style="width: 100%; padding: 12px 16px; border: 2px solid var(--color-border); border-radius: var(--radius-input); background: var(--color-bg); color: var(--color-text); font-size: 14px; transition: all 0.2s;">
-
-      </div>
-
-
-
-      <!-- Step 2: Items -->
-
-      <div id="step2" class="wizard-step" style="display: none;">
-
-        <div id="itemsContainer">
-
-          {% set items_list = quotation.get('items', []) %}
-
-          {% if items_list and items_list is iterable and items_list is not string %}
-
-            {% for item in items_list %}
-
-            <div class="item-row" style="display: flex; gap: 8px; margin-bottom: 12px; align-items: flex-end;">
-
-              <div style="flex: 2;">
-
-                <label style="font-size: 12px; font-weight: 600; color: var(--color-text-muted); margin-bottom: 4px; display: block;">Nome</label>
-
-                <input type="text" class="item-name form-input" value="{{ item.name }}" style="width: 100%; padding: 10px 12px; border: 2px solid var(--color-border); border-radius: var(--radius-input); background: var(--color-bg); color: var(--color-text); font-size: 13px;">
-
-              </div>
-
-              <div style="flex: 1;">
-
-                <label style="font-size: 12px; font-weight: 600; color: var(--color-text-muted); margin-bottom: 4px; display: block;">Qtd</label>
-
-                <input type="number" class="item-quantity form-input" value="{{ item.quantity }}" min="1" style="width: 100%; padding: 10px 12px; border: 2px solid var(--color-border); border-radius: var(--radius-input); background: var(--color-bg); color: var(--color-text); font-size: 13px;">
-
-              </div>
-
-              <div style="flex: 1;">
-
-                <label style="font-size: 12px; font-weight: 600; color: var(--color-text-muted); margin-bottom: 4px; display: block;">Valor</label>
-
-                <input type="number" class="item-value form-input" value="{{ item.value }}" step="0.01" style="width: 100%; padding: 10px 12px; border: 2px solid var(--color-border); border-radius: var(--radius-input); background: var(--color-bg); color: var(--color-text); font-size: 13px;">
-
-              </div>
-
-              <button type="button" onclick="removeItem(this)" style="padding: 10px; background: #fee2e2; color: #dc2626; border: none; border-radius: var(--radius-input); cursor: pointer;">
-
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-
-              </button>
-
-            </div>
-
-            {% endfor %}
-
-          {% endif %}
-
-        </div>
-
-        <button type="button" onclick="addItem()" style="width: 100%; padding: 12px; background: var(--color-slate-light); color: var(--color-text); border: 2px dashed var(--color-border); border-radius: var(--radius-input); cursor: pointer; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 8px;">
-
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-
-          Adicionar Item
-
-        </button>
-
-      </div>
-
-
-
-      <!-- Step 3: Notes -->
-
-      <div id="step3" class="wizard-step" style="display: none;">
-
-        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
-
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" stroke-width="2">
-
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-
-            <polyline points="14 2 14 8 20 8"></polyline>
-
-            <line x1="16" y1="13" x2="8" y2="13"></line>
-
-            <line x1="16" y1="17" x2="8" y2="17"></line>
-
-            <polyline points="10 9 9 9 8 9"></polyline>
-
-          </svg>
-
-          <label style="margin: 0; font-weight: 600;">Observações</label>
-
-        </div>
-
-        <textarea id="editNotes" class="form-input" rows="6" placeholder="Adicione observações ao orçamento" style="width: 100%; padding: 12px 16px; border: 2px solid var(--color-border); border-radius: var(--radius-input); background: var(--color-bg); color: var(--color-text); font-size: 14px; transition: all 0.2s; resize: vertical; line-height: 1.5;">{{ quotation.notes or '' }}</textarea>
-
-      </div>
-
-    </div>
-
-
-
-    <div class="modal-footer" style="padding: 24px; border-top: 1px solid var(--color-border); display: flex; gap: 12px; justify-content: flex-end;">
-
-      <button id="prevBtn" class="btn btn-secondary" onclick="prevStep()" style="padding: 12px 24px; font-size: 14px; font-weight: 500; border-radius: var(--radius-btn); transition: all 0.2s; background: var(--color-slate-light); color: var(--color-text); border: 2px solid var(--color-border); display: none;">Voltar</button>
-
-      <button id="nextBtn" class="btn btn-primary" onclick="nextStep()" style="padding: 12px 24px; font-size: 14px; font-weight: 500; border-radius: var(--radius-btn); transition: all 0.2s; background: var(--color-primary); color: white; border: none;">Próximo</button>
-
-      <button id="saveBtn" class="btn btn-primary" onclick="saveEdit()" style="padding: 12px 24px; font-size: 14px; font-weight: 500; border-radius: var(--radius-btn); transition: all 0.2s; background: var(--color-primary); color: white; border: none; display: none;">Salvar</button>
-
-    </div>
-
-  </div>
-
-</div>
-
-
-
-<script>
-
-let currentStep = 1;
-
-const totalSteps = 3;
-
-
-
-function openEditModal() {
-
-  closeActionsMenuOnMobile();
-
-  const modal = document.getElementById('editModal');
-
-  modal.style.display = 'flex';
-
-  currentStep = 1;
-
-  updateWizardUI();
-
-}
-
-
-
-function closeEditModal() {
-
-  const modal = document.getElementById('editModal');
-
-  modal.style.display = 'none';
-
-  currentStep = 1;
-
-  updateWizardUI();
-
-}
-
-
-
-function nextStep() {
-
-  if (currentStep < totalSteps) {
-
-    currentStep++;
-
-    updateWizardUI();
-
-  }
-
-}
-
-
-
-function prevStep() {
-
-  if (currentStep > 1) {
-
-    currentStep--;
-
-    updateWizardUI();
-
-  }
-
-}
-
-
-
-function updateWizardUI() {
-
-  // Hide all steps
-
-  for (let i = 1; i <= totalSteps; i++) {
-
-    document.getElementById(`step${i}`).style.display = 'none';
-
-  }
-
-  
-
-  // Show current step
-
-  document.getElementById(`step${currentStep}`).style.display = 'block';
-
-  
-
-  // Update step indicators
-
-  document.querySelectorAll('.step-indicator').forEach((indicator, index) => {
-
-    const stepNum = index + 1;
-
-    const circle = indicator.querySelector('div');
-
-    const label = indicator.querySelector('span');
-
-    
-
-    if (stepNum < currentStep) {
-
-      circle.style.background = 'var(--color-primary)';
-
-      circle.style.color = 'white';
-
-      label.style.color = 'var(--color-text)';
-
-    } else if (stepNum === currentStep) {
-
-      circle.style.background = 'var(--color-primary)';
-
-      circle.style.color = 'white';
-
-      label.style.color = 'var(--color-text)';
-
-    } else {
-
-      circle.style.background = 'var(--color-border)';
-
-      circle.style.color = 'var(--color-text-muted)';
-
-      label.style.color = 'var(--color-text-muted)';
-
-    }
-
-  });
-
-  
-
-  // Update buttons
-
-  const prevBtn = document.getElementById('prevBtn');
-
-  const nextBtn = document.getElementById('nextBtn');
-
-  const saveBtn = document.getElementById('saveBtn');
-
-  
-
-  prevBtn.style.display = currentStep > 1 ? 'block' : 'none';
-
-  nextBtn.style.display = currentStep < totalSteps ? 'block' : 'none';
-
-  saveBtn.style.display = currentStep === totalSteps ? 'block' : 'none';
-
-}
-
-
-
-function addItem() {
-
-  const container = document.getElementById('itemsContainer');
-
-  const newItem = document.createElement('div');
-
-  newItem.className = 'item-row';
-
-  newItem.style.cssText = 'display: flex; gap: 8px; margin-bottom: 12px; align-items: flex-end;';
-
-  newItem.innerHTML = `
-
-    <div style="flex: 2;">
-
-      <label style="font-size: 12px; font-weight: 600; color: var(--color-text-muted); margin-bottom: 4px; display: block;">Nome</label>
-
-      <input type="text" class="item-name form-input" placeholder="Nome do item" style="width: 100%; padding: 10px 12px; border: 2px solid var(--color-border); border-radius: var(--radius-input); background: var(--color-bg); color: var(--color-text); font-size: 13px;">
-
-    </div>
-
-    <div style="flex: 1;">
-
-      <label style="font-size: 12px; font-weight: 600; color: var(--color-text-muted); margin-bottom: 4px; display: block;">Qtd</label>
-
-      <input type="number" class="item-quantity form-input" value="1" min="1" style="width: 100%; padding: 10px 12px; border: 2px solid var(--color-border); border-radius: var(--radius-input); background: var(--color-bg); color: var(--color-text); font-size: 13px;">
-
-    </div>
-
-    <div style="flex: 1;">
-
-      <label style="font-size: 12px; font-weight: 600; color: var(--color-text-muted); margin-bottom: 4px; display: block;">Valor</label>
-
-      <input type="number" class="item-value form-input" value="0.00" step="0.01" style="width: 100%; padding: 10px 12px; border: 2px solid var(--color-border); border-radius: var(--radius-input); background: var(--color-bg); color: var(--color-text); font-size: 13px;">
-
-    </div>
-
-    <button type="button" onclick="removeItem(this)" style="padding: 10px; background: #fee2e2; color: #dc2626; border: none; border-radius: var(--radius-input); cursor: pointer;">
-
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-
-    </button>
-
-  `;
-
-  container.appendChild(newItem);
-
-}
-
-
-
-function removeItem(button) {
-
-  button.closest('.item-row').remove();
-
-}
-
-
-
-function saveEdit() {
-
-  const clientName = document.getElementById('editClientName').value;
-
-  const expiryDate = document.getElementById('editExpiryDate').value;
-
-  const notes = document.getElementById('editNotes').value;
-
-  
-
-  // Collect items
-
-  const items = [];
-
-  document.querySelectorAll('.item-row').forEach(row => {
-
-    const name = row.querySelector('.item-name').value;
-
-    const quantity = parseInt(row.querySelector('.item-quantity').value);
-
-    const value = parseFloat(row.querySelector('.item-value').value);
-
-    
-
-    if (name) {
-
-      items.push({ name, quantity, value });
-
-    }
-
-  });
-
-  
-
-  fetch(`/dashboard/quotation/{{ quotation.id }}/edit`, {
-
-    method: 'POST',
-
-    headers: { 'Content-Type': 'application/json' },
-
-    body: JSON.stringify({
-
-      client_name: clientName,
-
-      expiry_date: expiryDate,
-
-      notes: notes,
-
-      items: items
-
-    })
-
-  })
-
-  .then(response => response.json())
-
-  .then(data => {
-
-    if (data.success) {
-
-      window.location.reload();
-
-    } else {
-
-      alert('Erro ao salvar: ' + data.error);
-
-    }
-
-  })
-
-  .catch(error => {
-
-    alert('Erro ao salvar');
-
-  });
-
-}
-
-</script>
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" integrity="sha512-BNa5l1JYW5H0U8nyCLlcsoFV3ayhtq/Y5cHIxHmr18bODsPwhj/KgOMGNJUgIAQ9l8D1eZGXIkzH+5wQ5y8QNA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" integrity="sha512-rcX+8Z0Yjy1Q5VhcE7UZ5EKeosFVJeFt3PcTJS3BM4tiTtHn6t2A+qsSVqS+8CA0nVddOZXS6UaYTDxAZtU2g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 </body>
-
 </html>
-

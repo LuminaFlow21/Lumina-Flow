@@ -31,6 +31,15 @@
     const scaleValue = clamped.toFixed(3);
     target.style.setProperty('--viewer-scale', scaleValue);
 
+    const body = document.body;
+    if (body) {
+      if (Math.abs(clamped - 1) > 0.01) {
+        body.classList.add('is-scaled');
+      } else {
+        body.classList.remove('is-scaled');
+      }
+    }
+
     const { baseWidth, baseHeight } = updateBaseMetrics(target);
 
     const layoutShell = target.closest('.layout-shell');
@@ -53,6 +62,13 @@
     if (!target) {
       return;
     }
+
+    // Disable scaling on desktop completely
+    if (window.innerWidth >= 1024) {
+      applyScaleValue(target, 1);
+      return 1;
+    }
+
     const state = responsiveScaleState.get(target) || { manual: 1 };
     state.auto = computeAutoScale(target);
     state.min = Math.max(0.1, state.auto - 0.1);
@@ -81,15 +97,158 @@
     }
 
     toolbar.dataset.enhanced = 'true';
-    const toggle = toolbar.querySelector('.actions-toggle');
-    if (toggle && !toolbar.querySelector('.actions-inline-hint')) {
-      const hint = document.createElement('p');
-      hint.className = 'actions-inline-hint';
-      hint.textContent = '↑ Baixe como imagem';
-      toggle.insertAdjacentElement('afterend', hint);
-    }
+    toolbar.querySelectorAll('.actions-inline-hint').forEach((node) => node.remove());
     document.body.classList.add('quotation-viewer');
     return toolbar;
+  }
+
+  function getPreferredRegionSymbol() {
+    const REGION_SYMBOL_MAP = { BR: 'R$', UK: '£' };
+
+    const safeGetLocalRegion = () => {
+      try {
+        return localStorage.getItem('user_region');
+      } catch (error) {
+        return null;
+      }
+    };
+
+    const candidates = [
+      safeGetLocalRegion(),
+      document.documentElement?.getAttribute('data-region'),
+      document.body?.getAttribute('data-server-region'),
+    ];
+
+    for (const region of candidates) {
+      if (region && REGION_SYMBOL_MAP[region]) {
+        return { region, symbol: REGION_SYMBOL_MAP[region] };
+      }
+    }
+
+    return null;
+  }
+
+  function detectCurrentCurrencySymbol(root) {
+    const SEARCH_ORDER = ['R$', '£'];
+    const source = root || document.getElementById('quotationContainer') || document.querySelector('.orcamento');
+    if (!source) {
+      return null;
+    }
+
+    const textSnapshot = source.textContent || '';
+    for (const candidate of SEARCH_ORDER) {
+      if (textSnapshot.includes(candidate)) {
+        return candidate;
+      }
+    }
+    return null;
+  }
+
+  function replaceCurrencySymbol(target, fromSymbol, toSymbol) {
+    if (!target || !fromSymbol || !toSymbol || fromSymbol === toSymbol) {
+      return;
+    }
+
+    const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const matcher = new RegExp(escapeRegex(fromSymbol), 'g');
+
+    const walker = document.createTreeWalker(target, NodeFilter.SHOW_TEXT, null, false);
+    const nodesToUpdate = [];
+    while (walker.nextNode()) {
+      const current = walker.currentNode;
+      if (matcher.test(current.nodeValue)) {
+        nodesToUpdate.push(current);
+      }
+    }
+
+    nodesToUpdate.forEach((node) => {
+      node.nodeValue = node.nodeValue.replace(matcher, toSymbol);
+    });
+  }
+
+  function syncTemplateCurrencySymbol() {
+    const preference = getPreferredRegionSymbol();
+    if (!preference) {
+      return;
+    }
+
+    const quotationRoot = document.getElementById('quotationContainer') || document.querySelector('.orcamento');
+    if (!quotationRoot) {
+      return;
+    }
+
+    const currentSymbol = detectCurrentCurrencySymbol(quotationRoot);
+    if (!currentSymbol || currentSymbol === preference.symbol) {
+      return;
+    }
+
+    const targets = [quotationRoot, document.querySelector('.action-buttons')].filter(Boolean);
+    targets.forEach((target) => replaceCurrencySymbol(target, currentSymbol, preference.symbol));
+  }
+
+  function normalizeViewerStructure() {
+    if (window.matchMedia('(min-width: 1024px)').matches) {
+      document.querySelectorAll('.viewport-pan').forEach((pan) => {
+        const parent = pan.parentNode;
+        if (!parent) return;
+        while (pan.firstChild) {
+          parent.insertBefore(pan.firstChild, pan);
+        }
+        pan.remove();
+      });
+      return;
+    }
+    const quotation = document.getElementById('quotationContainer') || document.querySelector('.orcamento');
+    if (!quotation) {
+      return;
+    }
+
+    let templateShell = quotation.closest('.layout-shell:not(.layout-shell--actions):not(.layout-shell--hint)');
+    if (!templateShell) {
+      templateShell = document.createElement('div');
+      templateShell.className = 'layout-shell';
+      const parent = quotation.parentNode;
+      if (parent) {
+        parent.insertBefore(templateShell, quotation);
+        templateShell.appendChild(quotation);
+      }
+    }
+
+    const resolveViewportAnchor = () => templateShell.closest('.viewport-pan') || templateShell;
+
+    const actionButtons = document.querySelector('.action-buttons');
+    if (actionButtons) {
+      let actionsShell = actionButtons.closest('.layout-shell--actions');
+      if (!actionsShell) {
+        actionsShell = document.createElement('div');
+        actionsShell.className = 'layout-shell layout-shell--actions';
+        const parent = actionButtons.parentNode;
+        if (parent) {
+          parent.insertBefore(actionsShell, actionButtons);
+          actionsShell.appendChild(actionButtons);
+        }
+      }
+
+      const anchor = resolveViewportAnchor();
+      if (anchor?.parentNode && actionsShell.nextSibling !== anchor) {
+        anchor.parentNode.insertBefore(actionsShell, anchor);
+      }
+    }
+
+    let hintShell = document.querySelector('.layout-shell--hint');
+    if (!hintShell) {
+      hintShell = document.createElement('div');
+      hintShell.className = 'layout-shell layout-shell--hint';
+      const hint = document.createElement('div');
+      hint.className = 'mobile-scroll-hint';
+      hint.textContent = '👆 mexa na tela para ver o orçamento';
+      hintShell.appendChild(hint);
+    }
+
+    const hintAnchor = resolveViewportAnchor();
+    if (hintAnchor?.parentNode && hintShell.nextSibling !== hintAnchor) {
+      hintAnchor.parentNode.insertBefore(hintShell, hintAnchor);
+    }
   }
 
   function getViewportTarget() {
@@ -97,20 +256,25 @@
   }
 
   function ensureViewportScroller() {
+    if (window.matchMedia('(min-width: 1024px)').matches) {
+      return;
+    }
     const quotation = document.getElementById('quotationContainer') || document.querySelector('.orcamento');
     if (!quotation) {
       return;
     }
 
-    let viewportPan = quotation.closest('.viewport-pan');
+    const templateShell = quotation.closest('.layout-shell:not(.layout-shell--actions):not(.layout-shell--hint)') || quotation;
+
+    let viewportPan = templateShell.closest('.viewport-pan');
     if (!viewportPan) {
       viewportPan = document.createElement('div');
       viewportPan.className = 'viewport-pan';
 
-      const parent = quotation.parentNode;
+      const parent = templateShell.parentNode;
       if (parent) {
-        parent.insertBefore(viewportPan, quotation);
-        viewportPan.appendChild(quotation);
+        parent.insertBefore(viewportPan, templateShell);
+        viewportPan.appendChild(templateShell);
       }
     }
 
@@ -124,6 +288,9 @@
   let staticPreviewAttempts = 0;
 
   async function renderStaticPreviewImage() {
+    if (window.matchMedia('(min-width: 1024px)').matches) {
+      return;
+    }
     const viewportPan = document.querySelector('.viewport-pan');
     const quotation = document.getElementById('quotationContainer') || document.querySelector('.orcamento');
     if (!viewportPan || !quotation || viewportPan.dataset.staticPreview === 'true') {
@@ -489,8 +656,12 @@
   window.LuminaFlow.resolveExportConfig = resolveExportConfig;
 
   document.addEventListener('DOMContentLoaded', () => {
+    normalizeViewerStructure();
     enhanceToolbar();
     ensureViewportScroller();
-    renderStaticPreviewImage();
+    if (!window.matchMedia('(min-width: 1024px)').matches) {
+      renderStaticPreviewImage();
+    }
+    syncTemplateCurrencySymbol();
   }, { once: true });
 })();

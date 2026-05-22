@@ -39,10 +39,8 @@
     }
 
     .orcamento{
-      width:760px;
-      max-width:760px;
-      min-width:760px;
-      flex:0 0 760px;
+      max-width: 960px;
+      width: 100%;
       background:#ffffff;
       border-radius:16px;
       padding:30px;
@@ -51,6 +49,13 @@
       flex-direction:column;
       position:relative;
       margin:0 auto;
+    }
+
+    @media (min-width: 1024px) {
+      .orcamento {
+        width: auto;
+        max-width: 100%;
+      }
     }
 
     .orcamento::before{

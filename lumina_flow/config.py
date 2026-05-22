@@ -46,6 +46,9 @@ class Config:
     BASE_URL = os.getenv('BASE_URL', 'http://localhost:5000')
     SUCCESS_URL = f'{BASE_URL}/dashboard?session_id={{CHECKOUT_SESSION_ID}}'
     CANCEL_URL = f'{BASE_URL}/pricing'
+    LINKS_HOME_URL = os.getenv('LINKS_HOME_URL', '/')
+    LINKS_WHATSAPP_URL = os.getenv('LINKS_WHATSAPP_URL', 'https://wa.me/5511999999999')
+    LINKS_INSTAGRAM_URL = os.getenv('LINKS_INSTAGRAM_URL', 'https://instagram.com/luminaflow')
     
     # Session
     SESSION_COOKIE_SECURE = os.getenv('SESSION_COOKIE_SECURE', 'False').lower() == 'true'
