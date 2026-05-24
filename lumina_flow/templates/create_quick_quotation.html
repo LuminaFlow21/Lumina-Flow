@@ -62,8 +62,16 @@
 <script>
 const selectedTemplate = '{{ template }}';
 
+function getRegion() {
+    try {
+        return localStorage.getItem('user_region') === 'BR' ? 'BR' : 'UK';
+    } catch (error) {
+        return 'UK';
+    }
+}
+
 function getCurrency() {
-    return localStorage.getItem('user_region') === 'BR' ? 'R$' : '£';
+    return getRegion() === 'BR' ? 'R$' : '£';
 }
 
 // Initialize on page load
@@ -84,7 +92,8 @@ document.getElementById('quickQuotationForm').addEventListener('submit', async f
         service_description: document.getElementById('service_description').value,
         value: parseFloat(document.getElementById('value').value),
         expiry_date: document.getElementById('expiry_date').value,
-        template: selectedTemplate
+        template: selectedTemplate,
+        region: getRegion()
     };
     
     try {

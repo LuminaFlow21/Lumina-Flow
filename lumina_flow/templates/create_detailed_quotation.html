@@ -158,8 +158,16 @@
 <script>
 const selectedTemplate = '{{ template }}';
 
+function getRegion() {
+    try {
+        return localStorage.getItem('user_region') === 'BR' ? 'BR' : 'UK';
+    } catch (error) {
+        return 'UK';
+    }
+}
+
 function getCurrency() {
-    return localStorage.getItem('user_region') === 'BR' ? 'R$' : '£';
+    return getRegion() === 'BR' ? 'R$' : '£';
 }
 
 function updateCurrencyLabels() {
@@ -255,7 +263,8 @@ document.getElementById('detailedQuotationForm').addEventListener('submit', asyn
         discount: parseFloat(document.getElementById('discount').value) || 0,
         expiry_date: document.getElementById('expiry_date').value,
         notes: document.getElementById('notes').value,
-        template: selectedTemplate
+        template: selectedTemplate,
+        region: getRegion()
     };
     
     try {

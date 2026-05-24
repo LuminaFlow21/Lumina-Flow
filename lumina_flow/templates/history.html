@@ -15,6 +15,15 @@
 {% endblock %}
 
 {% block content %}
+        <!-- Reader Buttons -->
+        <div class="history-reader">
+            <div class="history-reader__buttons">
+                <button type="button" class="reader-btn is-active" data-i18n="dashboard.history_tab_history">Histórico</button>
+                <button type="button" class="reader-btn" data-i18n="dashboard.history_tab_results">Resultados</button>
+            </div>
+            <p class="history-reader__hint" data-i18n="dashboard.history_tab_hint">Em breve você poderá alternar entre histórico e resultados.</p>
+        </div>
+
         <div class="history-header">
             <div class="history-header__title">
                 <h1 data-i18n="dashboard.quotation_history">Histórico de Orçamentos</h1>
@@ -26,7 +35,6 @@
                 </a>
             </div>
         </div>
-        
         <!-- Status Filter -->
         <div class="status-filter">
             <button class="filter-btn active" data-filter="all" data-i18n="dashboard.filter_all">Todos</button>

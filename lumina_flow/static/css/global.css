@@ -507,8 +507,8 @@ a:hover {
     }
     50% {
         transform: rotate(180deg) scale(1.1);
-    }
-    100% {
+        }
+        100% {
         transform: rotate(360deg) scale(1);
     }
 }
@@ -568,7 +568,7 @@ a:hover {
 }
 
 .dashboard-layout .whatsapp-fab {
-    bottom: clamp(96px, 14vh, 150px);
+    bottom: clamp(18px, 14vh, 75px);
 }
 
 .whatsapp-fab--dragging,
@@ -583,6 +583,7 @@ a:hover {
     animation: none;
     opacity: 0;
 }
+
 
 /* ========================================
    RESPONSIVE BREAKPOINTS

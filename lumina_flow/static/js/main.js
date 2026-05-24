@@ -24,6 +24,18 @@ async function loadTranslations() {
     }
 }
 
+async function persistRegionToServer(region) {
+    try {
+        await fetch('/set-region', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ region })
+        });
+    } catch (error) {
+        console.error('[i18n] Error setting region on server:', error);
+    }
+}
+
 // Initialize language and region from localStorage, server, or browser
 async function initializeLanguage() {
     const body = document.body;
@@ -32,15 +44,20 @@ async function initializeLanguage() {
 
     console.log('[i18n] Init - savedRegion:', savedRegion, '| serverRegion:', serverRegion);
 
+    let resolvedRegion = currentRegion;
+
     if (savedRegion && REGION_CONFIG[savedRegion]) {
-        currentRegion = savedRegion;
+        resolvedRegion = savedRegion;
     } else if (serverRegion && REGION_CONFIG[serverRegion]) {
-        currentRegion = serverRegion;
+        resolvedRegion = serverRegion;
+        localStorage.setItem(LANGUAGE_STORAGE_KEY, resolvedRegion);
     } else {
         const browserLang = navigator.language || navigator.userLanguage || 'en';
-        currentRegion = browserLang.startsWith('pt') ? 'BR' : 'UK';
+        resolvedRegion = browserLang.startsWith('pt') ? 'BR' : 'UK';
+        localStorage.setItem(LANGUAGE_STORAGE_KEY, resolvedRegion);
     }
 
+    currentRegion = resolvedRegion;
     currentLanguage = REGION_CONFIG[currentRegion].language;
     document.documentElement.setAttribute('data-region', currentRegion);
     syncGlobalState();
@@ -51,7 +68,11 @@ async function initializeLanguage() {
         selector.value = currentRegion;
     });
 
-    return Boolean(savedRegion);
+    if (serverRegion !== currentRegion) {
+        persistRegionToServer(currentRegion);
+    }
+
+    return Boolean(savedRegion && REGION_CONFIG[savedRegion]);
 }
 
 // Get translation by key
@@ -112,16 +133,7 @@ async function applyRegionChange(newRegion, { reload = true } = {}) {
         selector.value = newRegion;
     });
 
-    try {
-        const response = await fetch('/set-region', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ region: newRegion })
-        });
-        await response.json();
-    } catch (error) {
-        console.error('[i18n] Error setting region on server:', error);
-    }
+    await persistRegionToServer(newRegion);
 
     updateCurrencyDisplays();
     updateTranslations();
@@ -287,7 +299,34 @@ function updateDataLabels() {
 }
 
 function initWhatsAppDrag() {
-    const fab = document.querySelector('.whatsapp-fab');
+    const container = document.querySelector('[data-whatsapp-container]');
+    const fab = container?.querySelector('.whatsapp-fab[data-no-drag]') || document.querySelector('.whatsapp-fab');
+    const hideToggle = container?.querySelector('[data-whatsapp-hide]');
+    const handleButton = container?.querySelector('[data-whatsapp-handle]');
+    const STORAGE_KEY = 'whatsapp_hidden';
+
+    if (container && hideToggle && handleButton) {
+        const applyHiddenState = (hidden) => {
+            container.classList.toggle('whatsapp--hidden', hidden);
+            hideToggle.checked = hidden;
+        };
+
+        const savedHidden = localStorage.getItem(STORAGE_KEY) === 'true';
+        applyHiddenState(savedHidden);
+
+        hideToggle.addEventListener('change', () => {
+            const hidden = hideToggle.checked;
+            applyHiddenState(hidden);
+            localStorage.setItem(STORAGE_KEY, hidden);
+        });
+
+        handleButton.addEventListener('click', () => {
+            const hidden = !container.classList.contains('whatsapp--hidden');
+            applyHiddenState(!hidden);
+            localStorage.setItem(STORAGE_KEY, !hidden);
+        });
+    }
+
     if (!fab || !window.PointerEvent) {
         return;
     }
@@ -297,14 +336,14 @@ function initWhatsAppDrag() {
     let suppressClick = false;
     let offsetX = 0;
     let offsetY = 0;
-    const STORAGE_KEY = 'whatsapp_fab_position';
+    const POSITION_KEY = 'whatsapp_fab_position';
 
     const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
     const isTouchPointer = (event) => !event.pointerType || event.pointerType === 'touch' || event.pointerType === 'pen';
 
     const loadSavedPosition = () => {
         try {
-            const raw = localStorage.getItem(STORAGE_KEY);
+            const raw = localStorage.getItem(POSITION_KEY);
             if (!raw) return null;
             const saved = JSON.parse(raw);
             if (typeof saved.left === 'number' && typeof saved.top === 'number') {
@@ -385,7 +424,7 @@ function initWhatsAppDrag() {
             try {
                 const rect = fab.getBoundingClientRect();
                 const data = { left: rect.left, top: rect.top };
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+                localStorage.setItem(POSITION_KEY, JSON.stringify(data));
             } catch (error) {
                 console.warn('[WhatsApp FAB] Failed to persist position', error);
             }

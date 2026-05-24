@@ -1,0 +1,100 @@
+{% set currency_map = {'BRL': 'R$', 'USD': '$', 'EUR': '€', 'GBP': '£'} %}
+{% set currency_code = (quotation.currency or session.get('user_region', 'BR'))|upper %}
+{% set resolved_symbol = quotation.currency_symbol or currency_map.get(currency_code, 'R$') %}
+{% set total_value = quotation.value|float %}
+{% set _generator_default = user_name or (profile_data.company_name if profile_data else None) or session.get('user_email', 'Lumina Flow') %}
+{% set generator_name = generator_name if generator_name is defined else _generator_default %}
+{% set user_can_edit = current_user.is_authenticated and quotation.user_id == current_user.id|string %}
+{% set quotation_code = quotation.id[:8].upper() %}
+
+{% if preview_mode %}
+  <div class="qa-preview-banner">
+    Prévia interativa • Dados demonstrativos
+  </div>
+{% else %}
+<div class="qa-actions action-buttons" data-generator-name="{{ generator_name }}"
+     data-currency-symbol="{{ resolved_symbol }}"
+     data-total-value="{{ '%.2f' | format(total_value) }}"
+     data-quotation-code="#{{ quotation_code }}">
+  <div class="qa-actions-mobile">
+    <button type="button" class="qa-actions-toggle" data-qa-toggle>
+      <span>Ações</span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 4v4"></path>
+        <path d="M6.93 6.93l2.83 2.83"></path>
+        <path d="M4 12h4"></path>
+        <path d="M6.93 17.07l2.83-2.83"></path>
+        <path d="M12 16v4"></path>
+        <path d="M17.07 17.07l-2.83-2.83"></path>
+        <path d="M16 12h4"></path>
+        <path d="M17.07 6.93l-2.83 2.83"></path>
+        <circle cx="12" cy="12" r="2.5"></circle>
+      </svg>
+    </button>
+    <button type="button" class="qa-whatsapp-pill" data-action-trigger="whatsapp">
+      <span class="qa-wa-inline">
+        <span class="qa-wa-icon">
+          <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M16 3C9.383 3 4 8.383 4 15c0 2.594.809 4.999 2.191 6.996L5 29l7.246-1.898C13.895 27.361 14.917 27.5 16 27.5c6.617 0 12-5.383 12-12S22.617 3 16 3Zm0 21.5c-.892 0-1.767-.132-2.602-.394l-.525-.164-3.883 1.018 1.037-3.781-.171-.58C9.305 19.21 9 17.99 9 16.5 9 11.813 12.813 8 17.5 8S26 11.813 26 16.5 22.187 24.5 17.5 24.5Zm5.231-6.31c-.283-.141-1.683-.832-1.944-.926-.261-.097-.452-.141-.643.14-.192.284-.739.926-.905 1.116-.165.19-.334.213-.617.071-.285-.142-1.203-.444-2.292-1.418-.848-.756-1.421-1.689-1.588-1.973-.165-.284-.018-.438.124-.578.127-.126.285-.328.43-.492.143-.165.19-.284.285-.474.095-.19.047-.355-.024-.496-.07-.142-.642-1.552-.879-2.124-.232-.556-.469-.48-.643-.489-.165-.008-.355-.01-.546-.01-.19 0-.497.071-.758.355-.261.283-.999.974-.999 2.37s1.023 2.754 1.165 2.946c.142.19 2.013 3.072 4.878 4.306.681.293 1.212.468 1.626.598.682.217 1.303.187 1.79.114.546-.081 1.683-.688 1.921-1.353.237-.665.237-1.234.165-1.354-.07-.113-.26-.18-.543-.321Z" fill="currentColor"/>
+          </svg>
+        </span>
+        <span class="qa-wa-meta">{{ generator_name }}</span>
+      </span>
+    </button>
+    <div class="qa-actions-dropdown" aria-hidden="true">
+      {% if user_can_edit %}
+      <a href="{{ url_for('dashboard.dashboard_view') }}" class="qa-action-link">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        <span>Voltar</span>
+      </a>
+      <button type="button" class="qa-action-btn" data-action-trigger="edit">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        <span>Editar</span>
+      </button>
+      {% endif %}
+      <button type="button" class="qa-action-btn" data-action-trigger="image">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        <span>Baixar imagem</span>
+      </button>
+      <button type="button" class="qa-action-btn" data-action-trigger="pdf">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        <span>Baixar PDF</span>
+      </button>
+      <button type="button" class="qa-action-btn" data-action-trigger="share">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+        <span>Compartilhar</span>
+      </button>
+    </div>
+  </div>
+
+  <aside class="qa-actions-sidebar">
+    <h3>Ações</h3>
+    {% if user_can_edit %}
+    <a href="{{ url_for('dashboard.dashboard_view') }}" class="qa-action-link">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      <span>Voltar</span>
+    </a>
+    <button type="button" class="qa-action-btn" data-action-trigger="edit">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      <span>Editar</span>
+    </button>
+    {% endif %}
+    <button type="button" class="qa-action-btn" data-action-trigger="image">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+      <span>Baixar imagem</span>
+    </button>
+    <button type="button" class="qa-action-btn" data-action-trigger="pdf">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      <span>Baixar PDF</span>
+    </button>
+    <button type="button" class="qa-action-btn" data-action-trigger="share">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+      <span>Compartilhar</span>
+    </button>
+    <button type="button" class="qa-action-btn qa-whatsapp-option" data-action-trigger="whatsapp">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3c-4.43 0-8 3.57-8 8 0 1.735.562 3.34 1.516 4.643L5 21l5.53-1.453C11.08 19.846 11.528 19.9 12 19.9c4.43 0 8-3.57 8-8s-3.57-8-8-8Zm0 14.6c-.66 0-1.305-.097-1.92-.29l-.388-.12-2.846.745.76-2.77-.125-.425C7.285 13.684 7 12.8 7 11.9 7 8.59 9.69 5.9 13 5.9s6 2.69 6 6-2.69 5.7-6 5.7Zm3.923-4.417c-.212-.106-1.269-.592-1.465-.659-.197-.07-.34-.1-.484.1-.144.201-.557.659-.682.794-.124.136-.251.152-.463.05-.213-.101-.907-.317-1.728-1.07-.639-.57-1.073-1.273-1.2-1.488-.125-.214-.014-.33.093-.436.096-.095.216-.247.327-.371.109-.124.145-.214.217-.357.072-.143.036-.267-.018-.373-.054-.106-.486-1.18-.666-1.613-.176-.423-.355-.365-.486-.372-.125-.006-.269-.007-.414-.007-.145 0-.376.054-.574.269-.198.214-.756.738-.756 1.796 0 1.058.774 1.873.882 2.003.109.129 1.528 2.088 3.7 2.927.516.2.919.318 1.229.406.515.148.984.127 1.353.077.413-.056 1.269-.468 1.448-.921.179-.452.179-.841.125-.922-.054-.077-.196-.122-.409-.218Z"/></svg>
+      <span>{{ generator_name }}</span>
+    </button>
+  </aside>
+</div>
+{% endif %}

@@ -1,6 +1,6 @@
-﻿from flask import Blueprint, render_template, session, redirect, url_for, request, jsonify
+﻿from flask import Blueprint, render_template, session, redirect, url_for, request, jsonify, abort
 from flask_login import login_required, current_user
-from datetime import datetime
+from datetime import datetime, timedelta
 from ..supabase_handler import get_supabase_handler
 from ..stripe_handler import get_stripe_handler
 from ..auth_handler import get_auth_handler
@@ -39,6 +39,67 @@ def get_user_quotations(user_id: str, access_token: str = None) -> list:
     return check_and_update_expired_quotations(quotations, user_id)
 
 ALLOWED_DELETE_PLANS = {'basic', 'pro', 'enterprise'}
+REGION_TO_CURRENCY = {'BR': 'BRL', 'UK': 'GBP'}
+
+TEMPLATE_PALETTES = {
+    'quick_modern_v2.html': ['#eef3ff', '#1565ff', '#29d6ff', '#e0e7ff'],
+    'quick_classic.html': ['#f4f1ea', '#b45309', '#d97706', '#fef3c7'],
+    'quick_bold.html': ['#fff1f2', '#be185d', '#f97316', '#ffe4e6'],
+    'quick_elegant.html': ['#f4f4f5', '#78350f', '#ea580c', '#fef0c7'],
+    'quick_vibrant.html': ['#fff7ed', '#ec4899', '#f97316', '#ffe4e6'],
+    'quick_clean.html': ['#f0fdfa', '#0f766e', '#14b8a6', '#ccfbf1'],
+    'quick_creative.html': ['#faf5ff', '#a855f7', '#6366f1', '#ede9fe'],
+    'quick_luxury.html': ['#0b1120', '#facc15', '#f59e0b', '#4c1d95'],
+    'quick_tech.html': ['#020617', '#38bdf8', '#22d3ee', '#0ea5e9'],
+    'quick_premium.html': ['#ecfccb', '#15803d', '#34d399', '#dcfce7'],
+    'detailed_premium.html': ['#ecfccb', '#15803d', '#34d399', '#dcfce7'],
+    'detailed_modern.html': ['#ecf1ff', '#4f46e5', '#0ea5e9', '#e0e7ff'],
+    'detailed_classic.html': ['#f5f1ea', '#b45309', '#d97706', '#fef3c7'],
+    'detailed_bold.html': ['#fff1f2', '#be123c', '#f97316', '#ffe4e6'],
+    'detailed_elegant.html': ['#f4f4f5', '#78350f', '#ea580c', '#fef0c7'],
+    'detailed_clean.html': ['#f0fdfa', '#0f766e', '#14b8a6', '#ccfbf1'],
+    'detailed_creative.html': ['#fdf2ff', '#a855f7', '#6366f1', '#f3e8ff'],
+    'detailed_luxury.html': ['#0b1120', '#facc15', '#f59e0b', '#4c1d95'],
+    'detailed_tech.html': ['#0f172a', '#38bdf8', '#22d3ee', '#0ea5e9'],
+    'detailed_vibrant.html': ['#fff7ed', '#ec4899', '#f97316', '#ffe4e6'],
+}
+
+TEMPLATE_CATALOG = {
+    'quick': [
+        {'name': 'Moderno Clássico', 'template_file': 'quick_modern_v2.html', 'preview_image': None},
+        {'name': 'Clássico Profissional', 'template_file': 'quick_classic.html', 'preview_image': None},
+        {'name': 'Bold Impactante', 'template_file': 'quick_bold.html', 'preview_image': None},
+        {'name': 'Elegante Sofisticado', 'template_file': 'quick_elegant.html', 'preview_image': None},
+        {'name': 'Vibrante Energético', 'template_file': 'quick_vibrant.html', 'preview_image': None},
+        {'name': 'Limpo Minimalista', 'template_file': 'quick_clean.html', 'preview_image': None},
+        {'name': 'Criativo Colorido', 'template_file': 'quick_creative.html', 'preview_image': None},
+        {'name': 'Luxo Premium', 'template_file': 'quick_luxury.html', 'preview_image': None},
+        {'name': 'Tech Moderno', 'template_file': 'quick_tech.html', 'preview_image': None},
+        {'name': 'Premium Dark', 'template_file': 'quick_premium.html', 'preview_image': None},
+    ],
+    'detailed': [
+        {'name': 'Premium Dark', 'template_file': 'detailed_premium.html', 'preview_image': None},
+        {'name': 'Moderno Minimalista', 'template_file': 'detailed_modern.html', 'preview_image': None},
+        {'name': 'Clássico Profissional', 'template_file': 'detailed_classic.html', 'preview_image': None},
+        {'name': 'Bold Impactante', 'template_file': 'detailed_bold.html', 'preview_image': None},
+        {'name': 'Elegante Sofisticado', 'template_file': 'detailed_elegant.html', 'preview_image': None},
+        {'name': 'Limpo Minimalista', 'template_file': 'detailed_clean.html', 'preview_image': None},
+        {'name': 'Criativo Colorido', 'template_file': 'detailed_creative.html', 'preview_image': None},
+        {'name': 'Luxo Premium', 'template_file': 'detailed_luxury.html', 'preview_image': None},
+        {'name': 'Tech Moderno', 'template_file': 'detailed_tech.html', 'preview_image': None},
+        {'name': 'Vibrante Energético', 'template_file': 'detailed_vibrant.html', 'preview_image': None},
+    ],
+}
+
+for group in TEMPLATE_CATALOG.values():
+    for entry in group:
+        entry['palette'] = TEMPLATE_PALETTES.get(entry['template_file'], [])
+
+ALL_TEMPLATES = {
+    entry['template_file']: entry
+    for group in TEMPLATE_CATALOG.values()
+    for entry in group
+}
 
 
 def can_create_quotation(user_id: str, plan: str) -> bool:
@@ -55,6 +116,19 @@ def can_create_quotation(user_id: str, plan: str) -> bool:
 def can_delete_quotation(plan: str) -> bool:
     normalized_plan = (plan or 'free').lower()
     return normalized_plan in ALLOWED_DELETE_PLANS
+
+
+def resolve_region_and_currency(payload=None):
+    payload = payload or {}
+    region = str(payload.get('region', '')).upper()
+
+    if region not in REGION_TO_CURRENCY:
+        region = session.get('user_region', 'UK')
+    else:
+        session['user_region'] = region
+
+    currency = REGION_TO_CURRENCY.get(region, 'GBP')
+    return region, currency
 
 @dashboard_bp.route('/test-dashboard')
 def test_dashboard():
@@ -99,6 +173,7 @@ def test_dashboard():
 
     # Get real quotations from database
     quotations = get_user_quotations(test_user_id)
+    recent_quotations = quotations[:5]
 
     session['user_id'] = test_user_id
     session['user_email'] = test_email
@@ -106,6 +181,7 @@ def test_dashboard():
         'dashboard.html',
         subscription=subscription,
         quotations=quotations,
+        recent_quotations=recent_quotations,
         quotation_count=len(quotations),
         can_create=True
     )
@@ -126,6 +202,7 @@ def dashboard_view():
 
     quotations = get_user_quotations(user_id)
     quotation_count = len(quotations)
+    recent_quotations = quotations[:5]
     can_create_new = can_create_quotation(user_id, subscription['plan'])
 
     # Check if profile is complete
@@ -137,6 +214,7 @@ def dashboard_view():
         'dashboard.html',
         subscription=subscription,
         quotations=quotations,
+        recent_quotations=recent_quotations,
         quotation_count=quotation_count, 
         can_create=can_create_new,
         profile_complete=profile_complete,
@@ -179,69 +257,79 @@ def select_template(quotation_type):
     profile_result = supabase.get_user_profile(user_id)
     profile_data = profile_result.get('data', {}) if profile_result.get('success') else {}
     
-    # For now, return hardcoded templates
-    if quotation_type == 'quick':
-        templates = [
-            {'name': 'Moderno Clássico', 'template_file': 'quick_modern_v2.html', 'preview_image': '/static/images/previews/quick_modern_v2.png'},
-            {'name': 'Clássico Profissional', 'template_file': 'quick_classic.html', 'preview_image': '/static/images/previews/quick_classic.png'},
-            {'name': 'Bold Impactante', 'template_file': 'quick_bold.html', 'preview_image': '/static/images/previews/quick_bold.png'},
-            {'name': 'Elegante Sofisticado', 'template_file': 'quick_elegant.html', 'preview_image': '/static/images/previews/quick_elegant.png'},
-            {'name': 'Vibrante Energético', 'template_file': 'quick_vibrant.html', 'preview_image': '/static/images/previews/quick_vibrant.png'},
-            {'name': 'Limpo Minimalista', 'template_file': 'quick_clean.html', 'preview_image': '/static/images/previews/quick_clean.png'},
-            {'name': 'Criativo Colorido', 'template_file': 'quick_creative.html', 'preview_image': '/static/images/previews/quick_creative.png'},
-            {'name': 'Luxo Premium', 'template_file': 'quick_luxury.html', 'preview_image': '/static/images/previews/quick_luxury.png'},
-            {'name': 'Tech Moderno', 'template_file': 'quick_tech.html', 'preview_image': '/static/images/previews/quick_tech.png'},
-            {'name': 'Premium Dark', 'template_file': 'quick_premium.html', 'preview_image': '/static/images/previews/quick_premium.png'}
-        ]
-    else:
-        templates = [
-            {'name': 'Premium Dark', 'template_file': 'detailed_premium.html', 'preview_image': '/static/images/previews/detailed_premium.png'},
-            {'name': 'Moderno Minimalista', 'template_file': 'detailed_modern.html', 'preview_image': '/static/images/previews/detailed_modern.png'},
-            {'name': 'Clássico Profissional', 'template_file': 'detailed_classic.html', 'preview_image': '/static/images/previews/detailed_classic.png'},
-            {'name': 'Bold Impactante', 'template_file': 'detailed_bold.html', 'preview_image': '/static/images/previews/detailed_bold.png'},
-            {'name': 'Elegante Sofisticado', 'template_file': 'detailed_elegant.html', 'preview_image': '/static/images/previews/detailed_elegant.png'},
-            {'name': 'Limpo Minimalista', 'template_file': 'detailed_clean.html', 'preview_image': '/static/images/previews/detailed_clean.png'},
-            {'name': 'Criativo Colorido', 'template_file': 'detailed_creative.html', 'preview_image': '/static/images/previews/detailed_creative.png'},
-            {'name': 'Luxo Premium', 'template_file': 'detailed_luxury.html', 'preview_image': '/static/images/previews/detailed_luxury.png'},
-            {'name': 'Tech Moderno', 'template_file': 'detailed_tech.html', 'preview_image': '/static/images/previews/detailed_tech.png'},
-            {'name': 'Vibrante Energético', 'template_file': 'detailed_vibrant.html', 'preview_image': '/static/images/previews/detailed_vibrant.png'}
-        ]
-    
+    templates = TEMPLATE_CATALOG.get(quotation_type)
+    if templates is None:
+        abort(404)
+
     return render_template('select_template.html', templates=templates, quotation_type=quotation_type, profile_data=profile_data, subscription=subscription)
 
 @dashboard_bp.route('/api/templates')
 @login_required
 def get_templates_api():
     """API endpoint to get all templates for SPA"""
-    quick_templates = [
-        {'name': 'Moderno Clássico', 'template_file': 'quick_modern_v2.html', 'preview_image': '/static/images/previews/quick_modern_v2.png'},
-        {'name': 'Clássico Profissional', 'template_file': 'quick_classic.html', 'preview_image': '/static/images/previews/quick_classic.png'},
-        {'name': 'Bold Impactante', 'template_file': 'quick_bold.html', 'preview_image': '/static/images/previews/quick_bold.png'},
-        {'name': 'Elegante Sofisticado', 'template_file': 'quick_elegant.html', 'preview_image': '/static/images/previews/quick_elegant.png'},
-        {'name': 'Vibrante Energético', 'template_file': 'quick_vibrant.html', 'preview_image': '/static/images/previews/quick_vibrant.png'},
-        {'name': 'Limpo Minimalista', 'template_file': 'quick_clean.html', 'preview_image': '/static/images/previews/quick_clean.png'},
-        {'name': 'Criativo Colorido', 'template_file': 'quick_creative.html', 'preview_image': '/static/images/previews/quick_creative.png'},
-        {'name': 'Luxo Premium', 'template_file': 'quick_luxury.html', 'preview_image': '/static/images/previews/quick_luxury.png'},
-        {'name': 'Tech Moderno', 'template_file': 'quick_tech.html', 'preview_image': '/static/images/previews/quick_tech.png'},
-        {'name': 'Premium Dark', 'template_file': 'quick_premium.html', 'preview_image': '/static/images/previews/quick_premium.png'}
-    ]
-
-    detailed_templates = [
-        {'name': 'Premium Dark', 'template_file': 'detailed_premium.html', 'preview_image': '/static/images/previews/detailed_premium.png'},
-        {'name': 'Moderno Minimalista', 'template_file': 'detailed_modern.html', 'preview_image': '/static/images/previews/detailed_modern.png'},
-        {'name': 'Clássico Profissional', 'template_file': 'detailed_classic.html', 'preview_image': '/static/images/previews/detailed_classic.png'},
-        {'name': 'Bold Impactante', 'template_file': 'detailed_bold.html', 'preview_image': '/static/images/previews/detailed_bold.png'},
-        {'name': 'Elegante Sofisticado', 'template_file': 'detailed_elegant.html', 'preview_image': '/static/images/previews/detailed_elegant.png'},
-        {'name': 'Limpo Minimalista', 'template_file': 'detailed_clean.html', 'preview_image': '/static/images/previews/detailed_clean.png'},
-        {'name': 'Criativo Colorido', 'template_file': 'detailed_creative.html', 'preview_image': '/static/images/previews/detailed_creative.png'},
-        {'name': 'Luxo Premium', 'template_file': 'detailed_luxury.html', 'preview_image': '/static/images/previews/detailed_luxury.png'},
-        {'name': 'Tech Moderno', 'template_file': 'detailed_tech.html', 'preview_image': '/static/images/previews/detailed_tech.png'},
-        {'name': 'Vibrante Energético', 'template_file': 'detailed_vibrant.html', 'preview_image': '/static/images/previews/detailed_vibrant.png'}
-    ]
-
-    all_templates = quick_templates + detailed_templates
+    all_templates = TEMPLATE_CATALOG['quick'] + TEMPLATE_CATALOG['detailed']
 
     return jsonify({'templates': all_templates})
+
+
+@dashboard_bp.route('/quotation/template-preview/<template_file>')
+@login_required
+def quotation_template_preview(template_file):
+    template_entry = ALL_TEMPLATES.get(template_file)
+    if not template_entry:
+        abort(404)
+
+    supabase = get_supabase_handler()
+    profile_result = supabase.get_user_profile(current_user.id)
+    profile_data = profile_result.get('data', {}) if profile_result.get('success') else {}
+
+    region = session.get('user_region', 'UK')
+    currency_code = REGION_TO_CURRENCY.get(region, 'GBP')
+    currency_symbol = 'R$' if currency_code == 'BRL' else '£'
+
+    sample_items = [
+        {'name': 'Consultoria Estratégica', 'quantity': 1, 'value': 1800.0},
+        {'name': 'Design de Interface', 'quantity': 2, 'value': 850.0},
+        {'name': 'Implementação', 'quantity': 1, 'value': 1200.0},
+    ]
+    subtotal = sum(item['quantity'] * item['value'] for item in sample_items)
+    discount = 250.0
+    total_value = max(subtotal - discount, 0)
+
+    quotation = {
+        'id': f"PREVIEW-{template_file.replace('.html', '').upper()[:6]}",
+        'user_id': str(current_user.id),
+        'client_name': 'Cliente Exemplo',
+        'phone': '(11) 99999-9999',
+        'address': 'Rua Exemplo, 123 - São Paulo/SP',
+        'email': 'cliente@exemplo.com',
+        'service_description': 'Pacote completo de branding, identidade visual e desenvolvimento.',
+        'items': sample_items,
+        'discount': discount,
+        'value': total_value,
+        'currency': currency_code,
+        'created_at': datetime.utcnow().isoformat(),
+        'expiry_date': (datetime.utcnow() + timedelta(days=7)).date().isoformat(),
+        'notes': 'Esta é uma prévia interativa automática para visualizar o layout do template.',
+        'template': template_file,
+    }
+
+    profile_data = profile_data or {}
+    profile_data.setdefault('company_name', 'Lumina Flow Studio')
+    user_name = profile_data.get('full_name') or profile_data.get('company_name')
+    if not user_name:
+        email = getattr(current_user, 'email', 'lumina@flow.com')
+        user_name = email.split('@')[0].replace('.', ' ').title()
+
+    return render_template(
+        template_file,
+        quotation=quotation,
+        profile_data=profile_data,
+        user_name=user_name,
+        currency_symbol=currency_symbol,
+        preview_mode=True,
+        generator_name=user_name,
+    )
 
 @dashboard_bp.route('/quotation/spa')
 @login_required
@@ -510,8 +598,8 @@ def edit_quotation_basic(quotation_id):
 def update_quotation_currency():
     """Update currency of all user's quotations based on current region"""
     user_id = current_user.id
-    region = session.get('user_region', 'UK')
-    currency = 'BRL' if region == 'BR' else 'GBP'
+    payload = request.get_json(silent=True) or {}
+    _, currency = resolve_region_and_currency(payload)
     
     supabase = get_supabase_handler()
     result = supabase.update_user_quotation_currency(user_id, currency)
@@ -533,8 +621,7 @@ def create_quick_quotation():
     if not can_create_quotation(user_id, plan):
         return jsonify({'success': False, 'error': 'Free plan limit reached. Upgrade to Pro.'}), 403
     
-    region = session.get('user_region', 'UK')
-    currency = 'BRL' if region == 'BR' else 'GBP'
+    _, currency = resolve_region_and_currency(data)
     
     result = supabase.create_quotation(
         user_id=user_id,
@@ -566,8 +653,7 @@ def create_detailed_quotation():
         if not can_create_quotation(user_id, plan):
             return jsonify({'success': False, 'error': 'Free plan limit reached. Upgrade to Pro.'}), 403
 
-        region = session.get('user_region', 'UK')
-        currency = 'BRL' if region == 'BR' else 'GBP'
+        _, currency = resolve_region_and_currency(data)
 
         # Calculate total from items
         items = data.get('items', [])
@@ -611,8 +697,7 @@ def create_quotation():
     if not can_create_quotation(user_id, plan):
         return jsonify({'success': False, 'error': 'Free plan limit reached. Upgrade to Pro.'}), 403
     
-    region = session.get('user_region', 'UK')
-    currency = 'BRL' if region == 'BR' else 'GBP'
+    _, currency = resolve_region_and_currency(data)
     
     result = supabase.create_quotation(
         user_id=user_id,

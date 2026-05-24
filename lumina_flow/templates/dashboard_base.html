@@ -18,7 +18,6 @@
 </head>
 <body class="dashboard-layout" data-server-region="{{ session.get('user_region', 'UK') }}">
     <div class="dashboard-container">
-        <!-- Sidebar -->
         <aside class="dashboard-sidebar">
             <nav class="sidebar-nav">
                 <!-- Logo -->
@@ -79,6 +78,7 @@
                             <option value="BR">PT</option>
                             <option value="UK">EN</option>
                         </select>
+                        <span data-i18n="dashboard.language">Idioma</span>
                     </div>
                     
                     <!-- User Profile Element -->
@@ -108,7 +108,6 @@
             </nav>
         </aside>
         
-        <!-- Main Content -->
         <main class="dashboard-main">
             {% block content %}{% endblock %}
         </main>

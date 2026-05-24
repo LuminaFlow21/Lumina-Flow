@@ -24,7 +24,7 @@ def create_app(config_name=None):
     # O CSP é desabilitado por padrão para não interferir com scripts inline/externos
     # durante o desenvolvimento. Pode ser ajustado para produção.
     if not app.config['DEBUG']:
-        Talisman(app, content_security_policy=None)
+        Talisman(app, content_security_policy=None, frame_options='SAMEORIGIN')
 
     # Inicializa Flask-Login
     login_manager = LoginManager()

@@ -97,28 +97,12 @@
     font-size: 14px;
   }
 
-  .quotation-spa__template-preview {
+  .quotation-spa__template-card .template-preview {
     width: 100%;
-    height: 200px;
-    background: var(--color-background);
-    border-radius: 16px;
-    margin-bottom: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
   }
 
-  .quotation-spa__template-preview img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-
-  .quotation-spa__template-placeholder {
-    color: var(--color-text-secondary);
-    font-size: 14px;
-    text-align: center;
+  .quotation-spa__template-card .template-card-actions {
+    margin-top: 16px;
   }
 
   .quotation-spa__button-group {
@@ -297,6 +281,7 @@
     </div>
   </div>
 </div>
+
 {% endblock %}
 
 {% block extra_js %}
@@ -334,18 +319,31 @@
     );
 
     grid.innerHTML = filteredTemplates.map(template => `
-      <div class="card quotation-spa__template-card" onclick="selectTemplate('${template.template_file}')">
-        <div class="quotation-spa__template-preview">
-          ${template.preview_image 
-            ? `<img src="${template.preview_image}" alt="${template.name}" onerror="this.classList.add('is-hidden'); this.nextElementSibling.classList.remove('is-hidden');">
-               <div class="quotation-spa__template-placeholder is-hidden">Preview não disponível</div>`
-            : '<div class="quotation-spa__template-placeholder">Preview não disponível</div>'
-          }
+      <div class="card quotation-spa__template-card" data-template="${template.template_file}">
+        <div class="template-preview live">
+          <div class="preview-chip">Paleta do layout</div>
+          <div class="preview-swatches" role="img" aria-label="Cores do template ${template.name}">
+            ${(template.palette || []).map((color) => `
+              <div class="preview-swatch" style="--swatch-color: ${color}" title="${color}"></div>
+            `).join('')}
+            ${(!template.palette || !template.palette.length) ? '<p class="preview-hint">Paleta não disponível</p>' : ''}
+          </div>
+          <p class="preview-hint">Cores que compõem este orçamento.</p>
         </div>
         <h3>${template.name}</h3>
-        <button class="btn btn-primary">Selecionar</button>
+        <div class="template-card-actions">
+          <button type="button" class="btn btn-primary" data-select-template="${template.template_file}">Selecionar</button>
+        </div>
       </div>
     `).join('');
+
+    grid.querySelectorAll('[data-select-template]').forEach((button) => {
+      button.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        selectTemplate(button.getAttribute('data-select-template'));
+      });
+    });
   }
 
   function selectTemplate(templateFile) {
@@ -598,5 +596,15 @@
     document.getElementById('loading').classList.remove('active');
     goToStep(3);
   }
+
+  document.querySelectorAll('[data-preview-close]').forEach((element) => {
+    element.addEventListener('click', closePreview);
+  });
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && previewModal?.classList.contains('is-open')) {
+      closePreview();
+    }
+  });
 </script>
 {% endblock %}

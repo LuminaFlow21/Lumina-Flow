@@ -1,0 +1,622 @@
+{% set theme_defaults = {
+  'bg_body': '#eef3ff',
+  'fg_primary': '#182433',
+  'fg_muted': '#64748b',
+  'accent': '#4f46e5',
+  'accent_secondary': '#0ea5e9',
+  'accent_soft': '#e0e7ff',
+  'border': '#e2e8f0',
+  'card_bg': '#ffffff',
+  'hint_bg': '#f1f5f9'
+} %}
+{% set theme_map = theme or {} %}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Orçamento Rápido #{{ quotation.id[:8].upper() }}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/quotation_actions.css') }}">
+  <style>
+    :root {
+      --bg-body: {{ theme_map.get('bg_body', theme_defaults.bg_body) }};
+      --fg-primary: {{ theme_map.get('fg_primary', theme_defaults.fg_primary) }};
+      --fg-muted: {{ theme_map.get('fg_muted', theme_defaults.fg_muted) }};
+      --accent: {{ theme_map.get('accent', theme_defaults.accent) }};
+      --accent-secondary: {{ theme_map.get('accent_secondary', theme_defaults.accent_secondary) }};
+      --accent-soft: {{ theme_map.get('accent_soft', theme_defaults.accent_soft) }};
+      --border: {{ theme_map.get('border', theme_defaults.border) }};
+      --card-bg: {{ theme_map.get('card_bg', theme_defaults.card_bg) }};
+      --hint-bg: {{ theme_map.get('hint_bg', theme_defaults.hint_bg) }};
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: var(--bg-body);
+      font-family: 'Inter', sans-serif;
+      color: var(--fg-primary);
+      line-height: 1.5;
+      padding: clamp(24px, 6vw, 48px) 16px 48px;
+      min-height: 100vh;
+      overflow-x: hidden;
+      overflow-y: auto;
+    }
+
+    #quotationContainer {
+      width: min(760px, 100%);
+      margin: 0 auto;
+      background: var(--card-bg);
+      border-radius: 28px;
+      padding: clamp(28px, 6vw, 48px);
+      box-shadow: 0 30px 70px rgba(15, 23, 42, 0.12);
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      position: relative;
+    }
+
+    #quotationContainer::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      pointer-events: none;
+    }
+
+    .quick-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      gap: 24px;
+    }
+
+    .quick-brand {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      min-width: 240px;
+      flex: 1;
+    }
+
+    .quick-avatar {
+      width: 76px;
+      height: 76px;
+      border-radius: 22px;
+      border: 3px solid var(--accent);
+      background: linear-gradient(135deg, var(--accent), var(--accent-secondary));
+      color: #fff;
+      font-weight: 700;
+      font-size: 26px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      box-shadow: 0 15px 35px rgba(79, 70, 229, 0.35);
+    }
+
+    .quick-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .quick-heading span {
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--fg-muted);
+      font-weight: 600;
+    }
+
+    .quick-heading h1 {
+      font-family: 'Poppins', sans-serif;
+      font-size: clamp(22px, 4vw, 30px);
+      font-weight: 700;
+    }
+
+    .quick-heading p {
+      color: var(--accent);
+      font-weight: 600;
+      margin-top: 6px;
+    }
+
+    .quick-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      min-width: 180px;
+    }
+
+    .quick-meta .meta-pill {
+      background: var(--hint-bg);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 10px 16px;
+      font-size: 13px;
+      color: var(--fg-muted);
+      font-weight: 600;
+    }
+
+    .quick-meta .meta-pill strong {
+      display: block;
+      font-size: 16px;
+      color: var(--fg-primary);
+    }
+
+    .quick-card {
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      padding: 22px;
+      background: var(--card-bg);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .quick-card-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .quick-card-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-secondary));
+      color: #fff;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .quick-card-title {
+      font-size: 16px;
+      font-weight: 600;
+      font-family: 'Poppins', sans-serif;
+    }
+
+    .quick-info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 14px;
+    }
+
+    .quick-info-item {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      border-radius: 16px;
+      background: var(--hint-bg);
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      padding: 16px;
+    }
+
+    .quick-info-item span {
+      display: block;
+    }
+
+    .quick-info-item .label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--fg-muted);
+      font-weight: 600;
+    }
+
+    .quick-info-item .value {
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    .quick-service {
+      font-size: 15px;
+      color: var(--fg-primary);
+      line-height: 1.6;
+      white-space: pre-wrap;
+    }
+
+    .quick-total {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .quick-total-amount {
+      border-radius: 18px;
+      border: 1px solid var(--border);
+      display: flex;
+      overflow: hidden;
+      font-weight: 600;
+      font-size: 20px;
+    }
+
+    .quick-total-amount span {
+      padding: 12px 20px;
+      display: inline-flex;
+      align-items: center;
+    }
+
+    .quick-total-label {
+      background: var(--hint-bg);
+      color: var(--fg-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-size: 12px;
+    }
+
+    .quick-total-value {
+      background: linear-gradient(135deg, var(--accent), var(--accent-secondary));
+      color: #fff;
+      font-family: 'Poppins', sans-serif;
+    }
+
+    .cta-banner {
+      border-radius: 20px;
+      padding: 18px 20px;
+      background: linear-gradient(120deg, var(--accent), var(--accent-secondary));
+      color: #fff;
+      font-weight: 600;
+      font-size: 15px;
+      text-align: center;
+      box-shadow: 0 20px 40px rgba(79, 70, 229, 0.35);
+    }
+
+    .quick-notes {
+      border-radius: 18px;
+      border: 1px dashed var(--border);
+      padding: 18px;
+      background: var(--hint-bg);
+      white-space: pre-wrap;
+      line-height: 1.6;
+    }
+
+    .footer-hint {
+      text-align: center;
+      color: var(--fg-muted);
+      font-size: 13px;
+      margin-top: 8px;
+    }
+
+    @media (max-width: 640px) {
+      #quotationContainer {
+        padding: 28px 18px;
+      }
+
+      .quick-header {
+        flex-direction: column;
+      }
+
+      .quick-meta {
+        width: 100%;
+      }
+
+      .quick-total {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .cta-banner {
+        font-size: 14px;
+      }
+    }
+
+    @media print {
+      body {
+        background: #fff;
+        padding: 0;
+      }
+
+      #quotationContainer {
+        box-shadow: none;
+        border-radius: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+{% set currency_map = {'BRL': 'R$', 'USD': '$', 'EUR': '€', 'GBP': '£'} %}
+{% set base_symbol = currency_map.get(quotation.currency, currency_map['BRL']) %}
+{% set currency_symbol = quotation.currency_symbol or base_symbol %}
+{% set total_value = quotation.value|float %}
+{% set generator_name = user_name or (profile_data.company_name if profile_data else None) or (user_email or 'Lumina Flow') %}
+{% include 'partials/quotation_actions.html' %}
+  <main id="quotationContainer">
+    <header class="quick-header">
+      <div class="quick-brand">
+        <div class="quick-avatar">
+          {% if profile_data and profile_data.get('profile_photo_url') %}
+            <img src="{{ profile_data.profile_photo_url }}" alt="Foto de {{ user_name }}">
+          {% else %}
+            <span>{{ user_name[:2]|upper }}</span>
+          {% endif %}
+        </div>
+        <div class="quick-heading">
+          <span>Orçamento rápido</span>
+          <h1>{{ user_name }}</h1>
+          {% if profile_data and profile_data.get('company_name') %}
+            <p>{{ profile_data.company_name }}</p>
+          {% endif %}
+        </div>
+      </div>
+      <div class="quick-meta">
+        <div class="meta-pill">
+          Código
+          <strong>#{{ quotation.id[:8].upper() }}</strong>
+        </div>
+        {% if quotation.created_at %}
+        <div class="meta-pill">
+          Emitido em
+          <strong>{{ quotation.created_at[:10] }}</strong>
+        </div>
+        {% endif %}
+        {% if quotation.expiry_date %}
+        <div class="meta-pill">
+          Válido até
+          <strong>{{ quotation.expiry_date }}</strong>
+        </div>
+        {% endif %}
+      </div>
+    </header>
+
+    <section class="quick-card">
+      <div class="quick-card-header">
+        <div class="quick-card-icon">👤</div>
+        <h2 class="quick-card-title">Cliente</h2>
+      </div>
+      <div class="quick-info-grid">
+        <div class="quick-info-item">
+          <span class="label">Nome</span>
+          <span class="value">{{ quotation.client_name or 'Não informado' }}</span>
+        </div>
+        {% if quotation.phone %}
+        <div class="quick-info-item">
+          <span class="label">Telefone</span>
+          <span class="value">{{ quotation.phone }}</span>
+        </div>
+        {% endif %}
+        {% if quotation.email %}
+        <div class="quick-info-item">
+          <span class="label">Email</span>
+          <span class="value">{{ quotation.email }}</span>
+        </div>
+        {% endif %}
+      </div>
+    </section>
+
+    <section class="quick-card">
+      <div class="quick-card-header">
+        <div class="quick-card-icon">📋</div>
+        <h2 class="quick-card-title">Serviço</h2>
+      </div>
+      <div class="quick-service">
+        {{ quotation.service_description or 'Descrição não informada' }}
+      </div>
+    </section>
+
+    <section class="quick-card">
+      <div class="quick-card-header">
+        <div class="quick-card-icon">💰</div>
+        <h2 class="quick-card-title">Investimento</h2>
+      </div>
+      <div class="quick-total">
+        <div class="quick-total-amount">
+          <span class="quick-total-label">Total</span>
+          <span class="quick-total-value">{{ currency_symbol }} {{ '%.2f' | format(total_value) }}</span>
+        </div>
+        <div class="cta-banner">
+          Valores válidos mediante confirmação. Entre em contato para garantir este orçamento.
+        </div>
+      </div>
+    </section>
+
+    {% if quotation.notes %}
+    <section class="quick-card">
+      <div class="quick-card-header">
+        <div class="quick-card-icon">📝</div>
+        <h2 class="quick-card-title">Observações</h2>
+      </div>
+      <div class="quick-notes">
+        {{ quotation.notes }}
+      </div>
+    </section>
+    {% endif %}
+  </main>
+  <p class="footer-hint">Documento gerado automaticamente por Lumina Flow.</p>
+
+  <div class="modal" id="editModal" aria-hidden="true">
+    <div class="modal-backdrop" data-modal-close></div>
+    <div class="modal-card" role="dialog" aria-modal="true">
+      <h3>Editar orçamento</h3>
+      <form class="modal-form" id="editForm">
+        <div>
+          <label for="editClientNameQuick">Cliente</label>
+          <input type="text" id="editClientNameQuick" name="client_name" value="{{ quotation.client_name }}" required>
+        </div>
+        <div>
+          <label for="editDescriptionQuick">Descrição do serviço</label>
+          <textarea id="editDescriptionQuick" name="service_description" rows="3">{{ quotation.service_description or '' }}</textarea>
+        </div>
+        <div>
+          <label for="editValueQuick">Valor total</label>
+          <input type="number" step="0.01" min="0" id="editValueQuick" name="value" value="{{ '%.2f' | format(total_value) }}" required>
+        </div>
+        <div>
+          <label for="editExpiryQuick">Validade (opcional)</label>
+          <input type="date" id="editExpiryQuick" name="expiry_date" value="{{ quotation.expiry_date or '' }}">
+        </div>
+        <div>
+          <label for="editNotesQuick">Observações</label>
+          <textarea id="editNotesQuick" name="notes" rows="4">{{ quotation.notes or '' }}</textarea>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" data-modal-close>Cancelar</button>
+          <button type="submit" class="btn-primary" id="editSaveButtonQuick">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      const editModal = document.getElementById('editModal');
+      const editForm = document.getElementById('editForm');
+      const saveButton = document.getElementById('editSaveButtonQuick');
+
+      function openEditModal() {
+        if (!editModal) return;
+        editModal.classList.add('is-open');
+        editModal.setAttribute('aria-hidden', 'false');
+      }
+
+      function closeEditModal() {
+        if (!editModal) return;
+        editModal.classList.remove('is-open');
+        editModal.setAttribute('aria-hidden', 'true');
+      }
+
+      document.querySelectorAll('[data-modal-close]').forEach((element) => {
+        element.addEventListener('click', closeEditModal);
+      });
+
+      document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+          closeEditModal();
+        }
+      });
+
+      async function postEditForm(formData) {
+        try {
+          if (saveButton) {
+            saveButton.disabled = true;
+            saveButton.textContent = 'Salvando...';
+          }
+          const response = await fetch(`/dashboard/quotation/{{ quotation.id }}/edit`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(formData),
+          });
+          const result = await response.json();
+          if (!response.ok || !result.success) {
+            throw new Error(result.error || 'Erro ao salvar');
+          }
+          window.location.reload();
+        } catch (error) {
+          alert(error.message || 'Erro ao salvar');
+        } finally {
+          if (saveButton) {
+            saveButton.disabled = false;
+            saveButton.textContent = 'Salvar';
+          }
+          closeEditModal();
+        }
+      }
+
+      if (editForm) {
+        editForm.addEventListener('submit', (event) => {
+          event.preventDefault();
+          const formData = {
+            client_name: editForm.client_name.value.trim(),
+            service_description: editForm.service_description.value.trim(),
+            value: parseFloat(editForm.value.value) || 0,
+            expiry_date: editForm.expiry_date.value || null,
+            notes: editForm.notes.value.trim(),
+          };
+          postEditForm(formData);
+        });
+      }
+
+      async function renderCanvas() {
+        if (typeof html2canvas !== 'function') {
+          alert('Ferramenta de captura não carregada. Tente novamente.');
+          throw new Error('html2canvas indisponível');
+        }
+        const target = document.getElementById('quotationContainer');
+        return html2canvas(target, {
+          backgroundColor: '#ffffff',
+          scale: Math.min(2, window.devicePixelRatio || 1.5),
+          useCORS: true,
+        });
+      }
+
+      async function downloadImage() {
+        try {
+          const canvas = await renderCanvas();
+          const link = document.createElement('a');
+          link.download = `orcamento-{{ quotation.id[:8].upper() }}.png`;
+          link.href = canvas.toDataURL('image/png');
+          link.click();
+        } catch (error) {
+          console.error(error);
+        }
+      }
+
+      async function downloadPDF() {
+        const jsPDF = window.jspdf && window.jspdf.jsPDF;
+        if (typeof jsPDF !== 'function') {
+          alert('Ferramenta de PDF não carregada.');
+          return;
+        }
+        try {
+          const canvas = await renderCanvas();
+          const imgData = canvas.toDataURL('image/png');
+          const pdf = new jsPDF('p', 'mm', 'a4');
+          const pageWidth = pdf.internal.pageSize.getWidth();
+          const pageHeight = pdf.internal.pageSize.getHeight();
+          const imageWidth = canvas.width;
+          const imageHeight = canvas.height;
+          const scale = Math.min(pageWidth / imageWidth, pageHeight / imageHeight);
+          const renderWidth = imageWidth * scale;
+          const renderHeight = imageHeight * scale;
+          const marginX = (pageWidth - renderWidth) / 2;
+          const marginY = Math.max(10, (pageHeight - renderHeight) / 2);
+          pdf.addImage(imgData, 'PNG', marginX, marginY, renderWidth, renderHeight);
+          pdf.save(`orcamento-{{ quotation.id[:8].upper() }}.pdf`);
+        } catch (error) {
+          console.error(error);
+        }
+      }
+
+      function shareQuotation() {
+        const shareData = {
+          title: 'Orçamento {{ quotation.client_name }}',
+          text: "Orçamento no valor de {{ currency_symbol }} {{ '%.2f' | format(total_value) }}",
+          url: window.location.href,
+        };
+        if (navigator.share) {
+          navigator.share(shareData).catch(() => {});
+          return;
+        }
+        navigator.clipboard?.writeText(window.location.href).then(() => {
+          alert('Link copiado para a área de transferência.');
+        }).catch(() => {
+          alert('Copie o link manualmente: ' + window.location.href);
+        });
+      }
+
+      window.openEditModal = openEditModal;
+      window.downloadImage = downloadImage;
+      window.downloadPDF = downloadPDF;
+      window.shareQuotation = shareQuotation;
+    })();
+  </script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" integrity="sha512-BNa5l1JYW5H0U8nyCLlcsoFV3ayhtq/Y5cHIxHmr18bODsPwhj/KgOMGNJUgIAQ9l8D1eZGXIkzH+5wQ5y8QNA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" integrity="sha512-rcX+8Z0Yjy1Q5VhcE7UZ5EKeosFVJeFt3PcTJS3BM4tiTtHn6t2A+qsSVqS+8CA0nVddOZXS6UaYTDxAZtU2g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="{{ url_for('static', filename='js/quotation_actions.js') }}"></script>
+</body>
+</html>

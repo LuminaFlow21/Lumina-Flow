@@ -69,14 +69,16 @@
         </div>
         {% endif %}
 
-        <!-- Quotation History -->
-        <div class="quotation-history">
+        <!-- Recent Quotations -->
+        <section class="quotation-history recent-quotations-card">
             <div class="card-header">
-                <h2 data-i18n="dashboard.quotation_history">Histórico de Orçamentos</h2>
+                <div>
+                    <h2 data-i18n="dashboard.recent_quotations">Orçamentos Recentes</h2>
+                </div>
             </div>
-            
-            {% if quotations %}
-            <div class="table-container">
+
+            {% if recent_quotations %}
+            <div class="table-container table-container--compact">
                 <table class="quotation-table">
                     <thead>
                         <tr>
@@ -88,18 +90,24 @@
                         </tr>
                     </thead>
                     <tbody>
-                        {% for q in quotations %}
+                        {% for q in recent_quotations %}
                         <tr onclick="viewQuotation('{{ q.id }}')" style="cursor: pointer;">
-                            <td class="client-cell" data-label="Cliente" data-i18n-label="dashboard.client_name">{{ q.client_name }}</td>
-                            <td class="date-cell" data-label="Data" data-i18n-label="dashboard.date">{{ q.created_at[:10].split('-')[2] }}/{{ q.created_at[:10].split('-')[1] }}/{{ q.created_at[:10].split('-')[0] if q.created_at else '' }}</td>
-                            <td class="value-cell" data-label="Valor" data-i18n-label="dashboard.value">
+                            <td class="client-cell" data-i18n-label="dashboard.client_name">{{ q.client_name }}</td>
+                            <td class="date-cell" data-i18n-label="dashboard.date">
+                                {% if q.created_at %}
+                                {{ q.created_at[:10].split('-')[2] }}/{{ q.created_at[:10].split('-')[1] }}/{{ q.created_at[:10].split('-')[0] }}
+                                {% else %}
+                                -
+                                {% endif %}
+                            </td>
+                            <td class="value-cell" data-i18n-label="dashboard.value">
                                 {% if q.currency == 'BRL' %}R$ {% else %}£ {% endif %}{{ "%.2f"|format(q.value) }}
                             </td>
-                            <td data-label="Status" data-i18n-label="dashboard.status">
-                                <span class="status-badge status-{{ q.status }}" data-i18n="dashboard.{{ q.status }}"></span>
+                            <td data-i18n-label="dashboard.status">
+                                <span class="status-badge status-{{ q.status }}" data-i18n="dashboard.{{ q.status }}">{{ q.status|capitalize }}</span>
                             </td>
-                            <td class="actions-cell" data-label="Ações" data-i18n-label="dashboard.actions">
-                                <a href="{{ url_for('dashboard.quotation_detail', quotation_id=q.id) }}" class="btn btn-sm btn-secondary" data-i18n="dashboard.view_details">Ver Detalhes</a>
+                            <td class="actions-cell" data-i18n-label="dashboard.actions">
+                                <a href="{{ url_for('dashboard.quotation_detail', quotation_id=q.id) }}" class="btn btn-sm btn-secondary" data-i18n="dashboard.view_details">Ver detalhes</a>
                             </td>
                         </tr>
                         {% endfor %}
@@ -114,11 +122,15 @@
                     <line x1="16" y1="13" x2="8" y2="13"></line>
                     <line x1="16" y1="17" x2="8" y2="17"></line>
                 </svg>
-                <p data-i18n="dashboard.no_quotations">Nenhum orçamento ainda</p>
+                <p data-i18n="dashboard.no_recent_quotations">Nenhum orçamento recente</p>
                 <p class="text-slate" data-i18n="dashboard.start_quotation">Crie seu primeiro orçamento acima</p>
             </div>
             {% endif %}
-        </div>
+
+            <div class="recent-quotations-card__footer">
+                <a href="{{ url_for('dashboard.history') }}" class="btn btn-secondary" data-i18n="dashboard.view_more">Ver mais</a>
+            </div>
+        </section>
 
         <!-- Upgrade CTA for free users -->
         {% if subscription.plan == 'free' and quotation_count >= 2 %}

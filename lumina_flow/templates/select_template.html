@@ -23,31 +23,23 @@
         
         <div class="template-selection">
             {% for template in templates %}
-            <div class="template-card" onclick="selectTemplate('{{ template.template_file }}')">
-                <div class="template-preview">
-                    {% if template.preview_image %}
-                    <img src="{{ template.preview_image }}" alt="{{ template.name }}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                    <div class="template-placeholder" style="display: none;">
-                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                            <polyline points="14 2 14 8 20 8"></polyline>
-                            <line x1="16" y1="13" x2="8" y2="13"></line>
-                            <line x1="16" y1="17" x2="8" y2="17"></line>
-                        </svg>
+            <div class="template-card" data-template="{{ template.template_file }}">
+                <div class="template-preview live">
+                    <div class="preview-chip">Paleta do layout</div>
+                    <div class="preview-swatches" role="img" aria-label="Cores principais do template {{ template.name }}">
+                        {% for color in template.palette %}
+                        <div class="preview-swatch" style="--swatch-color: {{ color }}" title="{{ color }}"></div>
+                        {% endfor %}
+                        {% if not template.palette %}
+                        <p class="preview-hint">Paleta não disponível</p>
+                        {% endif %}
                     </div>
-                    {% else %}
-                    <div class="template-placeholder">
-                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                            <polyline points="14 2 14 8 20 8"></polyline>
-                            <line x1="16" y1="13" x2="8" y2="13"></line>
-                            <line x1="16" y1="17" x2="8" y2="17"></line>
-                        </svg>
-                    </div>
-                    {% endif %}
+                    <p class="preview-hint">Cores que compõem este orçamento.</p>
                 </div>
                 <h3>{{ template.name }}</h3>
-                <button class="btn btn-primary">Selecionar</button>
+                <div class="template-card-actions">
+                    <button type="button" class="btn btn-primary" data-select-template="{{ template.template_file }}">Selecionar</button>
+                </div>
             </div>
             {% endfor %}
         </div>
@@ -59,5 +51,12 @@ function selectTemplate(templateFile) {
     const quotationType = '{{ quotation_type }}';
     window.location.href = `/dashboard/quotation/create/${quotationType}?template=${templateFile}`;
 }
+
+document.querySelectorAll('[data-select-template]').forEach((button) => {
+    button.addEventListener('click', (event) => {
+        event.preventDefault();
+        selectTemplate(button.getAttribute('data-select-template'));
+    });
+});
 </script>
 {% endblock %}
