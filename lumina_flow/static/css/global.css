@@ -106,7 +106,7 @@
     --z-tooltip: 1060;
     
     /* Container */
-    --container-max-width: 1440px;
+    --container-max-width: 1800px;
     --container-padding: var(--spacing-lg);
 }
 

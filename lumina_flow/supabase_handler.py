@@ -191,7 +191,7 @@ class SupabaseHandler:
         
         Args:
             user_id: User ID
-            plan: Plan type (free, pro, enterprise)
+            plan: Plan type (free, basic, pro, enterprise)
             subscription_status: Subscription status (active, inactive, trial)
             stripe_customer_id: Stripe customer ID
             stripe_subscription_id: Stripe subscription ID
@@ -678,19 +678,29 @@ class SupabaseHandler:
         except Exception as e:
             return {'success': False, 'error': str(e)}
     
-    def update_quotation(self, user_id: str, quotation_id: str, update_data: dict) -> dict:
+    def update_quotation(self, user_id: str, quotation_id: str, update_data: dict = None, **fields) -> dict:
         """
         Update quotation fields
         Args:
             user_id: User ID
             quotation_id: Quotation ID
             update_data: Dictionary of fields to update
+            **fields: Optional keyword arguments for backwards compatibility
         Returns:
             Result dict with success status
         """
+        payload = {}
+        if isinstance(update_data, dict):
+            payload.update(update_data)
+        if fields:
+            payload.update(fields)
+
+        if not payload:
+            return {'success': False, 'error': 'No fields provided for update'}
+
         try:
             response = self.admin_client.table('quotations') \
-                .update(update_data) \
+                .update(payload) \
                 .eq('user_id', user_id) \
                 .eq('id', quotation_id) \
                 .execute()
@@ -867,6 +877,38 @@ class SupabaseHandler:
                 'error': str(e)
             }
 
+    def get_public_quotation(self, quotation_id: str) -> dict:
+        """
+        Get a quotation by ID without requiring an authenticated owner.
+
+        Args:
+            quotation_id: Quotation ID
+
+        Returns:
+            Dictionary with quotation data or error
+        """
+        try:
+            response = self.admin_client.table('quotations') \
+                .select('*') \
+                .eq('id', quotation_id) \
+                .execute()
+
+            if response.data and len(response.data) > 0:
+                return {
+                    'success': True,
+                    'data': response.data[0]
+                }
+            else:
+                return {
+                    'success': False,
+                    'error': 'Quotation not found'
+                }
+        except Exception as e:
+            return {
+                'success': False,
+                'error': str(e)
+            }
+
     def is_pro_user(self, user_id: str) -> bool:
         """
         Check if user is a Pro subscriber
@@ -879,7 +921,7 @@ class SupabaseHandler:
         """
         subscription = self.get_user_subscription(user_id)
         if subscription.get('success'):
-            return subscription.get('plan') == 'pro' and subscription.get('subscription_status') == 'active'
+            return subscription.get('plan') in ('basic', 'pro', 'enterprise') and subscription.get('subscription_status') == 'active'
         return False
 
 

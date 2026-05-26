@@ -4,206 +4,13 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
-<style>
-  .quotation-spa {
-    display: flex;
-    flex-direction: column;
-    gap: 32px;
-  }
-
-  .quotation-spa__progress {
-    display: flex;
-    justify-content: center;
-    gap: 8px;
-  }
-
-  .quotation-spa__progress-step {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: var(--color-border);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-family: var(--font-heading);
-    font-weight: 600;
-    font-size: 14px;
-    color: var(--color-text-secondary);
-    transition: all 0.3s ease;
-  }
-
-  .quotation-spa__progress-step.active,
-  .quotation-spa__progress-step.completed {
-    background: var(--color-primary);
-    color: #fff;
-  }
-
-  .quotation-spa__grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 24px;
-    max-width: 1000px;
-    margin: 0 auto;
-  }
-
-  .quotation-spa__grid--narrow {
-    max-width: 800px;
-  }
-
-  .quotation-spa__type-card,
-  .quotation-spa__template-card {
-    cursor: pointer;
-    text-align: center;
-    padding: 32px;
-  }
-
-  .step-section {
-    display: none;
-    animation: fadeIn 0.25s ease;
-  }
-
-  .step-section.active {
-    display: block;
-  }
-
-  @keyframes fadeIn {
-    from {
-      opacity: 0;
-      transform: translateY(6px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  .quotation-spa__icon {
-    width: 80px;
-    height: 80px;
-    margin: 0 auto 20px;
-    background: var(--color-background);
-    border-radius: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--color-primary);
-  }
-
-  .quotation-spa__card-list {
-    text-align: left;
-    margin-bottom: 24px;
-    padding-left: 20px;
-    color: var(--color-text-secondary);
-    font-size: 14px;
-  }
-
-  .quotation-spa__template-card .template-preview {
-    width: 100%;
-  }
-
-  .quotation-spa__template-card .template-card-actions {
-    margin-top: 16px;
-  }
-
-  .quotation-spa__button-group {
-    display: flex;
-    gap: 16px;
-    justify-content: center;
-    margin-top: 32px;
-  }
-
-  .quotation-spa__items-grid {
-    display: grid;
-    grid-template-columns: 2fr 1fr 1fr 1fr auto;
-    gap: 12px;
-    margin-bottom: 12px;
-    align-items: center;
-  }
-
-  .quotation-spa__add-item {
-    background: var(--color-background);
-    color: var(--color-primary);
-    border: 1px dashed var(--color-primary);
-    padding: 12px 20px;
-    border-radius: 12px;
-    cursor: pointer;
-    font-weight: 500;
-    width: 100%;
-  }
-
-  .quotation-spa__remove-item {
-    background: rgba(231, 76, 60, 0.12);
-    color: #E74C3C;
-    border: none;
-    width: 40px;
-    height: 40px;
-    border-radius: 12px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .is-hidden {
-    display: none !important;
-  }
-
-  .quotation-spa__loading {
-    text-align: center;
-    padding: 40px;
-    color: var(--color-text-secondary);
-  }
-
-  .quotation-spa__form-card {
-    max-width: 700px;
-    margin: 0 auto;
-    padding: 40px;
-  }
-
-  .quotation-spa__subtitle {
-    color: var(--color-text-secondary);
-  }
-
-  .quotation-spa h1,
-  .quotation-spa h2,
-  .quotation-spa h3 {
-    color: var(--color-text-main);
-  }
-
-  .quotation-spa h3 {
-    font-family: var(--font-heading);
-    font-weight: 600;
-    font-size: 18px;
-    margin-bottom: 12px;
-  }
-
-  .quotation-spa__spinner {
-    width: 40px;
-    height: 40px;
-    border: 3px solid var(--color-border);
-    border-top-color: var(--color-primary);
-    border-radius: 50%;
-    animation: quotation-spin 1s linear infinite;
-    margin: 0 auto 16px;
-  }
-
-  @keyframes quotation-spin {
-    to { transform: rotate(360deg); }
-  }
-
-  @media (max-width: 768px) {
-    .quotation-spa__items-grid {
-      grid-template-columns: 1fr;
-      gap: 8px;
-    }
-  }
-</style>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/quotation_spa.css') }}">
 {% endblock %}
 {% block content %}
 <div class="dashboard-header">
   <div class="dashboard-header__title">
-    <h1>Novo Orçamento</h1>
-    <p class="quotation-spa__subtitle">Crie seu orçamento em poucos passos</p>
+    <h1 data-i18n="dashboard.new_quotation">Novo Orçamento</h1>
+    <p class="quotation-spa__subtitle" data-i18n="dashboard.create_quotation_subtitle">Crie seu orçamento em poucos passos</p>
   </div>
 </div>
 
@@ -222,16 +29,16 @@
             <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
           </svg>
         </div>
-        <h3>Orçamento Rápido</h3>
-        <p class="quotation-spa__subtitle">Ideal para orçamentos simples e rápidos</p>
+        <h3 data-i18n="dashboard.quotation_quick">Orçamento Rápido</h3>
+        <p class="quotation-spa__subtitle" data-i18n="dashboard.quotation_quick_desc">Ideal para orçamentos simples e rápidos</p>
         <ul class="quotation-spa__card-list">
-          <li>Nome do cliente</li>
-          <li>Telefone</li>
-          <li>Descrição</li>
-          <li>Valor</li>
-          <li>Validade</li>
+          <li data-i18n="dashboard.client_name">Nome do cliente</li>
+          <li data-i18n="dashboard.phone">Telefone</li>
+          <li data-i18n="dashboard.service_description">Descrição</li>
+          <li data-i18n="dashboard.value">Valor</li>
+          <li data-i18n="dashboard.expiry_date">Validade</li>
         </ul>
-        <button class="btn btn-primary">Selecionar</button>
+        <button class="btn btn-primary" data-i18n="common.select">Selecionar</button>
       </div>
 
       <div class="card quotation-spa__type-card" onclick="selectType('detailed')">
@@ -244,17 +51,17 @@
             <line x1="10" y1="9" x2="8" y2="9"/>
           </svg>
         </div>
-        <h3>Orçamento Detalhado</h3>
-        <p class="quotation-spa__subtitle">Para orçamentos complexos com múltiplos itens</p>
+        <h3 data-i18n="dashboard.quotation_detailed">Orçamento Detalhado</h3>
+        <p class="quotation-spa__subtitle" data-i18n="dashboard.quotation_detailed_desc">Para orçamentos complexos com múltiplos itens</p>
         <ul class="quotation-spa__card-list">
-          <li>Nome do cliente</li>
-          <li>Telefone e Endereço</li>
-          <li>Múltiplos itens</li>
-          <li>Desconto</li>
-          <li>Observações</li>
-          <li>Valor calculado automaticamente</li>
+          <li data-i18n="dashboard.client_name">Nome do cliente</li>
+          <li data-i18n="dashboard.phone_address">Telefone e Endereço</li>
+          <li data-i18n="dashboard.multiple_items">Múltiplos itens</li>
+          <li data-i18n="dashboard.discount">Desconto</li>
+          <li data-i18n="dashboard.notes">Observações</li>
+          <li data-i18n="dashboard.auto_calculated">Valor calculado automaticamente</li>
         </ul>
-        <button class="btn btn-primary">Selecionar</button>
+        <button class="btn btn-primary" data-i18n="common.select">Selecionar</button>
       </div>
     </div>
   </div>
@@ -264,7 +71,7 @@
       <!-- Templates via JS -->
     </div>
     <div class="quotation-spa__button-group">
-      <button class="btn btn-secondary" onclick="goToStep(1)">Voltar</button>
+      <button class="btn btn-secondary" onclick="goToStep(1)" data-i18n="common.back">Voltar</button>
     </div>
   </div>
 
@@ -277,7 +84,7 @@
   <div class="step-section" id="loading">
     <div class="quotation-spa__loading">
       <div class="quotation-spa__spinner"></div>
-      <p>Processando...</p>
+      <p data-i18n="common.loading">Processando...</p>
     </div>
   </div>
 </div>
@@ -293,6 +100,10 @@
 
   // Load templates on page load
   document.addEventListener('DOMContentLoaded', async () => {
+    // Apply translations
+    if (typeof updateTranslations === 'function') {
+      updateTranslations();
+    }
     await loadTemplates();
   });
 
@@ -314,25 +125,26 @@
 
   function renderTemplates(type) {
     const grid = document.getElementById('templateGrid');
-    const filteredTemplates = templates.filter(t => 
+    const filteredTemplates = templates.filter(t =>
       type === 'quick' ? t.template_file.startsWith('quick_') : t.template_file.startsWith('detailed_')
     );
+    const t = (typeof window.t === 'function') ? window.t : (key) => key;
 
     grid.innerHTML = filteredTemplates.map(template => `
       <div class="card quotation-spa__template-card" data-template="${template.template_file}">
         <div class="template-preview live">
-          <div class="preview-chip">Paleta do layout</div>
-          <div class="preview-swatches" role="img" aria-label="Cores do template ${template.name}">
+          <div class="preview-chip">${t('dashboard.layout_palette')}</div>
+          <div class="preview-swatches" role="img" aria-label="${t('dashboard.template_colors', { name: template.name })}">
             ${(template.palette || []).map((color) => `
               <div class="preview-swatch" style="--swatch-color: ${color}" title="${color}"></div>
             `).join('')}
-            ${(!template.palette || !template.palette.length) ? '<p class="preview-hint">Paleta não disponível</p>' : ''}
+            ${(!template.palette || !template.palette.length) ? `<p class="preview-hint">${t('dashboard.palette_unavailable')}</p>` : ''}
           </div>
-          <p class="preview-hint">Cores que compõem este orçamento.</p>
+          <p class="preview-hint">${t('dashboard.palette_hint')}</p>
         </div>
         <h3>${template.name}</h3>
         <div class="template-card-actions">
-          <button type="button" class="btn btn-primary" data-select-template="${template.template_file}">Selecionar</button>
+          <button type="button" class="btn btn-primary" data-select-template="${template.template_file}">${t('common.select')}</button>
         </div>
       </div>
     `).join('');
@@ -354,40 +166,41 @@
 
   function renderForm() {
     const container = document.getElementById('formContainer');
+    const t = (typeof window.t === 'function') ? window.t : (key) => key;
     
     if (selectedType === 'quick') {
       container.innerHTML = `
         <form id="quotationForm">
           <div class="form-row">
             <div class="form-group">
-              <label for="client_name">Nome do Cliente *</label>
-              <input type="text" id="client_name" name="client_name" class="form-input" required placeholder="Digite o nome do cliente">
+              <label for="client_name">${t('dashboard.client_name')} *</label>
+              <input type="text" id="client_name" name="client_name" class="form-input" required placeholder="${t('dashboard.client_name')}">
             </div>
             <div class="form-group">
-              <label for="phone">Telefone</label>
+              <label for="phone">${t('dashboard.phone')}</label>
               <input type="tel" id="phone" name="phone" class="form-input" placeholder="(00) 00000-0000">
             </div>
           </div>
           
           <div class="form-group">
-            <label for="service_description">Descrição do Serviço *</label>
-            <textarea id="service_description" name="service_description" class="form-input" rows="4" required placeholder="Descreva o serviço a ser orçado"></textarea>
+            <label for="service_description">${t('dashboard.service_description')} *</label>
+            <textarea id="service_description" name="service_description" class="form-input" rows="4" required placeholder="${t('dashboard.service_description')}"></textarea>
           </div>
           
           <div class="form-row">
             <div class="form-group">
-              <label for="value">Valor (<span id="currencyLabel">R$</span>) *</label>
+              <label for="value">${t('dashboard.value')} (<span id="currencyLabel">R$</span>) *</label>
               <input type="number" id="value" name="value" class="form-input" step="0.01" min="0" required placeholder="0.00">
             </div>
             <div class="form-group">
-              <label for="expiry_date">Validade</label>
+              <label for="expiry_date">${t('dashboard.expiry_date')}</label>
               <input type="date" id="expiry_date" name="expiry_date" class="form-input">
             </div>
           </div>
 
           <div class="quotation-spa__button-group">
-            <button type="button" class="btn btn-secondary" onclick="goToStep(2)">Voltar</button>
-            <button type="submit" class="btn btn-primary">Gerar Orçamento</button>
+            <button type="button" class="btn btn-secondary" onclick="goToStep(2)">${t('common.back')}</button>
+            <button type="submit" class="btn btn-primary">${t('dashboard.new_quotation')}</button>
           </div>
         </form>
       `;
@@ -395,29 +208,29 @@
       container.innerHTML = `
         <form id="quotationForm">
           <div class="form-group">
-            <label for="client_name">Nome do Cliente *</label>
-            <input type="text" id="client_name" name="client_name" class="form-input" required placeholder="Digite o nome do cliente">
+            <label for="client_name">${t('dashboard.client_name')} *</label>
+            <input type="text" id="client_name" name="client_name" class="form-input" required placeholder="${t('dashboard.client_name')}">
           </div>
           
           <div class="form-row">
             <div class="form-group">
-              <label for="phone">Telefone</label>
+              <label for="phone">${t('dashboard.phone')}</label>
               <input type="tel" id="phone" name="phone" class="form-input" placeholder="(00) 00000-0000">
             </div>
             <div class="form-group">
-              <label for="address">Endereço</label>
-              <input type="text" id="address" name="address" class="form-input" placeholder="Endereço completo">
+              <label for="address">${t('dashboard.address')}</label>
+              <input type="text" id="address" name="address" class="form-input" placeholder="${t('dashboard.address')}">
             </div>
           </div>
 
           <div>
-            <label>Itens do Orçamento *</label>
+            <label>${t('dashboard.items')} *</label>
             <div id="itemsList">
               <div class="quotation-spa__items-grid">
-                <input type="text" placeholder="Descrição" class="form-input item-name" required>
-                <input type="number" placeholder="Qtd" class="form-input item-quantity" min="1" value="1" required>
-                <input type="number" placeholder="Valor" class="form-input item-value" step="0.01" min="0" required>
-                <input type="text" placeholder="Subtotal" class="form-input item-subtotal" readonly>
+                <input type="text" placeholder="${t('dashboard.description')}" class="form-input item-name" required>
+                <input type="number" placeholder="${t('dashboard.qty')}" class="form-input item-quantity" min="1" value="1" required>
+                <input type="number" placeholder="${t('dashboard.value')}" class="form-input item-value" step="0.01" min="0" required>
+                <input type="text" placeholder="${t('dashboard.subtotal')}" class="form-input item-subtotal" readonly>
                 <button type="button" onclick="removeItem(this)" class="quotation-spa__remove-item is-hidden">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <line x1="18" y1="6" x2="6" y2="18"/>
@@ -426,28 +239,28 @@
                 </button>
               </div>
             </div>
-            <button type="button" onclick="addItem()" class="quotation-spa__add-item">+ Adicionar Item</button>
+            <button type="button" onclick="addItem()" class="quotation-spa__add-item">+ ${t('dashboard.add_item')}</button>
           </div>
 
           <div class="form-row">
             <div class="form-group">
-              <label for="discount">Desconto (%)</label>
+              <label for="discount">${t('dashboard.discount')} (%)</label>
               <input type="number" id="discount" name="discount" class="form-input" step="0.01" min="0" max="100" placeholder="0">
             </div>
             <div class="form-group">
-              <label for="expiry_date">Validade</label>
+              <label for="expiry_date">${t('dashboard.expiry_date')}</label>
               <input type="date" id="expiry_date" name="expiry_date" class="form-input">
             </div>
           </div>
           
           <div class="form-group">
-            <label for="notes">Observações</label>
-            <textarea id="notes" name="notes" class="form-input" rows="4" placeholder="Observações adicionais"></textarea>
+            <label for="notes">${t('dashboard.notes')}</label>
+            <textarea id="notes" name="notes" class="form-input" rows="4" placeholder="${t('dashboard.notes_placeholder')}"></textarea>
           </div>
 
           <div class="quotation-spa__button-group">
-            <button type="button" class="btn btn-secondary" onclick="goToStep(2)">Voltar</button>
-            <button type="submit" class="btn btn-primary">Gerar Orçamento</button>
+            <button type="button" class="btn btn-secondary" onclick="goToStep(2)">${t('common.back')}</button>
+            <button type="submit" class="btn btn-primary">${t('dashboard.new_quotation')}</button>
           </div>
         </form>
       `;
@@ -474,13 +287,14 @@
 
   function addItem() {
     const itemsList = document.getElementById('itemsList');
+    const t = (typeof window.t === 'function') ? window.t : (key) => key;
     const newItem = document.createElement('div');
     newItem.className = 'quotation-spa__items-grid';
     newItem.innerHTML = `
-      <input type="text" placeholder="Descrição" class="form-input item-name" required>
-      <input type="number" placeholder="Qtd" class="form-input item-quantity" min="1" value="1" required>
-      <input type="number" placeholder="Valor" class="form-input item-value" step="0.01" min="0" required>
-      <input type="text" placeholder="Subtotal" class="form-input item-subtotal" readonly>
+      <input type="text" placeholder="${t('dashboard.description')}" class="form-input item-name" required>
+      <input type="number" placeholder="${t('dashboard.qty')}" class="form-input item-quantity" min="1" value="1" required>
+      <input type="number" placeholder="${t('dashboard.value')}" class="form-input item-value" step="0.01" min="0" required>
+      <input type="text" placeholder="${t('dashboard.subtotal')}" class="form-input item-subtotal" readonly>
       <button type="button" onclick="removeItem(this)" class="quotation-spa__remove-item">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <line x1="18" y1="6" x2="6" y2="18"/>

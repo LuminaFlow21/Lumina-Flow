@@ -9,6 +9,11 @@ const REGION_CONFIG = {
     UK: { language: 'en-GB', currency: '£' }
 };
 
+const LANGUAGE_UI_OPTIONS = {
+    BR: { flag: '🇧🇷', name: 'Português' },
+    UK: { flag: '🇬🇧', name: 'English' }
+};
+
 let currentLanguage = REGION_CONFIG.UK.language;
 let currentRegion = 'UK';
 let translations = {};
@@ -140,6 +145,7 @@ async function applyRegionChange(newRegion, { reload = true } = {}) {
     updatePricing();
     updatePlaceholderTranslations();
     updateDataLabels();
+    initLanguageControlClicks();
     syncGlobalState();
 
     if (reload && previous !== newRegion) {
@@ -226,6 +232,94 @@ function attachLanguageSelectors() {
     });
 }
 
+function initLanguageControlClicks() {
+    const controls = document.querySelectorAll('[data-language-control]');
+    controls.forEach(control => {
+        if (control.dataset.languageControlInit === 'true') return;
+
+        const select = control.querySelector('[data-language-selector]');
+        const dropdown = control.querySelector('[data-language-dropdown]');
+        const nameEl = control.querySelector('[data-language-name]');
+        if (!select || !dropdown) return;
+
+        const setActiveRegion = (region) => {
+            const data = LANGUAGE_UI_OPTIONS[region] || LANGUAGE_UI_OPTIONS.UK;
+            select.value = region;
+            nameEl.textContent = data.name;
+
+            dropdown.querySelectorAll('.language-option').forEach(option => {
+                const optionRegion = option.dataset.region;
+                option.classList.toggle('active', optionRegion === region);
+                const optionData = LANGUAGE_UI_OPTIONS[optionRegion];
+                if (optionData) {
+                    option.querySelector('.language-option-flag').textContent = optionData.flag;
+                    option.querySelector('.language-option-label').textContent = optionData.name;
+                }
+            });
+        };
+
+        const closeDropdown = () => {
+            control.classList.remove('open');
+            dropdown.setAttribute('aria-hidden', 'true');
+        };
+
+        const openDropdown = () => {
+            control.classList.add('open');
+            dropdown.setAttribute('aria-hidden', 'false');
+        };
+
+        const handleRegionChange = (region) => {
+            closeDropdown();
+            if (select.value !== region) {
+                const changeEvent = new Event('change', { bubbles: true });
+                select.value = region;
+                select.dispatchEvent(changeEvent);
+            } else {
+                setActiveRegion(region);
+            }
+        };
+
+        dropdown.querySelectorAll('.language-option').forEach(option => {
+            option.addEventListener('click', (event) => {
+                event.stopPropagation();
+                handleRegionChange(option.dataset.region);
+            });
+            option.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    handleRegionChange(option.dataset.region);
+                }
+            });
+        });
+
+        control.addEventListener('click', (event) => {
+            if (control.classList.contains('open')) {
+                if (!dropdown.contains(event.target)) {
+                    closeDropdown();
+                }
+                return;
+            }
+            openDropdown();
+        });
+
+        document.addEventListener('click', (event) => {
+            if (!control.contains(event.target)) {
+                closeDropdown();
+            }
+        });
+
+        control.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                closeDropdown();
+            }
+        });
+
+        setActiveRegion(select.value);
+        dropdown.setAttribute('aria-hidden', 'true');
+        control.dataset.languageControlInit = 'true';
+    });
+}
+
 function attachLanguageToggles() {
     const toggles = document.querySelectorAll('[data-language-toggle]');
     toggles.forEach(toggle => {
@@ -262,6 +356,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     await loadTranslations();
     const hasSavedLanguage = await initializeLanguage();
     attachLanguageSelectors();
+    initLanguageControlClicks();
     attachLanguageToggles();
     updateTranslations();
     updatePricing();

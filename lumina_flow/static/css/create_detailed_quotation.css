@@ -1,0 +1,55 @@
+/* ========================================
+   LUMINA FLOW - CREATE DETAILED QUOTATION
+   ======================================== */
+
+.items-container {
+    margin-top: var(--spacing-md);
+}
+
+.item-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr auto;
+    gap: var(--spacing-md);
+    align-items: end;
+    margin-bottom: var(--spacing-md);
+    padding: var(--spacing-md);
+    background: var(--color-slate);
+    border-radius: var(--radius-btn);
+}
+
+.remove-item-btn {
+    padding: 8px;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid #ef4444;
+    border-radius: var(--radius-btn);
+    color: #ef4444;
+    cursor: pointer;
+    transition: all var(--transition-base);
+}
+
+.remove-item-btn:hover {
+    background: #ef4444;
+    color: white;
+}
+
+.add-item-btn {
+    padding: var(--spacing-sm) var(--spacing-lg);
+    background: rgba(16, 185, 129, 0.1);
+    border: 1px solid #10b981;
+    border-radius: var(--radius-btn);
+    color: #10b981;
+    cursor: pointer;
+    transition: all var(--transition-base);
+    font-weight: var(--font-weight-semibold);
+}
+
+.add-item-btn:hover {
+    background: #10b981;
+    color: white;
+}
+
+.total-display {
+    font-size: 1.5rem;
+    font-weight: var(--font-weight-bold);
+    color: var(--color-indigo);
+}

@@ -4,8 +4,12 @@
 {% set total_value = quotation.value|float %}
 {% set _generator_default = user_name or (profile_data.company_name if profile_data else None) or session.get('user_email', 'Lumina Flow') %}
 {% set generator_name = generator_name if generator_name is defined else _generator_default %}
-{% set user_can_edit = current_user.is_authenticated and quotation.user_id == current_user.id|string %}
+{% set public_view = public_view if public_view is defined else False %}
+{% set user_can_edit = (not public_view) and current_user.is_authenticated and quotation.user_id == current_user.id|string %}
 {% set quotation_code = quotation.id[:8].upper() %}
+{% set public_path = url_for('dashboard.quotation_public_view', quotation_id=quotation.id) %}
+{% set raw_whatsapp = profile_data.get('whatsapp') if profile_data else '' %}
+{% set whatsapp_number = raw_whatsapp|replace(' ', '')|replace('(', '')|replace(')', '')|replace('-', '')|replace('+', '') if raw_whatsapp else '' %}
 
 {% if preview_mode %}
   <div class="qa-preview-banner">
@@ -15,7 +19,10 @@
 <div class="qa-actions action-buttons" data-generator-name="{{ generator_name }}"
      data-currency-symbol="{{ resolved_symbol }}"
      data-total-value="{{ '%.2f' | format(total_value) }}"
-     data-quotation-code="#{{ quotation_code }}">
+     data-quotation-code="#{{ quotation_code }}"
+     data-share-path="{{ public_path }}"
+     data-quotation-id="{{ quotation.id }}"
+     data-whatsapp-number="{{ whatsapp_number }}">
   <div class="qa-actions-mobile">
     <button type="button" class="qa-actions-toggle" data-qa-toggle>
       <span>Ações</span>
@@ -96,5 +103,26 @@
       <span>{{ generator_name }}</span>
     </button>
   </aside>
+
+  <div class="qa-share-modal" data-share-modal hidden>
+    <div class="qa-share-modal__backdrop" data-share-close></div>
+    <div class="qa-share-modal__card" role="dialog" aria-modal="true" aria-labelledby="qa-share-modal-title">
+      <div class="qa-share-modal__header">
+        <h3 id="qa-share-modal-title">Compartilhar orçamento</h3>
+        <button type="button" class="qa-share-modal__close" data-share-close aria-label="Fechar modal">×</button>
+      </div>
+      <div class="qa-share-modal__body">
+        <p>Copie o link público abaixo e envie para o seu cliente.</p>
+        <div class="qa-share-modal__field">
+          <input type="text" class="qa-share-modal__input" data-share-link readonly>
+          <button type="button" class="qa-share-modal__copy" data-share-copy>Copiar link</button>
+        </div>
+        <p class="qa-share-modal__hint" data-share-feedback>Clique em “Copiar link” para enviar o orçamento.</p>
+      </div>
+      <div class="qa-share-modal__footer">
+        <button type="button" class="qa-share-modal__close-btn" data-share-close>Fechar</button>
+      </div>
+    </div>
+  </div>
 </div>
 {% endif %}

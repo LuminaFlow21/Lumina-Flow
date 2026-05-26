@@ -1,0 +1,192 @@
+{% set raw_items = quotation.get('items') %}
+{% set quotation_items = raw_items if raw_items is not none else [] %}
+{% set is_detailed = quotation_items | length > 0 %}
+{% set quotation_type = 'detailed' if is_detailed else 'quick' %}
+<div id="editModal" class="modal edit-template-modal edit-template-modal--{{ quotation_type }}" aria-hidden="true">
+  <div class="modal-backdrop" data-modal-close></div>
+  <div class="modal-content edit-template-modal__shell" role="dialog" aria-modal="true" aria-labelledby="editModalTitle">
+    <header class="edit-template-modal__header">
+      <div class="edit-template-modal__header-content">
+        <p class="edit-template-modal__eyebrow" data-i18n="dashboard.edit_quotation">Editar Orçamento</p>
+        <h2 id="editModalTitle" class="edit-template-modal__title" data-i18n="dashboard.edit_template_title">Atualize o orçamento em tempo real</h2>
+        <p class="edit-template-modal__subtitle" data-i18n="dashboard.edit_template_subtitle">Clique em qualquer texto para editar e visualize as mudanças imediatamente antes de salvar.</p>
+      </div>
+      <div class="edit-template-modal__header-icons">
+        <button type="button" class="edit-template-modal__tips-button edit-template-modal__tips-button--mobile" data-tips-toggle aria-label="Ver dicas">
+          <span class="edit-template-modal__tips-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 3a6 6 0 0 0-6 6c0 2.16 1.08 3.63 2.12 4.72.58.61.88 1.4.88 2.22v.06a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1v-.06c0-.82.3-1.61.88-2.22C16.92 12.63 18 11.16 18 9a6 6 0 0 0-6-6Zm-2 18h4a1 1 0 0 0 0-2h-4a1 1 0 1 0 0 2Z" fill="currentColor"/>
+            </svg>
+          </span>
+        </button>
+        <button type="button" class="edit-template-modal__close" aria-label="Fechar" data-modal-close>
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+    </header>
+
+    <div class="edit-template-modal__body" data-quotation-root
+         data-quotation-id="{{ quotation.id }}"
+         data-quotation-type="{{ quotation_type }}"
+         data-currency-symbol="{{ currency_symbol }}"
+         data-currency-code="{{ currency_code }}"
+         data-total-value="{{ '%.2f' | format(quotation.value or total_value or 0) }}"
+         data-save-endpoint="{{ url_for('dashboard.edit_quotation', quotation_id=quotation.id) }}">
+      <div class="edit-template-modal__preview" data-editor-preview>
+        <div class="edit-card edit-card--{{ quotation_type }}" data-editor-card>
+          <div class="edit-card__banner">
+            <div class="edit-card__badge">{{ quotation.template|default('LuminaFlow') }}</div>
+            <div class="edit-card__meta">
+              <span class="edit-card__code">#{{ quotation.id[:8].upper() }}</span>
+              <span class="edit-card__status" data-i18n="dashboard.status">Status</span>
+            </div>
+          </div>
+
+          <section class="edit-card__section">
+            <h3 class="edit-card__section-title" data-i18n="dashboard.client_info">Informações do Cliente</h3>
+            <div class="edit-card__field">
+              <span class="edit-card__label" data-i18n="dashboard.client_name">Cliente</span>
+              <span class="edit-card__value" contenteditable data-field="client_name" data-placeholder="Nome do cliente">{{ quotation.client_name or '' }}</span>
+            </div>
+            <div class="edit-card__field">
+              <span class="edit-card__label" data-i18n="dashboard.phone">Telefone</span>
+              <span class="edit-card__value" contenteditable data-field="phone" data-placeholder="(00) 00000-0000">{{ quotation.phone or '' }}</span>
+            </div>
+            <div class="edit-card__field" data-only="detailed">
+              <span class="edit-card__label" data-i18n="dashboard.address">Endereço</span>
+              <div class="edit-card__multiline" contenteditable data-field="address" data-placeholder="Endereço completo">{{ quotation.address or '' }}</div>
+            </div>
+          </section>
+
+          <section class="edit-card__section">
+            <h3 class="edit-card__section-title" data-only="quick" data-i18n="dashboard.service_info">Serviço</h3>
+            <div class="edit-card__field edit-card__field--stacked" data-only="quick">
+              <span class="edit-card__label" data-i18n="dashboard.service_description">Descrição do serviço</span>
+              <div class="edit-card__multiline" contenteditable data-field="service_description" data-placeholder="Descreva o serviço prestado">{{ quotation.service_description or '' }}</div>
+            </div>
+            <div class="edit-card__field edit-card__field--stacked">
+              <span class="edit-card__label" data-i18n="dashboard.notes">Observações</span>
+              <div class="edit-card__multiline" contenteditable data-field="notes" data-placeholder="Observações adicionais">{{ quotation.notes or '' }}</div>
+            </div>
+          </section>
+
+          <section class="edit-card__section" data-only="detailed">
+            <div class="edit-card__section-head">
+              <h3 class="edit-card__section-title" data-i18n="dashboard.items">Itens do Orçamento</h3>
+              <button type="button" class="edit-card__add" data-action="add-item" data-i18n="dashboard.add_item">Adicionar Item</button>
+            </div>
+            <div class="edit-card__items" data-items-root>
+              <div class="edit-card__items-row edit-card__items-row--head">
+                <span class="edit-card__item edit-card__item--head edit-card__item--name" data-i18n="dashboard.description">Descrição</span>
+                <span class="edit-card__item edit-card__item--head edit-card__item--quantity" data-i18n="dashboard.qty">Qtd</span>
+                <span class="edit-card__item edit-card__item--head edit-card__item--value" data-i18n="dashboard.value">Valor</span>
+                <span class="edit-card__item edit-card__item--head edit-card__item--subtotal" data-i18n="dashboard.subtotal">Subtotal</span>
+                <span class="edit-card__items-spacer"></span>
+              </div>
+              {% for item in quotation_items %}
+              <div class="edit-card__items-row" data-item-row data-item-index="{{ loop.index0 }}">
+                <span class="edit-card__item edit-card__item--name" contenteditable data-item-field="name" data-item-index="{{ loop.index0 }}" data-placeholder="Descrição do item" data-label="Descrição">{{ item.name or '' }}</span>
+                <span class="edit-card__item edit-card__item--quantity" contenteditable data-item-field="quantity" data-item-index="{{ loop.index0 }}" data-type="number" data-label="Qtd">{{ item.quantity or 1 }}</span>
+                <span class="edit-card__item edit-card__item--value" contenteditable data-item-field="value" data-item-index="{{ loop.index0 }}" data-type="currency" data-label="Valor">{{ '%.2f' | format(item.value or 0) }}</span>
+                <span class="edit-card__item edit-card__item--subtotal" data-subtotal data-item-index="{{ loop.index0 }}" data-label="Subtotal">{{ '%.2f' | format((item.quantity or 0) * (item.value or 0)) }}</span>
+                <button type="button" class="edit-card__item-remove" data-action="remove-item" data-item-index="{{ loop.index0 }}" aria-label="Remover item">&times;</button>
+              </div>
+              {% endfor %}
+            </div>
+          </section>
+
+          <section class="edit-card__section">
+            <h3 class="edit-card__section-title" data-only="quick" data-i18n="dashboard.value">Valores</h3>
+            <div class="edit-card__field" data-only="quick">
+              <span class="edit-card__label" data-i18n="dashboard.value">Valor</span>
+              <span class="edit-card__currency">{{ currency_symbol }}</span>
+              <span class="edit-card__value" contenteditable data-field="value" data-type="currency">{{ '%.2f' | format(quotation.value or total_value or 0) }}</span>
+            </div>
+            <div class="edit-card__field">
+              <span class="edit-card__label" data-i18n="dashboard.expiry_date">Validade</span>
+              <span class="edit-card__value" contenteditable data-field="expiry_date" data-type="date" data-placeholder="DD/MM/AA">{{ quotation.expiry_date or '' }}</span>
+            </div>
+            <div class="edit-card__field" data-only="detailed">
+              <span class="edit-card__label" data-i18n="dashboard.discount">Desconto</span>
+              <span class="edit-card__currency">{{ currency_symbol }}</span>
+              <span class="edit-card__value" contenteditable data-field="discount" data-type="currency">{{ '%.2f' | format(quotation.discount or 0) }}</span>
+            </div>
+          </section>
+
+          <section class="edit-card__section edit-card__section--summary">
+            <div class="edit-card__summary" data-summary-root>
+              <div class="edit-card__summary-row">
+                <span data-i18n="dashboard.client_name">Cliente</span>
+                <strong data-summary="client">{{ quotation.client_name }}</strong>
+              </div>
+              <div class="edit-card__summary-row">
+                <span data-i18n="dashboard.value">Valor</span>
+                <strong>{{ currency_symbol }} <span data-summary="value">{{ '%.2f' | format(quotation.value or total_value or 0) }}</span></strong>
+              </div>
+              <div class="edit-card__summary-row">
+                <span data-i18n="dashboard.expiry_date">Validade</span>
+                <strong data-summary="expiry">{{ quotation.expiry_date or '-' }}</strong>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <aside class="edit-template-modal__sidebar" data-tips-panel>
+        <button type="button" class="edit-template-modal__tips-close" data-tips-close aria-label="Fechar dicas">&times;</button>
+        <div class="edit-template-modal__panel">
+          <h3 data-i18n="dashboard.edit_template_sidebar_title">Dicas rápidas</h3>
+          <ul class="edit-template-modal__tips">
+            <li data-i18n="dashboard.edit_template_tip_click">Clique em qualquer campo para editar o texto.</li>
+            <li data-i18n="dashboard.edit_template_tip_shortcuts">Use Ctrl/Cmd + B ou I para negrito e itálico.</li>
+            <li data-i18n="dashboard.edit_template_tip_items" data-only="detailed">Adicione ou remova itens para recalcular o total automaticamente.</li>
+            <li data-mobile-tip>Arraste os campos lentamente para evitar o teclado cobrindo o conteúdo.</li>
+          </ul>
+        </div>
+        <div class="edit-template-modal__panel edit-template-modal__panel--summary">
+          <h3 data-i18n="dashboard.edit_template_overview">Resumo</h3>
+          <div class="edit-template-modal__overview">
+            <div>
+              <span data-i18n="dashboard.value">Valor</span>
+              <strong>{{ currency_symbol }} <span data-overview="value">{{ '%.2f' | format(quotation.value or total_value or 0) }}</span></strong>
+            </div>
+            <div>
+              <span data-i18n="dashboard.expiry_date">Validade</span>
+              <strong data-overview="expiry">{{ quotation.expiry_date or '-' }}</strong>
+            </div>
+            <div data-only="detailed">
+              <span data-i18n="dashboard.discount">Desconto</span>
+              <strong>{{ currency_symbol }} <span data-overview="discount">{{ '%.2f' | format(quotation.discount or 0) }}</span></strong>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <div class="edit-template-modal__confirm" data-confirm-root hidden>
+      <div class="edit-template-modal__confirm-backdrop" data-confirm-dismiss></div>
+      <div class="edit-template-modal__confirm-card" role="alertdialog" aria-modal="true">
+        <p class="edit-template-modal__confirm-message" data-confirm-message>Deseja confirmar esta ação?</p>
+        <div class="edit-template-modal__confirm-actions">
+          <button type="button" class="edit-template-modal__confirm-btn edit-template-modal__confirm-btn--secondary" data-confirm-action="secondary">Voltar</button>
+          <button type="button" class="edit-template-modal__confirm-btn edit-template-modal__confirm-btn--primary" data-confirm-action="primary">Confirmar</button>
+        </div>
+      </div>
+    </div>
+
+    <footer class="edit-template-modal__footer">
+      <button type="button" class="edit-template-modal__footer-btn edit-template-modal__footer-btn--cancel" data-action="cancel">
+        <span class="edit-template-modal__footer-btn-icon" aria-hidden="true">✕</span>
+        <span class="edit-template-modal__footer-btn-text" data-i18n="common.cancel">Cancelar</span>
+      </button>
+      <button type="button" class="edit-template-modal__footer-btn edit-template-modal__footer-btn--confirm" data-action="save">
+        <span class="edit-template-modal__footer-btn-icon" aria-hidden="true">✔</span>
+        <span class="edit-template-modal__footer-btn-text" data-i18n="dashboard.confirm_changes">Confirmar alterações</span>
+      </button>
+    </footer>
+
+    <script type="application/json" id="quotationEditorData">{{ quotation | tojson }}</script>
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/edit_quotation_modal.js') }}" defer></script>

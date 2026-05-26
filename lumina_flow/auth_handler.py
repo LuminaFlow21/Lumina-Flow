@@ -288,7 +288,7 @@ class AuthHandler:
         
         Args:
             user_id: User ID
-            plan: New plan (free or pro)
+            plan: New plan (free, basic, pro, enterprise)
         
         Returns:
             Dictionary with success status

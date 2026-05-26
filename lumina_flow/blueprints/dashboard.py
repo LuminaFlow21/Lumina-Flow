@@ -102,9 +102,26 @@ ALL_TEMPLATES = {
 }
 
 
+def _safe_float(value, default: float = 0.0) -> float:
+    if value is None:
+        return default
+    if isinstance(value, (int, float)):
+        return float(value)
+    try:
+        text = str(value).strip()
+    except Exception:
+        return default
+    if not text:
+        return default
+    try:
+        normalized = text.replace(',', '.')
+        return float(normalized)
+    except (TypeError, ValueError):
+        return default
+
 def can_create_quotation(user_id: str, plan: str) -> bool:
     normalized_plan = (plan or 'free').lower()
-    if normalized_plan in ('basic', 'pro'):
+    if normalized_plan in ('basic', 'pro', 'enterprise'):
         return True
     supabase = get_supabase_handler()
     count_result = supabase.count_user_quotations(user_id)
@@ -482,13 +499,57 @@ def edit_quotation(quotation_id):
     supabase = get_supabase_handler()
     
     data = request.get_json()
+    raw_value = data.get('value')
+    raw_discount = data.get('discount')
+    raw_items = data.get('items')
+
+    items_payload = None
+    items_total = 0.0
+    if isinstance(raw_items, list):
+        items_payload = []
+        for item in raw_items:
+            name = (item or {}).get('name') or ''
+            quantity = _safe_float((item or {}).get('quantity'), 0.0)
+            value = _safe_float((item or {}).get('value'), 0.0)
+
+            if not name.strip() and quantity == 0 and value == 0:
+                continue
+
+            normalized = {
+                'name': name.strip(),
+                'quantity': quantity,
+                'value': value,
+            }
+            items_payload.append(normalized)
+            items_total += quantity * value
+
+    discount_value = _safe_float(raw_discount, 0.0) if raw_discount is not None else None
+    recalculated_value = None
+    if items_payload is not None:
+        effective_discount = discount_value if discount_value is not None else 0.0
+        recalculated_value = max(items_total - effective_discount, 0.0)
+
+    update_fields = {
+        'client_name': data.get('client_name'),
+        'phone': data.get('phone'),
+        'address': data.get('address'),
+        'service_description': data.get('service_description'),
+        'value': _safe_float(raw_value, 0.0) if raw_value is not None else None,
+        'expiry_date': data.get('expiry_date'),
+        'notes': data.get('notes'),
+        'discount': discount_value,
+        'items': items_payload,
+    }
+
+    if recalculated_value is not None:
+        update_fields['value'] = recalculated_value
+
+    update_data = {k: v for k, v in update_fields.items() if v is not None}
+
     result = supabase.update_quotation(
         user_id=user_id,
         quotation_id=str(quotation_id),
-        client_name=data.get('client_name'),
-        service_description=data.get('service_description'),
-        value=float(data.get('value', 0)),
-        expiry_date=data.get('expiry_date')
+        update_data=update_data
     )
     
     if result.get('success'):
@@ -619,7 +680,7 @@ def create_quick_quotation():
     plan = current_user.plan
     
     if not can_create_quotation(user_id, plan):
-        return jsonify({'success': False, 'error': 'Free plan limit reached. Upgrade to Pro.'}), 403
+        return jsonify({'success': False, 'error': 'Free plan limit reached. Upgrade to Basic.'}), 403
     
     _, currency = resolve_region_and_currency(data)
     
@@ -627,7 +688,7 @@ def create_quick_quotation():
         user_id=user_id,
         client_name=data.get('client_name'),
         service_description=data.get('service_description'),
-        value=float(data.get('value', 0)),
+        value=_safe_float(data.get('value'), 0.0),
         currency=currency,
         expiry_date=data.get('expiry_date'),
         quotation_type='quick',
@@ -651,15 +712,18 @@ def create_detailed_quotation():
         plan = current_user.plan
 
         if not can_create_quotation(user_id, plan):
-            return jsonify({'success': False, 'error': 'Free plan limit reached. Upgrade to Pro.'}), 403
+            return jsonify({'success': False, 'error': 'Free plan limit reached. Upgrade to Basic.'}), 403
 
         _, currency = resolve_region_and_currency(data)
 
         # Calculate total from items
         items = data.get('items', [])
-        total = sum(float(item['quantity']) * float(item['value']) for item in items)
-        discount = float(data.get('discount', 0))
-        final_value = total - discount
+        total = sum(
+            _safe_float(item.get('quantity'), 0.0) * _safe_float(item.get('value'), 0.0)
+            for item in items
+        )
+        discount = _safe_float(data.get('discount'), 0.0)
+        final_value = max(total - discount, 0.0)
 
         result = supabase.create_quotation(
             user_id=user_id,
@@ -695,7 +759,7 @@ def create_quotation():
     plan = current_user.plan
     
     if not can_create_quotation(user_id, plan):
-        return jsonify({'success': False, 'error': 'Free plan limit reached. Upgrade to Pro.'}), 403
+        return jsonify({'success': False, 'error': 'Free plan limit reached. Upgrade to Basic.'}), 403
     
     _, currency = resolve_region_and_currency(data)
     
@@ -703,7 +767,7 @@ def create_quotation():
         user_id=user_id,
         client_name=data.get('client_name'),
         service_description=data.get('service_description'),
-        value=float(data.get('value', 0)),
+        value=_safe_float(data.get('value'), 0.0),
         currency=currency,
         expiry_date=data.get('expiry_date')
     )
@@ -825,4 +889,51 @@ def cancel_subscription():
 
     return jsonify({'success': True})
 
+
+@dashboard_bp.route('/quotation/public/<quotation_id>')
+def quotation_public_view(quotation_id):
+    supabase = get_supabase_handler()
+    result = supabase.get_public_quotation(str(quotation_id))
+
+    if not result.get('success') or not result.get('data'):
+        abort(404)
+
+    quotation = result['data']
+    owner_id = quotation.get('user_id')
+
+    profile_data = {}
+    generator_name = None
+    if owner_id:
+        profile_result = supabase.get_user_profile(owner_id)
+        if profile_result.get('success'):
+            profile_data = profile_result.get('data') or {}
+            generator_name = profile_data.get('full_name') or profile_data.get('company_name')
+
+    if not generator_name:
+        generator_name = quotation.get('client_name') or 'Lumina Flow'
+
+    currency_code = quotation.get('currency') or ('BRL' if session.get('user_region', 'UK') == 'BR' else 'GBP')
+    if isinstance(currency_code, str):
+        currency_code = currency_code.upper()
+
+    currency_map = {
+        'BRL': 'R$',
+        'GBP': '£',
+        'USD': '$',
+        'EUR': '€'
+    }
+    currency_symbol = currency_map.get(currency_code, currency_code)
+
+    template = quotation.get('template', 'quotation_detail.html')
+
+    return render_template(
+        template,
+        quotation=quotation,
+        user_name=generator_name,
+        profile_data=profile_data,
+        currency_symbol=currency_symbol,
+        currency_code=currency_code,
+        generator_name=generator_name,
+        public_view=True
+    )
 

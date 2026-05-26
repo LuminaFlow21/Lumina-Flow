@@ -31,6 +31,7 @@
       --border: {{ theme_map.get('border', theme_defaults.border) }};
       --card-bg: {{ theme_map.get('card_bg', theme_defaults.card_bg) }};
       --hint-bg: {{ theme_map.get('hint_bg', theme_defaults.hint_bg) }};
+      --quotation-export-width: 960;
     }
 
     *, *::before, *::after {
@@ -62,19 +63,28 @@
       gap: 32px;
     }
 
+    #quotationContainer.is-export-clone {
+      box-shadow: none !important;
+    }
+
+    #quotationContainer.is-export-clone::before,
+    #quotationContainer.is-export-clone::after {
+      display: none !important;
+    }
+
     .modern-header {
       display: flex;
-      flex-wrap: wrap;
-      align-items: flex-start;
+      align-items: center;
       justify-content: space-between;
       gap: 32px;
+      flex-wrap: nowrap;
     }
 
     .brand-block {
       display: flex;
       align-items: center;
       gap: 20px;
-      flex: 1;
+      flex: 1 1 60%;
       min-width: 260px;
     }
 
@@ -121,9 +131,16 @@
     }
 
     .quote-meta {
-      min-width: 220px;
-      display: grid;
-      gap: 12px;
+      display: flex;
+      gap: 18px;
+      align-items: flex-end;
+      justify-content: flex-end;
+      flex-wrap: nowrap;
+      flex: 0 0 auto;
+      min-width: 240px;
+    }
+
+    .quote-meta > div {
       text-align: right;
     }
 
@@ -246,6 +263,12 @@
       text-align: center;
     }
 
+    thead th:nth-child(2),
+    thead th:nth-child(3),
+    thead th:nth-child(4) {
+      text-align: center;
+    }
+
     tbody tr:hover {
       background: rgba(79, 70, 229, 0.04);
     }
@@ -290,7 +313,19 @@
       background: var(--hint-bg);
       color: var(--fg-primary);
       white-space: pre-wrap;
-      line-height: 1.7;
+      line-height: 1.75;
+      font-size: 1.02rem;
+      font-weight: 500;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+      hyphens: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .notes-block p {
+      margin: 0;
     }
 
     .footer-hint {
@@ -400,9 +435,18 @@
 
       .modern-header {
         flex-direction: column;
+        align-items: flex-start;
+        gap: 18px;
       }
 
       .quote-meta {
+        width: 100%;
+        justify-content: flex-start;
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+
+      .quote-meta > div {
         text-align: left;
       }
 
@@ -435,7 +479,7 @@
 {% set total_value = quotation.value|float %}
 {% set gross_value = total_value + discount_amount %}
 {% include 'partials/quotation_actions.html' %}
-  <main id="quotationContainer">
+  <main id="quotationContainer" data-export-width="960">
     <header class="modern-header">
       <div class="brand-block">
         <div class="brand-avatar">
@@ -544,7 +588,7 @@
           </table>
         </div>
       </div>
-      <p class="table-hint">↔ Arraste para o lado para ver todos os itens</p>
+      <p class="table-hint" data-export-hidden>↔ Arraste para o lado para ver todos os itens</p>
 
       <div class="price-summary">
         <div class="summary-card">
@@ -569,189 +613,14 @@
         <h2>Observações</h2>
       </div>
       <div class="notes-block">
-        {{ quotation.notes }}
+        <p>{{ quotation.notes | trim }}</p>
       </div>
     </section>
     {% endif %}
   </main>
   <p class="footer-hint">Documento gerado automaticamente por Lumina Flow.</p>
 
-  <div class="modal" id="editModal" aria-hidden="true">
-    <div class="modal-backdrop" data-modal-close></div>
-    <div class="modal-card" role="dialog" aria-modal="true">
-      <h3>Editar orçamento</h3>
-      <form class="modal-form" id="editForm">
-        <div>
-          <label for="editClientName">Cliente</label>
-          <input type="text" id="editClientName" name="client_name" value="{{ quotation.client_name }}" required>
-        </div>
-        <div>
-          <label for="editDescription">Descrição do serviço</label>
-          <textarea id="editDescription" name="service_description" rows="3">{{ quotation.service_description or '' }}</textarea>
-        </div>
-        <div>
-          <label for="editValue">Valor total</label>
-          <input type="number" step="0.01" min="0" id="editValue" name="value" value="{{ '%.2f' | format(total_value) }}" required>
-        </div>
-        <div>
-          <label for="editExpiryDate">Validade (opcional)</label>
-          <input type="date" id="editExpiryDate" name="expiry_date" value="{{ quotation.expiry_date or '' }}">
-        </div>
-        <div>
-          <label for="editNotes">Observações</label>
-          <textarea id="editNotes" name="notes" rows="4">{{ quotation.notes or '' }}</textarea>
-        </div>
-        <div class="modal-actions">
-          <button type="button" class="btn-secondary" data-modal-close>Cancelar</button>
-          <button type="submit" class="btn-primary" id="editSaveButton">Salvar</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <script>
-    (function() {
-      const editModal = document.getElementById('editModal');
-      const editForm = document.getElementById('editForm');
-      const saveButton = document.getElementById('editSaveButton');
-
-      function openEditModal() {
-        if (!editModal) return;
-        editModal.classList.add('is-open');
-        editModal.setAttribute('aria-hidden', 'false');
-      }
-
-      function closeEditModal() {
-        if (!editModal) return;
-        editModal.classList.remove('is-open');
-        editModal.setAttribute('aria-hidden', 'true');
-      }
-
-      document.querySelectorAll('[data-modal-close]').forEach((element) => {
-        element.addEventListener('click', closeEditModal);
-      });
-
-      document.addEventListener('keydown', (event) => {
-        if (event.key === 'Escape') {
-          closeEditModal();
-        }
-      });
-
-      async function postEditForm(formData) {
-        try {
-          if (saveButton) {
-            saveButton.disabled = true;
-            saveButton.textContent = 'Salvando...';
-          }
-          const response = await fetch(`/dashboard/quotation/{{ quotation.id }}/edit`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(formData),
-          });
-          const result = await response.json();
-          if (!response.ok || !result.success) {
-            throw new Error(result.error || 'Erro ao salvar');
-          }
-          window.location.reload();
-        } catch (error) {
-          alert(error.message || 'Erro ao salvar');
-        } finally {
-          if (saveButton) {
-            saveButton.disabled = false;
-            saveButton.textContent = 'Salvar';
-          }
-          closeEditModal();
-        }
-      }
-
-      if (editForm) {
-        editForm.addEventListener('submit', (event) => {
-          event.preventDefault();
-          const formData = {
-            client_name: editForm.client_name.value.trim(),
-            service_description: editForm.service_description.value.trim(),
-            value: parseFloat(editForm.value.value) || 0,
-            expiry_date: editForm.expiry_date.value || null,
-            notes: editForm.notes.value.trim(),
-          };
-          postEditForm(formData);
-        });
-      }
-
-      async function renderCanvas() {
-        if (typeof html2canvas !== 'function') {
-          alert('Ferramenta de captura não carregada. Tente novamente.');
-          throw new Error('html2canvas indisponível');
-        }
-        const target = document.getElementById('quotationContainer');
-        return html2canvas(target, {
-          backgroundColor: '#ffffff',
-          scale: Math.min(2, window.devicePixelRatio || 1.5),
-          useCORS: true,
-        });
-      }
-
-      async function downloadImage() {
-        try {
-          const canvas = await renderCanvas();
-          const link = document.createElement('a');
-          link.download = `orcamento-{{ quotation.id[:8].upper() }}.png`;
-          link.href = canvas.toDataURL('image/png');
-          link.click();
-        } catch (error) {
-          console.error(error);
-        }
-      }
-
-      async function downloadPDF() {
-        const jsPDF = window.jspdf && window.jspdf.jsPDF;
-        if (typeof jsPDF !== 'function') {
-          alert('Ferramenta de PDF não carregada.');
-          return;
-        }
-        try {
-          const canvas = await renderCanvas();
-          const imgData = canvas.toDataURL('image/png');
-          const pdf = new jsPDF('p', 'mm', 'a4');
-          const pageWidth = pdf.internal.pageSize.getWidth();
-          const pageHeight = pdf.internal.pageSize.getHeight();
-          const imageWidth = canvas.width;
-          const imageHeight = canvas.height;
-          const scale = Math.min(pageWidth / imageWidth, pageHeight / imageHeight);
-          const renderWidth = imageWidth * scale;
-          const renderHeight = imageHeight * scale;
-          const marginX = (pageWidth - renderWidth) / 2;
-          const marginY = Math.max(10, (pageHeight - renderHeight) / 2);
-          pdf.addImage(imgData, 'PNG', marginX, marginY, renderWidth, renderHeight);
-          pdf.save(`orcamento-{{ quotation.id[:8].upper() }}.pdf`);
-        } catch (error) {
-          console.error(error);
-        }
-      }
-
-      function shareQuotation() {
-        const shareData = {
-          title: 'Orçamento {{ quotation.client_name }}',
-          text: "Orçamento no valor de {{ currency_symbol }} {{ '%.2f' | format(total_value) }}",
-          url: window.location.href,
-        };
-        if (navigator.share) {
-          navigator.share(shareData).catch(() => {});
-          return;
-        }
-        navigator.clipboard?.writeText(window.location.href).then(() => {
-          alert('Link copiado para a área de transferência.');
-        }).catch(() => {
-          alert('Copie o link manualmente: ' + window.location.href);
-        });
-      }
-
-      window.openEditModal = openEditModal;
-      window.downloadImage = downloadImage;
-      window.downloadPDF = downloadPDF;
-      window.shareQuotation = shareQuotation;
-    })();
-  </script>
+  {% include 'partials/edit_quotation_modal.html' %}
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" integrity="sha512-BNa5l1JYW5H0U8nyCLlcsoFV3ayhtq/Y5cHIxHmr18bODsPwhj/KgOMGNJUgIAQ9l8D1eZGXIkzH+5wQ5y8QNA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" integrity="sha512-rcX+8Z0Yjy1Q5VhcE7UZ5EKeosFVJeFt3PcTJS3BM4tiTtHn6t2A+qsSVqS+8CA0nVddOZXS6UaYTDxAZtU2g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script src="{{ url_for('static', filename='js/quotation_actions.js') }}"></script>

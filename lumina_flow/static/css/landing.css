@@ -18,8 +18,11 @@
 }
 
 
+
 .landing-header + main {
-    padding-top: clamp(96px, 12vh, 160px);
+    padding-top: 0;
+    position: relative;
+    overflow: visible;
 }
 
 .landing-header + main section {
@@ -321,15 +324,17 @@ main {
     min-height: min(100vh, 900px);
     display: flex;
     align-items: center;
-    padding: clamp(var(--spacing-2xl), 8vw, var(--spacing-3xl)) 0;
-    overflow: hidden;
+    padding: 0 0 clamp(var(--spacing-2xl), 8vw, var(--spacing-3xl)) 0;
+    overflow: visible;
+    overflow-x: visible;
 }
 
 .hero-background {
     position: absolute;
     top: 0;
-    left: 0;
-    width: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100vw;
     height: 100%;
     z-index: -1;
 }
@@ -360,6 +365,7 @@ main {
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
     gap: clamp(var(--spacing-xl), 5vw, var(--spacing-3xl));
     align-items: center;
+    overflow: visible;
 }
 
 @media (min-width: 1024px) {
@@ -369,18 +375,25 @@ main {
 }
 
 .hero-text {
-    max-width: 620px;
+    max-width: 100%;
+    overflow: visible;
 }
 
 .hero-text h1 {
     font-size: clamp(2.25rem, 6vw, 3.75rem);
     font-weight: var(--font-weight-extrabold);
-    line-height: 1.1;
+    line-height: 1.15;
     margin-bottom: var(--spacing-lg);
-    background: linear-gradient(135deg, var(--color-navy) 0%, var(--color-indigo) 100%);
+    background: linear-gradient(90deg, var(--color-navy) 0%, var(--color-indigo) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+    overflow: visible;
+    white-space: normal;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background-size: 120% 100%;
+    background-position: left center;
 }
 
 .hero-subtitle {
@@ -1236,11 +1249,6 @@ main {
 
     .hero-subtitle {
         font-size: var(--font-size-sm);
-    }
-
-    .hero-pill-group {
-        flex-direction: column;
-        align-items: flex-start;
     }
 
     .hero-checklist li {

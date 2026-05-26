@@ -5,16 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=0.5, maximum-scale=5.0, user-scalable=yes, shrink-to-fit=no"/>
     <title>{% block title %}Lumina Flow{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/global.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/logo_sidebar.png') }}">
     {% block extra_css %}{% endblock %}
-    <style>
-        #main-footer {
-            display: none !important;
-        }
-        header {
-            display: none !important;
-        }
-    </style>
+    {% set current_region = session.get('user_region', 'UK') %}
+    {% set initial_code = 'PT' if current_region == 'BR' else 'EN' %}
+    {% set initial_name = 'Português' if current_region == 'BR' else 'English' %}
+    {% set initial_flag = '🇧🇷' if current_region == 'BR' else '🇬🇧' %}
 </head>
 <body class="dashboard-layout" data-server-region="{{ session.get('user_region', 'UK') }}">
     <div class="dashboard-container">
@@ -68,17 +65,29 @@
                         </svg>
                         <span data-i18n="common.theme">Tema</span>
                     </button>
-                    <div class="language-control">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="12" cy="12" r="10"></circle>
-                            <line x1="2" y1="12" x2="22" y2="12"></line>
-                            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
-                        </svg>
-                        <select id="language-selector" data-language-selector class="language-selector">
-                            <option value="BR">PT</option>
-                            <option value="UK">EN</option>
+                    <div class="language-control" data-language-control>
+                        <div class="language-content">
+                            <span class="language-name" data-language-name>{{ initial_name }}</span>
+                        </div>
+                        <span class="language-control-toggle" aria-hidden="true">
+                            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="4 6 8 10 12 6"></polyline>
+                            </svg>
+                        </span>
+                        <div class="language-dropdown" data-language-dropdown>
+                            <button type="button" class="language-option" data-region="BR">
+                                <span class="language-option-flag" aria-hidden="true">🇧🇷</span>
+                                <span class="language-option-label">Português</span>
+                            </button>
+                            <button type="button" class="language-option" data-region="UK">
+                                <span class="language-option-flag" aria-hidden="true">🇬🇧</span>
+                                <span class="language-option-label">English</span>
+                            </button>
+                        </div>
+                        <select id="language-selector" data-language-selector class="language-selector" aria-hidden="true">
+                            <option value="BR" {% if current_region == 'BR' %}selected{% endif %}>PT</option>
+                            <option value="UK" {% if current_region != 'BR' %}selected{% endif %}>EN</option>
                         </select>
-                        <span data-i18n="dashboard.language">Idioma</span>
                     </div>
                     
                     <!-- User Profile Element -->

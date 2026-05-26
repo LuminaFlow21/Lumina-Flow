@@ -3,21 +3,7 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
-<style>
-    .dashboard-main {
-        padding: 2rem;
-        box-sizing: border-box;
-    }
-    .quotation-form-card {
-        max-width: 700px;
-        margin: 20px auto;
-        width: 100%;
-    }
-    .profile-completion-banner {
-        max-width: 700px;
-        margin: 20px auto 40px auto;
-    }
-</style>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}">
 {% endblock %}
 
 {% block content %}
