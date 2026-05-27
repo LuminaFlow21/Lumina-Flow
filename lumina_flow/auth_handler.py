@@ -6,7 +6,7 @@ Uses bcrypt for password hashing and PostgreSQL for user storage
 import logging
 import bcrypt
 import secrets
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional, Dict
 from flask_login import UserMixin
 from .supabase_handler import get_supabase_handler
@@ -57,6 +57,10 @@ class AuthHandler:
     def generate_verification_token(self) -> str:
         """Generate a secure random token for email verification"""
         return secrets.token_urlsafe(32)
+
+    def generate_reset_token(self) -> str:
+        """Generate a secure token for password resets"""
+        return secrets.token_urlsafe(48)
     
     def create_user(self, email: str, password: str, plan: str = 'free', full_name: str = None) -> Dict:
         """
@@ -307,6 +311,140 @@ class AuthHandler:
             }
             
         except Exception as e:
+            return {
+                'success': False,
+                'error': str(e)
+            }
+
+    def create_password_reset_token(self, email: str) -> Dict:
+        """Create and persist a password reset token for the given email"""
+        try:
+            logger.info('[Auth] Generating password reset token', extra={'email': email})
+
+            response = self.supabase.admin_client.table('users') \
+                .select('*') \
+                .eq('email', email) \
+                .execute()
+
+            if not response.data:
+                logger.warning('[Auth] Password reset requested for unknown email', extra={'email': email})
+                return {
+                    'success': False,
+                    'error': 'If the email exists, a reset link will be sent.',
+                    'code': 'not_found'
+                }
+
+            user = response.data[0]
+
+            if not user.get('verified'):
+                logger.warning('[Auth] Password reset requested for unverified account', extra={'email': email})
+                return {
+                    'success': False,
+                    'error': 'Please verify your email before requesting a password reset.',
+                    'code': 'unverified'
+                }
+
+            reset_token = self.generate_reset_token()
+            expires_at_dt = datetime.now(timezone.utc) + timedelta(hours=1)
+            expires_at = expires_at_dt.isoformat()
+
+            self.supabase.admin_client.table('users') \
+                .update({
+                    'reset_token': reset_token,
+                    'reset_token_expires_at': expires_at,
+                    'updated_at': datetime.now(timezone.utc).isoformat()
+                }) \
+                .eq('id', user['id']) \
+                .execute()
+
+            logger.info('[Auth] Password reset token stored', extra={'user_id': str(user['id'])})
+
+            return {
+                'success': True,
+                'token': reset_token,
+                'user': user,
+                'expires_at': expires_at
+            }
+
+        except Exception as e:
+            logger.exception('[Auth] Exception creating password reset token', extra={'email': email})
+            return {
+                'success': False,
+                'error': str(e)
+            }
+
+    def reset_password(self, token: str, new_password: str) -> Dict:
+        """Reset the password for a user via a valid reset token"""
+        try:
+            logger.info('[Auth] Resetting password via token')
+
+            response = self.supabase.admin_client.table('users') \
+                .select('*') \
+                .eq('reset_token', token) \
+                .execute()
+
+            if not response.data:
+                logger.warning('[Auth] Invalid password reset token')
+                return {
+                    'success': False,
+                    'error': 'Invalid or expired reset token.',
+                    'code': 'invalid_token'
+                }
+
+            user = response.data[0]
+            expires_at = user.get('reset_token_expires_at')
+
+            if not expires_at:
+                logger.warning('[Auth] Reset token without expiry', extra={'user_id': str(user['id'])})
+                return {
+                    'success': False,
+                    'error': 'Invalid or expired reset token.',
+                    'code': 'invalid_token'
+                }
+
+            try:
+                if isinstance(expires_at, str):
+                    expires_dt = datetime.fromisoformat(expires_at.replace('Z', '+00:00') if 'Z' in expires_at else expires_at)
+                else:
+                    expires_dt = expires_at
+                if expires_dt.tzinfo is None:
+                    expires_dt = expires_dt.replace(tzinfo=timezone.utc)
+            except Exception:
+                logger.exception('[Auth] Failed parsing reset token expiry', extra={'user_id': str(user['id'])})
+                return {
+                    'success': False,
+                    'error': 'Invalid or expired reset token.',
+                    'code': 'invalid_token'
+                }
+
+            if expires_dt < datetime.now(timezone.utc):
+                logger.warning('[Auth] Reset token expired', extra={'user_id': str(user['id'])})
+                return {
+                    'success': False,
+                    'error': 'Reset token has expired. Request a new one.',
+                    'code': 'expired'
+                }
+
+            password_hash = self.hash_password(new_password)
+
+            self.supabase.admin_client.table('users') \
+                .update({
+                    'password_hash': password_hash,
+                    'reset_token': None,
+                    'reset_token_expires_at': None,
+                    'updated_at': datetime.now(timezone.utc).isoformat()
+                }) \
+                .eq('id', user['id']) \
+                .execute()
+
+            logger.info('[Auth] Password reset successful', extra={'user_id': str(user['id'])})
+
+            return {
+                'success': True
+            }
+
+        except Exception as e:
+            logger.exception('[Auth] Exception resetting password')
             return {
                 'success': False,
                 'error': str(e)

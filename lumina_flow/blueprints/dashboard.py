@@ -1,6 +1,9 @@
 ﻿from flask import Blueprint, render_template, session, redirect, url_for, request, jsonify, abort
 from flask_login import login_required, current_user
 from datetime import datetime, timedelta
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
+from collections import Counter, defaultdict
+import json
 from ..supabase_handler import get_supabase_handler
 from ..stripe_handler import get_stripe_handler
 from ..auth_handler import get_auth_handler
@@ -40,6 +43,356 @@ def get_user_quotations(user_id: str, access_token: str = None) -> list:
 
 ALLOWED_DELETE_PLANS = {'basic', 'pro', 'enterprise'}
 REGION_TO_CURRENCY = {'BR': 'BRL', 'UK': 'GBP'}
+CURRENCY_SYMBOLS = {
+    'BRL': 'R$',
+    'GBP': '£',
+    'USD': '$',
+    'EUR': '€'
+}
+VALUE_BUCKETS = [
+    (0, 300),
+    (300, 800),
+    (800, 2000),
+    (2000, 5000),
+    (5000, None)
+]
+
+
+def format_decimal_value(value: Decimal, region: str = 'UK', places: int = 2) -> str:
+    quantize_pattern = '0' if places == 0 else '0.' + ('0' * places)
+    try:
+        quantized = value.quantize(Decimal(quantize_pattern), rounding=ROUND_HALF_UP)
+    except (InvalidOperation, AttributeError):
+        quantized = Decimal('0').quantize(Decimal(quantize_pattern))
+
+    formatted = f"{quantized:,.{places}f}"
+    if region == 'BR':
+        formatted = formatted.replace(',', 'TEMP').replace('.', ',').replace('TEMP', '.')
+    return formatted
+
+
+def format_integer(value: int, region: str = 'UK') -> str:
+    formatted = f"{value:,}"
+    if region == 'BR':
+        formatted = formatted.replace(',', '.')
+    return formatted
+
+
+def parse_datetime(value) -> datetime | None:
+    if not value:
+        return None
+    if isinstance(value, datetime):
+        return value
+    text = str(value).strip()
+    if not text:
+        return None
+    text = text.replace('Z', '+00:00')
+    try:
+        return datetime.fromisoformat(text)
+    except ValueError:
+        pass
+    fallback_formats = [
+        '%Y-%m-%dT%H:%M:%S',
+        '%Y-%m-%d %H:%M:%S',
+        '%Y-%m-%dT%H:%M',
+        '%Y-%m-%d %H:%M'
+    ]
+    for fmt in fallback_formats:
+        try:
+            return datetime.strptime(text[:len(fmt)], fmt)
+        except ValueError:
+            continue
+    try:
+        timestamp = float(text)
+        return datetime.fromtimestamp(timestamp)
+    except (ValueError, TypeError):
+        return None
+
+
+def bucket_label(lower: int | float, upper: int | float | None, symbol: str, region: str) -> str:
+    lower_text = format_decimal_value(Decimal(lower), region, 0)
+    if upper is None:
+        return f"{symbol} {lower_text}+"
+    upper_text = format_decimal_value(Decimal(upper), region, 0)
+    return f"{symbol} {lower_text} – {upper_text}"
+
+
+def compute_trend(current_value: float | int, previous_value: float | int, suffix: str = '', decimals: int = 0) -> dict:
+    diff = current_value - previous_value
+    direction = 'up' if diff > 0 else 'down' if diff < 0 else 'flat'
+    if decimals == 0:
+        diff_display = f"{diff:+.0f}{suffix}"
+    else:
+        diff_display = f"{diff:+.{decimals}f}{suffix}"
+    return {
+        'current': current_value,
+        'previous': previous_value,
+        'diff': diff,
+        'diff_display': diff_display,
+        'direction': direction
+    }
+
+
+def average_days(values: list[float]) -> float:
+    if not values:
+        return 0.0
+    return round(sum(values) / len(values), 1)
+
+
+def calculate_results_metrics(quotations: list, region: str = 'UK', period_key: str = '30') -> dict:
+    today = datetime.utcnow().date()
+    period_alias = str(period_key or '30').lower()
+    period_map = {'3': 3, '7': 7, '30': 30, 'all': None}
+    period_days = period_map.get(period_alias, 30)
+
+    created_dates = []
+    for quotation in quotations:
+        created_dt = parse_datetime(quotation.get('created_at'))
+        if created_dt:
+            created_dates.append(created_dt.date())
+
+    if period_days is None:
+        if created_dates:
+            current_start = min(created_dates)
+        else:
+            current_start = today - timedelta(days=29)
+        period_days = max((today - current_start).days + 1, 1)
+    else:
+        period_days = max(int(period_days), 1)
+        current_start = today - timedelta(days=period_days - 1)
+
+    default_currency = REGION_TO_CURRENCY.get(region, 'GBP')
+    currency_symbol = CURRENCY_SYMBOLS.get(default_currency, default_currency)
+
+    counts = {'total': 0, 'accepted': 0, 'rejected': 0, 'pending': 0}
+    financial_totals = {
+        'total_value': Decimal('0'),
+        'closed_value': Decimal('0'),
+        'lost_value': Decimal('0')
+    }
+    accepted_amounts: list[Decimal] = []
+    ticket_by_date: dict[str, list[Decimal]] = defaultdict(list)
+    closed_by_date: dict[str, Decimal] = defaultdict(lambda: Decimal('0'))
+    bucket_stats = {(lower, upper): {'total': 0, 'accepted': 0} for lower, upper in VALUE_BUCKETS}
+    template_stats = defaultdict(lambda: {'total': 0, 'accepted': 0})
+    accepted_services = Counter()
+    accepted_items = Counter()
+    rejected_services = Counter()
+
+    for quotation in quotations:
+        created_dt = parse_datetime(quotation.get('created_at'))
+        if not created_dt:
+            continue
+        created_date = created_dt.date()
+        in_period = period_alias == 'all' or current_start <= created_date <= today
+        if not in_period:
+            continue
+
+        status = (quotation.get('status') or 'pending').lower()
+        if status not in {'accepted', 'rejected', 'pending', 'expired'}:
+            status = 'pending'
+
+        counts['total'] += 1
+        if status in counts:
+            counts[status] += 1
+
+        raw_value = quotation.get('value') or quotation.get('total_value') or 0
+        try:
+            amount = Decimal(str(raw_value))
+        except (InvalidOperation, TypeError, ValueError):
+            amount = Decimal('0')
+
+        currency_code = (quotation.get('currency') or '').upper() or default_currency
+        decision_dt = parse_datetime(quotation.get('status_updated_at') or quotation.get('decision_date') or quotation.get('updated_at'))
+        effective_date = decision_dt.date() if decision_dt else created_date
+
+        if currency_code == default_currency:
+            financial_totals['total_value'] += amount
+            if status == 'accepted':
+                financial_totals['closed_value'] += amount
+                accepted_amounts.append(amount)
+                ticket_by_date[effective_date.isoformat()].append(amount)
+                closed_by_date[effective_date.isoformat()] += amount
+            elif status == 'rejected':
+                financial_totals['lost_value'] += amount
+
+            try:
+                numeric_amount = float(amount)
+            except (TypeError, ValueError, InvalidOperation):
+                numeric_amount = 0.0
+
+            bucket_key = VALUE_BUCKETS[-1]
+            for candidate in VALUE_BUCKETS:
+                lower, upper = candidate
+                if upper is None and numeric_amount >= lower:
+                    bucket_key = candidate
+                    break
+                if upper is not None and lower <= numeric_amount < upper:
+                    bucket_key = candidate
+                    break
+            bucket_stats[bucket_key]['total'] += 1
+            if status == 'accepted':
+                bucket_stats[bucket_key]['accepted'] += 1
+
+        template_code = (quotation.get('template') or '').strip()
+        if template_code:
+            template_stats[template_code]['total'] += 1
+            if status == 'accepted':
+                template_stats[template_code]['accepted'] += 1
+
+        if status == 'accepted':
+            service_description = (quotation.get('service_description') or '').strip()
+            items = quotation.get('items')
+
+            if service_description:
+                accepted_services[service_description] += 1
+
+            if isinstance(items, list):
+                for item in items:
+                    name = (item or {}).get('name')
+                    if not name:
+                        continue
+                    label = str(name).strip()
+                    if not label:
+                        continue
+                    accepted_items[label] += 1
+                    if not service_description:
+                        accepted_services[label] += 1
+            elif not service_description:
+                fallback_service = (quotation.get('title') or '').strip()
+                if fallback_service:
+                    accepted_services[fallback_service] += 1
+
+        if status == 'rejected':
+            service_description = (quotation.get('service_description') or '').strip()
+            items = quotation.get('items')
+
+            if service_description:
+                rejected_services[service_description] += 1
+
+            if isinstance(items, list):
+                for item in items:
+                    name = (item or {}).get('name')
+                    if not name:
+                        continue
+                    label = str(name).strip()
+                    if not label:
+                        continue
+                    if not service_description:
+                        rejected_services[label] += 1
+            elif not service_description:
+                fallback_service = (quotation.get('title') or '').strip()
+                if fallback_service:
+                    rejected_services[fallback_service] += 1
+
+    total_count = counts['total']
+    approval_rate = round((counts['accepted'] / total_count) * 100, 2) if total_count else 0.0
+    rejection_rate = round((counts['rejected'] / total_count) * 100, 2) if total_count else 0.0
+
+    average_ticket = Decimal('0')
+    if accepted_amounts:
+        average_ticket = sum(accepted_amounts, Decimal('0')) / len(accepted_amounts)
+
+    counts_display = {key: format_integer(value, region) for key, value in counts.items()}
+    financial_display = {
+        'total_value': f"{currency_symbol} {format_decimal_value(financial_totals['total_value'], region)}",
+        'closed_value': f"{currency_symbol} {format_decimal_value(financial_totals['closed_value'], region)}",
+        'lost_value': f"{currency_symbol} {format_decimal_value(financial_totals['lost_value'], region)}",
+        'average_ticket': f"{currency_symbol} {format_decimal_value(average_ticket, region)}"
+    }
+
+    def format_rate(value: float) -> str:
+        text = f"{value:.1f}"
+        if region == 'BR':
+            text = text.replace('.', ',')
+        return f"{text}%"
+
+    conversion_chart = {'labels': [], 'values': []}
+    for lower, upper in VALUE_BUCKETS:
+        stats = bucket_stats[(lower, upper)]
+        total_bucket = stats['total']
+        rate = round((stats['accepted'] / total_bucket) * 100, 1) if total_bucket else 0.0
+        conversion_chart['labels'].append(bucket_label(lower, upper, currency_symbol, region))
+        conversion_chart['values'].append(rate)
+
+    def build_series(series_dict, average: bool = False):
+        labels = sorted(series_dict.keys())
+        values = []
+        for label in labels:
+            data = series_dict[label]
+            if average:
+                if data:
+                    total_values = sum(data, Decimal('0'))
+                    avg = total_values / len(data)
+                else:
+                    avg = Decimal('0')
+                values.append(float(avg))
+            else:
+                values.append(float(data))
+        return {'labels': labels, 'values': values}
+
+    ticket_chart = build_series(ticket_by_date, average=True)
+    closed_chart = build_series(dict(closed_by_date))
+
+    def build_counter(counter_obj: Counter, limit: int = 6) -> dict:
+        items = counter_obj.most_common(limit)
+        return {
+            'labels': [label for label, _ in items],
+            'values': [count for _, count in items]
+        }
+
+    accepted_services_chart = build_counter(accepted_services)
+    accepted_items_chart = build_counter(accepted_items)
+    rejected_services_chart = build_counter(rejected_services)
+
+    template_chart_data = []
+    for template_code, stats in template_stats.items():
+        total_template = stats['total']
+        if total_template == 0:
+            continue
+        rate = round((stats['accepted'] / total_template) * 100, 1)
+        template_name = ALL_TEMPLATES.get(template_code, {}).get('name', template_code)
+        template_chart_data.append({'label': template_name, 'value': rate})
+    template_chart_data.sort(key=lambda entry: entry['value'], reverse=True)
+    template_chart_data = template_chart_data[:6]
+
+    charts = {
+        'conversion_by_value': conversion_chart,
+        'ticket_over_time': ticket_chart,
+        'closed_value_over_time': closed_chart,
+        'templates_conversion': {
+            'labels': [item['label'] for item in template_chart_data],
+            'values': [item['value'] for item in template_chart_data]
+        },
+        'accepted_services': accepted_services_chart,
+        'accepted_items': accepted_items_chart,
+        'rejected_services': rejected_services_chart
+    }
+
+    return {
+        'period': {
+            'key': period_alias,
+            'start': current_start.isoformat(),
+            'end': today.isoformat(),
+            'days': period_days
+        },
+        'counts': counts,
+        'counts_display': counts_display,
+        'financial_display': financial_display,
+        'rates': {
+            'approval': approval_rate,
+            'rejection': rejection_rate
+        },
+        'rates_display': {
+            'approval': format_rate(approval_rate),
+            'rejection': format_rate(rejection_rate)
+        },
+        'currency': {
+            'code': default_currency,
+            'symbol': currency_symbol
+        },
+        'charts': charts
+    }
 
 TEMPLATE_PALETTES = {
     'quick_modern_v2.html': ['#eef3ff', '#1565ff', '#29d6ff', '#e0e7ff'],
@@ -489,7 +842,49 @@ def history():
         quotations=quotations,
         subscription=subscription,
         profile_data=profile_data,
-        can_delete_quotations=can_delete_quotation(current_user.plan)
+        can_delete_quotations=can_delete_quotation(current_user.plan),
+        active_view='history'
+    )
+
+
+@dashboard_bp.route('/history/results')
+@login_required
+def history_results():
+    user_id = current_user.id
+    supabase = get_supabase_handler()
+    quotations = get_user_quotations(user_id)
+
+    user_region = session.get('user_region', 'UK')
+    period_key = request.args.get('period', '30')
+    active_tab = request.args.get('tab', 'basic')
+    if active_tab not in {'basic', 'advanced'}:
+        active_tab = 'basic'
+
+    metrics = calculate_results_metrics(quotations, region=user_region, period_key=period_key)
+
+    sub_result = supabase.get_user_subscription(user_id)
+    subscription = {
+        'plan': current_user.plan,
+        'status': sub_result.get('subscription_status', 'inactive') if sub_result.get('success') else 'inactive'
+    }
+
+    profile_result = supabase.get_user_profile(user_id)
+    profile_data = profile_result.get('data', {}) if profile_result.get('success') else {}
+
+    has_period_data = metrics['counts']['total'] > 0
+
+    return render_template(
+        'history_results.html',
+        subscription=subscription,
+        profile_data=profile_data,
+        metrics=metrics,
+        quotations_count=len(quotations),
+        has_quotations=len(quotations) > 0,
+        has_period_data=has_period_data,
+        active_view='results',
+        active_tab=active_tab,
+        period_key=metrics['period']['key'],
+        user_region=user_region
     )
 
 @dashboard_bp.route('/quotation/edit/<quotation_id>', methods=['POST'])

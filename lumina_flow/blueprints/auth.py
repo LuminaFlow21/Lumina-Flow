@@ -61,6 +61,98 @@ def handle_login():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
+@auth_bp.route('/forgot-password', methods=['POST'])
+def forgot_password():
+    """Handle password reset request by email"""
+    try:
+        data = request.get_json() or {}
+        email = data.get('email')
+
+        if not email:
+            return jsonify({'success': False, 'error': 'Email is required'}), 400
+
+        auth_handler = get_auth_handler()
+        token_result = auth_handler.create_password_reset_token(email)
+
+        if not token_result.get('success'):
+            code = token_result.get('code')
+
+            # Do not reveal if email exists
+            if code == 'not_found':
+                return jsonify({
+                    'success': True,
+                    'message': 'If the email exists, a reset link will be sent.'
+                })
+
+            if code == 'unverified':
+                return jsonify({
+                    'success': False,
+                    'error': token_result.get('error', 'Account not verified.')
+                }), 400
+
+            return jsonify({
+                'success': False,
+                'error': token_result.get('error', 'Unable to create reset token.')
+            }), 400
+
+        email_handler = get_email_handler()
+        user = token_result.get('user') or {}
+        email_response = email_handler.send_password_reset_email(
+            email=email,
+            reset_token=token_result.get('token'),
+            user_name=user.get('full_name')
+        )
+
+        if not email_response.get('success'):
+            return jsonify({
+                'success': False,
+                'error': email_response.get('error', 'Failed to send reset email via Brevo.')
+            }), 502
+
+        return jsonify({
+            'success': True,
+            'message': 'We sent instructions to reset your password.'
+        })
+
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@auth_bp.route('/reset-password', methods=['POST'])
+def reset_password():
+    """Reset password using token"""
+    try:
+        data = request.get_json() or {}
+        token = data.get('token')
+        password = data.get('password')
+        confirm_password = data.get('confirm_password')
+
+        if not token or not password or not confirm_password:
+            return jsonify({'success': False, 'error': 'Token and password are required'}), 400
+
+        if password != confirm_password:
+            return jsonify({'success': False, 'error': 'Passwords do not match'}), 400
+
+        if len(password) < 8:
+            return jsonify({'success': False, 'error': 'Password must be at least 8 characters'}), 400
+
+        auth_handler = get_auth_handler()
+        result = auth_handler.reset_password(token, password)
+
+        if result.get('success'):
+            return jsonify({'success': True, 'message': 'Password updated successfully. You can now login.'})
+
+        status_code = 400 if result.get('code') in {'invalid_token', 'expired'} else 500
+
+        return jsonify({
+            'success': False,
+            'error': result.get('error', 'Unable to reset password')
+        }), status_code
+
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
 @auth_bp.route('/signup', methods=['POST'])
 def handle_signup():
     """Handle signup request"""

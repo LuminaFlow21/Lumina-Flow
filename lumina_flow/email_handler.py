@@ -127,6 +127,96 @@ If you didn't create an account, please ignore this email.
                 'success': False,
                 'error': str(e)
             }
+
+    def send_password_reset_email(self, email: str, reset_token: str, user_name: Optional[str] = None) -> Dict:
+        """Send password reset email with a secure link"""
+        try:
+            logger.info('[Email] Sending password reset email', extra={'email': email})
+
+            reset_url = f"{current_app.config.get('BASE_URL', 'http://localhost:5000')}/auth/login?reset_token={reset_token}"
+
+            email_data = {
+                "sender": {
+                    "name": "Lumina Flow",
+                    "email": current_app.config.get('BREVO_SENDER_EMAIL', 'noreply@luminaflow.com')
+                },
+                "to": [
+                    {
+                        "email": email,
+                        "name": user_name or email.split('@')[0]
+                    }
+                ],
+                "subject": "Reset your Lumina Flow password",
+                "htmlContent": f"""
+                <html>
+                <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                        <h2 style="color: #1e40af;">Reset your password</h2>
+                        <p>We received a request to reset your Lumina Flow password.</p>
+                        <p>If you made this request, click the button below to choose a new password.</p>
+
+                        <div style="text-align: center; margin: 30px 0;">
+                            <a href="{reset_url}"
+                               style="background-color: #1e40af; color: white; padding: 12px 30px;
+                                      text-decoration: none; border-radius: 5px; font-weight: bold;">
+                                Reset password
+                            </a>
+                        </div>
+
+                        <p style="font-size: 12px; color: #666;">
+                            If the button doesn't work, copy and paste this link into your browser:<br>
+                            <a href="{reset_url}" style="color: #1e40af;">{reset_url}</a>
+                        </p>
+
+                        <p style="font-size: 12px; color: #999;">
+                            This link will expire in 1 hour for your security.<br>
+                            If you didn't request a password reset, you can safely ignore this email.
+                        </p>
+                    </div>
+                </body>
+                </html>
+                """,
+                "textContent": f"""
+We received a request to reset your Lumina Flow password.
+
+If you made this request, use the link below to choose a new password:
+{reset_url}
+
+This link will expire in 1 hour. If you didn't request a password reset, you can ignore this email.
+                """
+            }
+
+            headers = {
+                'accept': 'application/json',
+                'content-type': 'application/json',
+                'api-key': self.api_key
+            }
+
+            response = requests.post(
+                f'{self.base_url}/smtp/email',
+                json=email_data,
+                headers=headers
+            )
+
+            logger.info('[Email] Password reset email response', extra={'status': response.status_code})
+
+            if response.status_code in [200, 201, 202]:
+                return {
+                    'success': True,
+                    'message': 'Password reset email sent'
+                }
+            else:
+                return {
+                    'success': False,
+                    'error': f'Brevo API error: {response.status_code} - {response.text}'
+                }
+
+        except Exception as e:
+            logger.exception('[Email] Exception sending password reset email', extra={'email': email})
+            return {
+                'success': False,
+                'error': str(e)
+            }
     
     def send_welcome_email(self, email: str, user_name: str = None) -> Dict:
         """

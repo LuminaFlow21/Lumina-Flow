@@ -10,10 +10,10 @@
         <!-- Reader Buttons -->
         <div class="history-reader">
             <div class="history-reader__buttons">
-                <button type="button" class="reader-btn is-active" data-i18n="dashboard.history_tab_history">Histórico</button>
-                <button type="button" class="reader-btn" data-i18n="dashboard.history_tab_results">Resultados</button>
+                <a href="{{ url_for('dashboard.history') }}" class="reader-btn {% if active_view == 'history' %}is-active{% endif %}" data-i18n="dashboard.history_tab_history">Histórico</a>
+                <a href="{{ url_for('dashboard.history_results') }}" class="reader-btn {% if active_view == 'results' %}is-active{% endif %}" data-i18n="dashboard.history_tab_results">Resultados</a>
             </div>
-            <p class="history-reader__hint" data-i18n="dashboard.history_tab_hint">Em breve você poderá alternar entre histórico e resultados.</p>
+            <p class="history-reader__hint" data-i18n="dashboard.history_tab_hint_active">Acompanhe o histórico ou visualize resultados detalhados.</p>
         </div>
 
         <div class="history-header">

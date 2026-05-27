@@ -21,12 +21,15 @@
         <form class="auth-form" id="loginForm">
             <div class="form-group">
                 <label for="email" data-i18n="auth.email">Email</label>
-                <input type="email" id="email" name="email" required placeholder="your@email.com">
+                <input type="email" id="email" name="email" required placeholder="your@email.com" data-i18n-placeholder="auth.email_placeholder">
             </div>
             
-            <div class="form-group">
+            <div class="form-group password-group">
                 <label for="password" data-i18n="auth.password">Password</label>
-                <input type="password" id="password" name="password" required placeholder="••••••••">
+                <div class="password-field">
+                    <input type="password" id="password" name="password" required placeholder="••••••••" data-i18n-placeholder="auth.password_placeholder">
+                    <button type="button" class="password-toggle" data-password-toggle data-password-target="#password"></button>
+                </div>
             </div>
 
             <div class="form-actions">
@@ -62,17 +65,23 @@
             
             <div class="form-group">
                 <label for="signupEmail" data-i18n="auth.email">Email</label>
-                <input type="email" id="signupEmail" name="email" required placeholder="your@email.com">
+                <input type="email" id="signupEmail" name="email" required placeholder="your@email.com" data-i18n-placeholder="auth.email_placeholder">
             </div>
             
-            <div class="form-group">
+            <div class="form-group password-group">
                 <label for="signupPassword" data-i18n="auth.password">Password</label>
-                <input type="password" id="signupPassword" name="password" required placeholder="••••••••">
+                <div class="password-field">
+                    <input type="password" id="signupPassword" name="password" required placeholder="••••••••" data-i18n-placeholder="auth.password_placeholder">
+                    <button type="button" class="password-toggle" data-password-toggle data-password-target="#signupPassword"></button>
+                </div>
             </div>
 
-            <div class="form-group">
+            <div class="form-group password-group">
                 <label for="confirmPassword" data-i18n="auth.confirm_password">Confirm Password</label>
-                <input type="password" id="confirmPassword" name="confirm_password" required placeholder="••••••••">
+                <div class="password-field">
+                    <input type="password" id="confirmPassword" name="confirm_password" required placeholder="••••••••" data-i18n-placeholder="auth.password_placeholder">
+                    <button type="button" class="password-toggle" data-password-toggle data-password-target="#confirmPassword"></button>
+                </div>
             </div>
 
             <button type="submit" class="btn btn-primary btn-full" data-i18n="auth.create_account">Create account</button>
@@ -129,6 +138,60 @@
     </div>
 </div>
 
+<!-- Password Reset Modal -->
+<div class="auth-modal" id="resetModal" hidden>
+    <div class="auth-modal__backdrop" data-reset-close></div>
+    <div class="auth-modal__card" role="dialog" aria-modal="true" aria-labelledby="resetModalTitle">
+        <button type="button" class="auth-modal__close" data-reset-close aria-label="Fechar modal" data-i18n-aria-label="auth.reset_modal_close_aria">×</button>
+        <header class="auth-modal__header">
+            <h2 class="auth-modal__title" id="resetModalTitle" data-i18n="auth.reset_modal_title_request">Recuperar senha</h2>
+        </header>
+        <div class="auth-modal__body">
+            <section class="auth-modal__step" data-reset-step="request">
+                <p class="auth-modal__description" data-i18n="auth.reset_modal_request_description">Informe o e-mail cadastrado para receber o link de redefinição.</p>
+                <form id="resetRequestForm" class="auth-modal__form">
+                    <div class="form-group">
+                        <label for="resetEmail" data-i18n="auth.reset_modal_email_label">E-mail</label>
+                        <input type="email" id="resetEmail" name="email" required placeholder="voce@email.com" data-i18n-placeholder="auth.email_placeholder">
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-full" data-i18n="auth.reset_modal_send_link">Enviar link</button>
+                    <p class="auth-modal__status" id="resetRequestStatus"></p>
+                </form>
+                <div class="auth-modal__actions">
+                    <button type="button" class="btn btn-outline btn-full" data-reset-close data-i18n="auth.reset_modal_close">Fechar</button>
+                </div>
+            </section>
+
+            <section class="auth-modal__step" data-reset-step="change" hidden>
+                <p class="auth-modal__description" data-i18n="auth.reset_modal_change_description">Defina uma nova senha para acessar sua conta.</p>
+                <form id="resetPasswordForm" class="auth-modal__form">
+                    <input type="hidden" id="resetTokenInput" name="token">
+                    <div class="form-group password-group">
+                        <label for="newPassword" data-i18n="auth.reset_modal_new_password">Nova senha</label>
+                        <div class="password-field">
+                            <input type="password" id="newPassword" name="password" required minlength="8" placeholder="••••••••" data-i18n-placeholder="auth.password_placeholder">
+                            <button type="button" class="password-toggle" data-password-toggle data-password-target="#newPassword"></button>
+                        </div>
+                    </div>
+                    <div class="form-group password-group">
+                        <label for="confirmNewPassword" data-i18n="auth.reset_modal_confirm_password">Confirmar nova senha</label>
+                        <div class="password-field">
+                            <input type="password" id="confirmNewPassword" name="confirm_password" required minlength="8" placeholder="••••••••" data-i18n-placeholder="auth.password_placeholder">
+                            <button type="button" class="password-toggle" data-password-toggle data-password-target="#confirmNewPassword"></button>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-full" data-i18n="auth.reset_modal_update_password">Atualizar senha</button>
+                    <p class="auth-modal__status" id="resetPasswordStatus"></p>
+                </form>
+                <div class="auth-modal__actions">
+                    <button type="button" class="btn btn-outline btn-full" data-reset-step-back data-i18n="auth.reset_modal_request_new_link">Solicitar novo link</button>
+                    <button type="button" class="btn btn-secondary btn-full" data-reset-close data-i18n="auth.reset_modal_back_to_login">Voltar ao login</button>
+                </div>
+            </section>
+        </div>
+    </div>
+</div>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     console.log('[Auth] DOM loaded');
@@ -144,6 +207,89 @@ document.addEventListener('DOMContentLoaded', function() {
     const showLogin = document.getElementById('showLogin');
     const loginCard = document.getElementById('loginCard');
     const signupCard = document.getElementById('signupCard');
+    const forgotPassword = document.getElementById('forgotPassword');
+    const resetModal = document.getElementById('resetModal');
+    const resetModalTitle = document.getElementById('resetModalTitle');
+    const resetSteps = resetModal ? {
+        request: resetModal.querySelector('[data-reset-step="request"]'),
+        change: resetModal.querySelector('[data-reset-step="change"]')
+    } : {};
+    const resetRequestForm = document.getElementById('resetRequestForm');
+    const resetPasswordForm = document.getElementById('resetPasswordForm');
+    const resetTokenInput = document.getElementById('resetTokenInput');
+    const resetRequestStatus = document.getElementById('resetRequestStatus');
+    const resetPasswordStatus = document.getElementById('resetPasswordStatus');
+
+    const setStatusMessage = (element, message, state = '') => {
+        if (!element) return;
+        element.textContent = message || '';
+        if (state) {
+            element.dataset.state = state;
+        } else {
+            delete element.dataset.state;
+        }
+    };
+
+    const passwordToggleButtons = document.querySelectorAll('[data-password-toggle]');
+    passwordToggleButtons.forEach((button) => {
+        const targetSelector = button.getAttribute('data-password-target');
+        const targetInput = document.querySelector(targetSelector);
+        if (!targetInput) return;
+
+        button.addEventListener('click', () => {
+            const isHidden = targetInput.type === 'password';
+            targetInput.type = isHidden ? 'text' : 'password';
+            button.classList.toggle('is-visible', isHidden);
+        });
+    });
+
+    const setResetStep = (step) => {
+        if (!resetModal) return;
+        Object.entries(resetSteps).forEach(([key, element]) => {
+            if (!element) return;
+            element.hidden = key !== step;
+        });
+
+        if (resetModalTitle) {
+            const titleKey = step === 'change' ? 'auth.reset_modal_title_change' : 'auth.reset_modal_title_request';
+            resetModalTitle.textContent = window.LuminaFlow?.t ? window.LuminaFlow.t(titleKey) : (step === 'change' ? 'Definir nova senha' : 'Recuperar senha');
+        }
+
+        if (step === 'request' && resetRequestForm) {
+            const emailInput = resetRequestForm.querySelector('input[type="email"]');
+            if (emailInput) {
+                emailInput.focus();
+            }
+        }
+
+        if (step === 'change' && resetPasswordForm) {
+            const passwordInput = resetPasswordForm.querySelector('input[type="password"]');
+            if (passwordInput) {
+                passwordInput.focus();
+            }
+        }
+    };
+
+    const openResetModal = (step = 'request') => {
+        if (!resetModal) return;
+        resetModal.hidden = false;
+        document.body.classList.add('auth-modal-open');
+        setResetStep(step);
+    };
+
+    const closeResetModal = () => {
+        if (!resetModal) return;
+        resetModal.hidden = true;
+        document.body.classList.remove('auth-modal-open');
+        if (resetRequestForm) {
+            resetRequestForm.reset();
+        }
+        if (resetPasswordForm) {
+            resetPasswordForm.reset();
+        }
+        setStatusMessage(resetRequestStatus, '');
+        setStatusMessage(resetPasswordStatus, '');
+    };
     
     console.log('[Auth] Elements found:', {
         showSignup: !!showSignup,
@@ -181,13 +327,165 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Forgot password
-    const forgotPassword = document.getElementById('forgotPassword');
+    const setButtonLoading = (button, isLoading) => {
+        if (!button) return;
+        button.disabled = isLoading;
+        if (isLoading) {
+            button.dataset.loading = 'true';
+        } else {
+            delete button.dataset.loading;
+        }
+    };
+
     if (forgotPassword) {
         forgotPassword.addEventListener('click', (e) => {
             e.preventDefault();
-            alert('Password reset functionality coming soon. Please contact support for assistance.');
+            openResetModal('request');
         });
+    }
+
+    if (resetModal) {
+        resetModal.querySelectorAll('[data-reset-close]').forEach((element) => {
+            element.addEventListener('click', () => {
+                closeResetModal();
+            });
+        });
+
+        resetModal.querySelectorAll('[data-reset-step-back]').forEach((element) => {
+            element.addEventListener('click', () => {
+                if (resetRequestForm) {
+                    resetRequestForm.reset();
+                }
+                setStatusMessage(resetRequestStatus, '');
+                setStatusMessage(resetPasswordStatus, '');
+                setResetStep('request');
+            });
+        });
+
+        resetModal.addEventListener('click', (event) => {
+            if (event.target === resetModal) {
+                closeResetModal();
+            }
+        });
+    }
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && resetModal && !resetModal.hidden) {
+            closeResetModal();
+        }
+    });
+
+    if (resetRequestForm) {
+        resetRequestForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const formData = new FormData(resetRequestForm);
+            const email = (formData.get('email') || '').trim();
+            const submitButton = resetRequestForm.querySelector('button[type="submit"]');
+
+            if (!email) {
+                const message = window.LuminaFlow?.t ? window.LuminaFlow.t('auth.reset_modal_error_invalid_email') : 'Informe um e-mail válido.';
+                setStatusMessage(resetRequestStatus, message, 'error');
+                return;
+            }
+
+            setButtonLoading(submitButton, true);
+            const sendingMessage = window.LuminaFlow?.t ? window.LuminaFlow.t('auth.reset_modal_status_sending') : 'Enviando instruções...';
+            setStatusMessage(resetRequestStatus, sendingMessage, 'info');
+
+            try {
+                const response = await fetch('/auth/forgot-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    const successMessage = result.message || (window.LuminaFlow?.t ? window.LuminaFlow.t('auth.reset_modal_status_email_sent') : 'Se o e-mail existir, você receberá as instruções em instantes.');
+                    setStatusMessage(resetRequestStatus, successMessage, 'success');
+                } else {
+                    const errorMessage = result.error || (window.LuminaFlow?.t ? window.LuminaFlow.t('auth.reset_modal_status_email_error') : 'Não foi possível enviar o e-mail de recuperação.');
+                    setStatusMessage(resetRequestStatus, errorMessage, 'error');
+                }
+            } catch (error) {
+                const fallbackMessage = error.message || (window.LuminaFlow?.t ? window.LuminaFlow.t('auth.reset_modal_status_unexpected_error') : 'Erro inesperado ao enviar o e-mail.');
+                setStatusMessage(resetRequestStatus, fallbackMessage, 'error');
+            } finally {
+                setButtonLoading(submitButton, false);
+            }
+        });
+    }
+
+    if (resetPasswordForm) {
+        resetPasswordForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const formData = new FormData(resetPasswordForm);
+            const token = formData.get('token') || resetTokenInput?.value || '';
+            const password = formData.get('password') || '';
+            const confirmPassword = formData.get('confirm_password') || '';
+            const submitButton = resetPasswordForm.querySelector('button[type="submit"]');
+
+            if (!password || password.length < 8) {
+                const minLenMessage = window.LuminaFlow?.t ? window.LuminaFlow.t('auth.reset_modal_error_min_length') : 'A senha deve conter ao menos 8 caracteres.';
+                setStatusMessage(resetPasswordStatus, minLenMessage, 'error');
+                return;
+            }
+
+            if (password !== confirmPassword) {
+                const mismatchMessage = window.LuminaFlow?.t ? window.LuminaFlow.t('auth.reset_modal_error_mismatch') : 'As senhas informadas não são iguais.';
+                setStatusMessage(resetPasswordStatus, mismatchMessage, 'error');
+                return;
+            }
+
+            if (!token) {
+                const invalidLinkMessage = window.LuminaFlow?.t ? window.LuminaFlow.t('auth.reset_modal_error_invalid_link') : 'Link de redefinição inválido. Solicite um novo.';
+                setStatusMessage(resetPasswordStatus, invalidLinkMessage, 'error');
+                return;
+            }
+
+            setButtonLoading(submitButton, true);
+            const updatingMessage = window.LuminaFlow?.t ? window.LuminaFlow.t('auth.reset_modal_status_updating') : 'Atualizando senha...';
+            setStatusMessage(resetPasswordStatus, updatingMessage, 'info');
+
+            try {
+                const response = await fetch('/auth/reset-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token, password, confirm_password: confirmPassword })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    const successMessage = result.message || (window.LuminaFlow?.t ? window.LuminaFlow.t('auth.reset_modal_status_success') : 'Senha atualizada com sucesso. Faça login novamente.');
+                    setStatusMessage(resetPasswordStatus, successMessage, 'success');
+                    setTimeout(() => {
+                        closeResetModal();
+                    }, 1800);
+                } else {
+                    const errorMessage = result.error || (window.LuminaFlow?.t ? window.LuminaFlow.t('auth.reset_modal_status_reset_error') : 'Não foi possível redefinir a senha.');
+                    setStatusMessage(resetPasswordStatus, errorMessage, 'error');
+                }
+            } catch (error) {
+                const fallbackMessage = error.message || (window.LuminaFlow?.t ? window.LuminaFlow.t('auth.reset_modal_status_unexpected_error') : 'Erro inesperado ao redefinir a senha.');
+                setStatusMessage(resetPasswordStatus, fallbackMessage, 'error');
+            } finally {
+                setButtonLoading(submitButton, false);
+            }
+        });
+    }
+
+    const resetTokenFromUrl = urlParams.get('reset_token');
+    if (resetTokenFromUrl && resetTokenInput) {
+        resetTokenInput.value = resetTokenFromUrl;
+        openResetModal('change');
+        const infoMessage = window.LuminaFlow?.t ? window.LuminaFlow.t('auth.reset_modal_status_prompt_new_password') : 'Crie uma nova senha com pelo menos 8 caracteres.';
+        setStatusMessage(resetPasswordStatus, infoMessage, 'info');
+
+        const cleanedUrl = new URL(window.location.href);
+        cleanedUrl.searchParams.delete('reset_token');
+        window.history.replaceState({}, '', `${cleanedUrl.pathname}${cleanedUrl.search}${cleanedUrl.hash}`);
     }
 
     // Login form
@@ -210,10 +508,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (result.success) {
                     window.location.href = result.redirect;
                 } else {
-                    alert(result.error || 'Login failed');
+                    const errorMessage = result.error || (window.LuminaFlow?.t ? window.LuminaFlow.t('auth.reset_modal_status_reset_error') : 'Login failed');
+                    alert(errorMessage);
                 }
             } catch (error) {
-                alert('Error: ' + error.message);
+                const errorMessage = window.LuminaFlow?.t ? window.LuminaFlow.t('auth.reset_modal_status_unexpected_error') : 'Unexpected error. Please try again.';
+                alert(errorMessage + (error?.message ? `: ${error.message}` : ''));
             }
         });
     }
@@ -227,7 +527,8 @@ document.addEventListener('DOMContentLoaded', function() {
             const data = Object.fromEntries(formData.entries());
             
             if (data.password !== data.confirm_password) {
-                alert('Passwords do not match');
+                const mismatchMessage = window.LuminaFlow?.t ? window.LuminaFlow.t('auth.reset_modal_error_mismatch') : 'Passwords do not match';
+                alert(mismatchMessage);
                 return;
             }
             
