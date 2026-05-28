@@ -1141,7 +1141,7 @@ def get_admin_billing_summary(filters: Dict[str, Any] = None) -> Dict[str, Any]:
                 
                 # Estimate revenue (basic plans)
                 if plan == 'basic' and status in ['active', 'past_due']:
-                    estimated_monthly_revenue += 49  # Basic price in BRL
+                    estimated_monthly_revenue += 69  # Basic price in BRL
         
         # Count failed payments (recent)
         failed_payments_query = supabase.admin_client.table('payments') \

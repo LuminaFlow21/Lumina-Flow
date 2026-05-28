@@ -18,7 +18,7 @@ PRICING = {
         'uk_annual': '£0'
     },
     'basic': {
-        'br_monthly': 'R$ 49',
+        'br_monthly': 'R$ 69',
         'uk_monthly': '£19',
         'br_annual': 'R$ 89',
         'uk_annual': '£29',
