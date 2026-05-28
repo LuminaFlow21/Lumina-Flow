@@ -3319,8 +3319,32 @@ background-color: var(--color-slate);
 }
 
 [data-theme="dark"] .profile-completion-banner {
-    background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(245, 158, 11, 0.15)) !important;
-    border: 1px solid #f59e0b !important;
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(245, 158, 11, 0.1)) !important;
+    border: 1px solid rgba(245, 158, 11, 0.5) !important;
+}
+
+[data-theme="dark"] .banner-message h3 {
+    color: #fbbf24 !important;
+}
+
+[data-theme="dark"] .checklist-item {
+    color: #d1d5db !important;
+}
+
+[data-theme="dark"] .checklist-item.completed {
+    color: #34d399 !important;
+}
+
+[data-theme="dark"] .check-icon {
+    color: #fbbf24 !important;
+}
+
+[data-theme="dark"] .checklist-item.completed .check-icon {
+    color: #10b981 !important;
+}
+
+[data-theme="dark"] .banner-close {
+    color: #d1d5db !important;
 }
 
 @keyframes slideDown {
@@ -3757,10 +3781,194 @@ background-color: var(--color-slate);
     .quotation-table {
         font-size: 11px;
     }
-    
-    .quotation-table th,
-    .quotation-table td {
-        padding: 6px 4px;
-    }
+}
+
+/* Payment Failed Alert */
+.payment-failed-alert {
+    background: linear-gradient(135deg, var(--color-alert-payment-bg-start, #fff7ed) 0%, var(--color-alert-payment-bg-end, #ffedd5) 100%);
+    border: 1px solid var(--color-alert-payment-border, #fdba74);
+    border-radius: var(--radius-md);
+    padding: 20px;
+    margin-bottom: 24px;
+    box-shadow: 0 4px 12px rgba(251, 146, 60, 0.15);
+}
+
+[data-theme="dark"] .payment-failed-alert {
+    background: linear-gradient(135deg, #451a03 0%, #7c2d12 100%);
+    border-color: #9a3412;
+    box-shadow: 0 4px 12px rgba(251, 146, 60, 0.25);
+}
+
+.payment-failed-alert .alert-content {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.payment-failed-alert .alert-icon {
+    font-size: 32px;
+    flex-shrink: 0;
+}
+
+.payment-failed-alert .alert-message {
+    flex: 1;
+}
+
+.payment-failed-alert .alert-message h3 {
+    color: var(--color-alert-payment-title, #c2410c);
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0 0 4px 0;
+}
+
+[data-theme="dark"] .payment-failed-alert .alert-message h3 {
+    color: #fed7aa;
+}
+
+.payment-failed-alert .alert-message p {
+    color: var(--color-alert-payment-text, #9a3412);
+    font-size: 14px;
+    margin: 0;
+    line-height: 1.5;
+}
+
+[data-theme="dark"] .payment-failed-alert .alert-message p {
+    color: #fdba74;
+}
+
+.payment-failed-alert .alert-btn {
+    background: var(--color-alert-payment-btn, #ea580c);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+    white-space: nowrap;
+}
+
+.payment-failed-alert .alert-btn:hover {
+    background: var(--color-alert-payment-btn-hover, #c2410c);
+}
+
+[data-theme="dark"] .payment-failed-alert .alert-btn:hover {
+    background: #f97316;
+}
+
+.payment-failed-alert .alert-btn:disabled {
+    background: var(--color-alert-payment-btn-disabled, #fdba74);
+    cursor: not-allowed;
+}
+
+[data-theme="dark"] .payment-failed-alert .alert-btn:disabled {
+    background: #9a3412;
+}
+
+/* Subscription Canceled Alert */
+.subscription-canceled-alert {
+    background: linear-gradient(135deg, var(--color-alert-canceled-bg-start, #f0f9ff) 0%, var(--color-alert-canceled-bg-end, #e0f2fe) 100%);
+    border: 1px solid var(--color-alert-canceled-border, #7dd3fc);
+    border-radius: var(--radius-md);
+    padding: 20px;
+    margin-bottom: 24px;
+    box-shadow: 0 4px 12px rgba(56, 189, 248, 0.15);
+}
+
+[data-theme="dark"] .subscription-canceled-alert {
+    background: linear-gradient(135deg, #0c4a6e 0%, #075985 100%);
+    border-color: #0ea5e9;
+    box-shadow: 0 4px 12px rgba(56, 189, 248, 0.25);
+}
+
+.subscription-canceled-alert .alert-content {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.subscription-canceled-alert .alert-icon {
+    font-size: 32px;
+    flex-shrink: 0;
+}
+
+.subscription-canceled-alert .alert-message {
+    flex: 1;
+}
+
+.subscription-canceled-alert .alert-message h3 {
+    color: var(--color-alert-canceled-title, #0369a1);
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0 0 4px 0;
+}
+
+[data-theme="dark"] .subscription-canceled-alert .alert-message h3 {
+    color: #7dd3fc;
+}
+
+.subscription-canceled-alert .alert-message p {
+    color: var(--color-alert-canceled-text, #075985);
+    font-size: 14px;
+    margin: 0;
+    line-height: 1.5;
+}
+
+[data-theme="dark"] .subscription-canceled-alert .alert-message p {
+    color: #bae6fd;
+}
+
+/* Subscription Cancellation Scheduled Alert */
+.cancellation-scheduled-alert {
+    background: linear-gradient(135deg, var(--color-alert-scheduled-bg-start, #fef3c7) 0%, var(--color-alert-scheduled-bg-end, #fde68a) 100%);
+    border: 1px solid var(--color-alert-scheduled-border, #f59e0b);
+    border-radius: var(--radius-md);
+    padding: 20px;
+    margin-bottom: 24px;
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.15);
+}
+
+[data-theme="dark"] .cancellation-scheduled-alert {
+    background: linear-gradient(135deg, #78350f 0%, #92400e 100%);
+    border-color: #b45309;
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.25);
+}
+
+.cancellation-scheduled-alert .alert-content {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.cancellation-scheduled-alert .alert-icon {
+    font-size: 32px;
+    flex-shrink: 0;
+}
+
+.cancellation-scheduled-alert .alert-message {
+    flex: 1;
+}
+
+.cancellation-scheduled-alert .alert-message h3 {
+    color: var(--color-alert-scheduled-title, #92400e);
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0 0 4px 0;
+}
+
+[data-theme="dark"] .cancellation-scheduled-alert .alert-message h3 {
+    color: #fcd34d;
+}
+
+.cancellation-scheduled-alert .alert-message p {
+    color: var(--color-alert-scheduled-text, #78350f);
+    font-size: 14px;
+    margin: 0;
+    line-height: 1.5;
+}
+
+[data-theme="dark"] .cancellation-scheduled-alert .alert-message p {
+    color: #fbbf24;
 }
 

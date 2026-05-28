@@ -29,8 +29,42 @@
             <button class="banner-close" id="bannerClose">×</button>
         </div>
         {% endif %}
-        {% if subscription.plan == 'free' and not subscription.stripe_subscription_id %}
+        {% if billing_state.plan == 'free' and not billing_state.stripe_subscription_id %}
         <p class="text-slate" data-i18n="dashboard.free_plan_note">Você está no plano gratuito. Faça upgrade para desbloquear recursos ilimitados.</p>
+        {% endif %}
+
+        <!-- Status Alerts -->
+        {% if billing_state.is_canceling %}
+        <div class="cancellation-scheduled-alert">
+            <div class="alert-content">
+                <div class="alert-icon">📅</div>
+                <div class="alert-message">
+                    <h3 data-i18n="dashboard.cancellation_scheduled_title">Cancelamento agendado</h3>
+                    <p data-i18n="dashboard.cancellation_scheduled_message">Seu plano foi cancelado e ficará ativo até <span class="cancel-date">{{ billing_state.access_until[:10] if billing_state.access_until else '-' }}</span>.</p>
+                </div>
+            </div>
+        </div>
+        {% elif billing_state.is_past_due %}
+        <div class="payment-failed-alert">
+            <div class="alert-content">
+                <div class="alert-icon">⚠️</div>
+                <div class="alert-message">
+                    <h3 data-i18n="dashboard.payment_failed_title">Pagamento não processado</h3>
+                    <p data-i18n="dashboard.payment_failed_message">Não conseguimos processar seu pagamento. Atualize sua forma de pagamento para evitar a perda de acesso ao plano.</p>
+                </div>
+                <button class="alert-btn" id="updatePaymentBtnProfile" data-i18n="dashboard.update_payment_button">Atualizar forma de pagamento</button>
+            </div>
+        </div>
+        {% elif billing_state.is_canceled %}
+        <div class="subscription-canceled-alert">
+            <div class="alert-content">
+                <div class="alert-icon">ℹ️</div>
+                <div class="alert-message">
+                    <h3 data-i18n="dashboard.subscription_canceled_title">Plano cancelado</h3>
+                    <p data-i18n="dashboard.subscription_canceled_message">Seu plano foi cancelado. Faça upgrade para voltar a usar recursos ilimitados.</p>
+                </div>
+            </div>
+        </div>
         {% endif %}
 
         <div class="dashboard-header">
@@ -99,7 +133,7 @@
                     <h3 class="form-section-title" data-i18n="dashboard.plan_info">Informações do Plano</h3>
                     <div class="form-group">
                         <label class="form-label" data-i18n="dashboard.plan_type">Plano</label>
-                        <input type="text" class="form-input" value="{{ subscription.plan|capitalize }}" disabled>
+                        <input type="text" class="form-input" value="{{ billing_state.plan|capitalize }}" disabled>
                     </div>
                 </div>
 
@@ -115,7 +149,7 @@
         {% set basic_price_label = pricing['basic']['%s_monthly' % region_key] if pricing and pricing.get('basic') else ('R$ 49' if region_key == 'br' else '£19') %}
         {% set basic_price_id = pricing['basic'].get('price_id_%s_monthly' % region_key) if pricing and pricing.get('basic') else None %}
 
-        {% if subscription.plan == 'basic' %}
+        {% if billing_state.plan == 'basic' %}
         <div class="subscription-card subscription-card--manage">
             <div class="subscription-card__headline">
                 <span class="subscription-card__badge" data-i18n="dashboard.current_plan">Plano Atual</span>
@@ -124,7 +158,27 @@
 
             <div class="subscription-card__layout">
                 <div class="subscription-card__details">
+                    {% if visual_state.state_key == 'canceling' %}
+                    <p class="subscription-card__description">
+                        <strong>{{ visual_state.icon }} {{ visual_state.label }}:</strong> {{ visual_state.description }}
+                        <br><small>Acesso até: <span class="cancel-date">{{ billing_state.access_until[:10] if billing_state.access_until else '-' }}</span></small>
+                    </p>
+                    {% elif visual_state.state_key == 'canceled' %}
+                    <p class="subscription-card__description">
+                        <strong>{{ visual_state.icon }} {{ visual_state.label }}:</strong> {{ visual_state.description }}
+                    </p>
+                    {% elif visual_state.state_key == 'past_due' %}
+                    <p class="subscription-card__description">
+                        <strong>{{ visual_state.icon }} {{ visual_state.label }}:</strong> {{ visual_state.description }}
+                        <br><small>Atualize sua forma de pagamento para evitar perder acesso.</small>
+                    </p>
+                    {% elif visual_state.state_key == 'active' %}
+                    <p class="subscription-card__description">
+                        <strong>{{ visual_state.icon }} {{ visual_state.label }}:</strong> {{ visual_state.description }}
+                    </p>
+                    {% else %}
                     <p class="subscription-card__description" data-i18n="dashboard.cancel_plan_note">Ao cancelar, você manterá o acesso até o fim do ciclo atual e não será cobrado novamente.</p>
+                    {% endif %}
                 </div>
 
                 <div class="subscription-card__aside">
@@ -133,24 +187,70 @@
                         <span class="subscription-price__period" data-i18n="pricing.per_month">/mês</span>
                     </div>
 
-                    {% if subscription.next_billing %}
+                    {% if not billing_state.is_canceled and not billing_state.is_canceling and billing_state.next_billing_date %}
                     <p class="subscription-card__note">
-                        <strong data-i18n="dashboard.next_billing_label">Próxima cobrança:</strong> {{ subscription.next_billing }}
+                        <strong data-i18n="dashboard.next_billing_label">Próxima cobrança:</strong> <span class="billing-date">{{ billing_state.next_billing_date[:10] if billing_state.next_billing_date else '-' }}</span>
+                    </p>
+                    {% elif billing_state.is_canceling %}
+                    <p class="subscription-card__note">
+                        <strong>Acesso até:</strong> <span class="access-date">{{ billing_state.access_until[:10] if billing_state.access_until else '-' }}</span>
                     </p>
                     {% endif %}
 
+                    {% if billing_state.is_canceled %}
+                    <button type="button"
+                            class="btn btn-primary subscription-card__cta"
+                            data-checkout
+                            data-price-key-br="br_monthly"
+                            data-price-key-uk="uk_monthly"
+                            {% if basic_price_id %}data-price-id="{{ basic_price_id }}"{% endif %}
+                            data-i18n="dashboard.upgrade_now">
+                        Reativar plano
+                    </button>
+                    {% elif billing_state.is_canceling %}
+                    <button type="button"
+                            class="btn btn-primary subscription-card__cta"
+                            id="reactivatePlanBtn"
+                            data-loading-text="Reativando..."
+                            data-success="Seu plano foi reativado com sucesso."
+                            data-error="Não foi possível reativar agora. Tente novamente."
+                            data-i18n="dashboard.reactivate_plan">
+                        Reativar plano
+                    </button>
+                    {% elif billing_state.is_past_due %}
+                    <button type="button"
+                            class="btn btn-primary subscription-card__cta"
+                            id="updatePaymentBtnProfile"
+                            data-loading-text="Atualizando..."
+                            data-success="Sua forma de pagamento foi atualizada."
+                            data-error="Não foi possível atualizar. Tente novamente."
+                            data-i18n="dashboard.update_payment">
+                        Atualizar forma de pagamento
+                    </button>
+                    {% elif billing_state.is_free %}
+                    <button type="button"
+                            class="btn btn-primary subscription-card__cta"
+                            data-checkout
+                            data-price-key-br="br_monthly"
+                            data-price-key-uk="uk_monthly"
+                            {% if basic_price_id %}data-price-id="{{ basic_price_id }}"{% endif %}
+                            data-i18n="dashboard.upgrade_now">
+                        Fazer upgrade
+                    </button>
+                    {% elif billing_state.is_active %}
                     <button type="button"
                             class="btn btn-danger subscription-card__cta"
                             id="cancelPlanBtn"
                             data-loading-text="Cancelando..."
                             data-confirm="Tem certeza de que deseja cancelar o plano?"
-                            data-success="Sua assinatura foi cancelada com sucesso."
+                            data-success="Cancelamento agendado com sucesso. Seu plano continuará ativo até {{ billing_state.access_until[:10] if billing_state.access_until else 'o fim do período atual' }} e não será renovado."
                             data-error="Não foi possível cancelar agora. Tente novamente."
                             data-missing="Não encontramos uma assinatura ativa. Atualize a página ou contate o suporte."
-                            data-requires-subscription="{{ 'true' if not subscription.stripe_subscription_id else 'false' }}"
+                            data-requires-subscription="{{ 'true' if not billing_state.stripe_subscription_id else 'false' }}"
                             data-i18n="dashboard.cancel_plan">
                         Cancelar plano
                     </button>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -274,6 +374,100 @@ document.addEventListener('DOMContentLoaded', function() {
         if (banner) {
             banner.style.display = 'none';
         }
+    }
+
+    // Format billing date to Brazilian format (DD/MM/YYYY)
+    const billingDateElements = document.querySelectorAll('.billing-date');
+    billingDateElements.forEach(element => {
+        const isoDate = element.textContent;
+        if (isoDate && isoDate.includes('T')) {
+            const date = new Date(isoDate);
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = date.getFullYear();
+            element.textContent = `${day}/${month}/${year}`;
+        }
+    });
+
+    // Format cancellation date to Brazilian format (DD/MM/YYYY)
+    const cancelDateElements = document.querySelectorAll('.cancel-date');
+    cancelDateElements.forEach(element => {
+        const isoDate = element.textContent;
+        if (isoDate && isoDate.includes('T')) {
+            const date = new Date(isoDate);
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = date.getFullYear();
+            element.textContent = `${day}/${month}/${year}`;
+        }
+    });
+
+    // Handle update payment button (profile page)
+    const updatePaymentBtnProfile = document.getElementById('updatePaymentBtnProfile');
+    if (updatePaymentBtnProfile) {
+        updatePaymentBtnProfile.addEventListener('click', async () => {
+            try {
+                updatePaymentBtnProfile.disabled = true;
+                updatePaymentBtnProfile.textContent = 'Carregando...';
+                
+                const response = await fetch('/billing/customer-portal', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    window.location.href = data.url;
+                } else {
+                    alert('Erro: ' + (data.error || 'Não foi possível abrir o portal de pagamento'));
+                    updatePaymentBtnProfile.disabled = false;
+                    updatePaymentBtnProfile.textContent = 'Atualizar forma de pagamento';
+                }
+            } catch (error) {
+                console.error('Error opening customer portal:', error);
+                alert('Erro ao abrir o portal de pagamento. Tente novamente.');
+                updatePaymentBtnProfile.disabled = false;
+                updatePaymentBtnProfile.textContent = 'Atualizar forma de pagamento';
+            }
+        });
+    }
+
+    // Handle reactivate plan button
+    const reactivateButton = document.getElementById('reactivatePlanBtn');
+    if (reactivateButton) {
+        reactivateButton.addEventListener('click', async () => {
+            const successMessage = reactivateButton.dataset.success || 'Seu plano foi reativado com sucesso.';
+            const errorMessage = reactivateButton.dataset.error || 'Não foi possível reativar agora. Tente novamente.';
+
+            const confirmReactivate = confirm('Deseja reativar seu plano? Você será cobrado novamente na próxima data de faturamento.');
+            if (!confirmReactivate) return;
+
+            const originalText = reactivateButton.textContent;
+            reactivateButton.disabled = true;
+            reactivateButton.textContent = reactivateButton.dataset.loadingText || 'Reativando...';
+
+            try {
+                const response = await fetch('/dashboard/api/subscription/reactivate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const result = await response.json();
+                if (result.success) {
+                    alert(successMessage);
+                    window.location.reload();
+                } else {
+                    throw new Error(result.error || 'Erro ao reativar');
+                }
+            } catch (error) {
+                console.error(error);
+                alert(error.message || errorMessage);
+                reactivateButton.disabled = false;
+                reactivateButton.textContent = originalText;
+            }
+        });
     }
 });
 

@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Billing - Lumina Flow</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin_billing.css') }}">
+</head>
+<body>
+<div class="admin-billing-container">
+    <div class="admin-header">
+        <h1>Billing Admin</h1>
+        <p>Monitoramento de assinaturas, pagamentos e webhooks</p>
+    </div>
+    
+    {% if webhooks_error_count and webhooks_error_count > 0 %}
+    <div class="admin-card" style="background: #fff7ed; border-color: #fed7aa; border-left: 4px solid #f97316; margin-bottom: 2rem;">
+        <div style="display: flex; align-items: center; gap: 1rem;">
+            <span style="font-size: 1.5rem;">⚠️</span>
+            <div>
+                <h3 style="margin: 0 0 0.5rem 0; color: #9a3412;">Existem webhooks com erro de processamento</h3>
+                <p style="margin: 0; color: #9a3412;">Encontrado(s) {{ webhooks_error_count }} webhook(s) com erro. Verifique a aba de webhooks para mais detalhes.</p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    {% if error %}
+    <div class="admin-card" style="background: #fee2e2; border-color: #fecaca;">
+        <p style="color: #991b1b; margin: 0;">Erro ao carregar dados: {{ error }}</p>
+    </div>
+    {% endif %}
+    
+    {% if summary %}
+    <div class="admin-cards-grid">
+        <div class="admin-card">
+            <p class="admin-card__label">Assinaturas Ativas</p>
+            <p class="admin-card__value">{{ summary.active_subscriptions }}</p>
+        </div>
+        
+        <div class="admin-card">
+            <p class="admin-card__label">Assinaturas Past Due</p>
+            <p class="admin-card__value">{{ summary.past_due_subscriptions }}</p>
+        </div>
+        
+        <div class="admin-card">
+            <p class="admin-card__label">Assinaturas Canceladas</p>
+            <p class="admin-card__value">{{ summary.canceled_subscriptions }}</p>
+        </div>
+        
+        <div class="admin-card">
+            <p class="admin-card__label">Pagamentos Falhados</p>
+            <p class="admin-card__value">{{ summary.failed_payments }}</p>
+        </div>
+        
+        <div class="admin-card">
+            <p class="admin-card__label">Receita Mensal Estimada</p>
+            <p class="admin-card__value">R$ {{ "%.2f"|format(summary.estimated_monthly_revenue) }}</p>
+        </div>
+        
+        <div class="admin-card">
+            <p class="admin-card__label">Cancelamentos Agendados</p>
+            <p class="admin-card__value">{{ summary.get('scheduled_cancellations', 0) }}</p>
+        </div>
+    </div>
+    {% endif %}
+    
+    <div class="admin-filters-bar">
+        <div class="admin-search-box">
+            <div style="position: relative;">
+                <input type="text" id="searchInput" placeholder="Buscar por nome, email, user_id, stripe_customer_id..." value="{{ q }}">
+                {% if q %}
+                <button type="button" id="clearSearch" style="position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 1.25rem; color: var(--admin-text-secondary); padding: 0; width: 1.5rem; height: 1.5rem; display: flex; align-items: center; justify-content: center;">×</button>
+                {% endif %}
+            </div>
+        </div>
+        <div class="admin-filters">
+            <button class="admin-filter-btn {% if not filters.status %}admin-filter-btn--active{% endif %}" data-filter="status" data-value="">Todos</button>
+            <button class="admin-filter-btn {% if filters.status == 'active' %}admin-filter-btn--active{% endif %}" data-filter="status" data-value="active">Ativos</button>
+            <button class="admin-filter-btn {% if filters.status == 'past_due' %}admin-filter-btn--active{% endif %}" data-filter="status" data-value="past_due">Past Due</button>
+            <button class="admin-filter-btn {% if filters.status == 'canceled' %}admin-filter-btn--active{% endif %}" data-filter="status" data-value="canceled">Cancelados</button>
+            <button class="admin-filter-btn {% if filters.plan == 'basic' %}admin-filter-btn--active{% endif %}" data-filter="plan" data-value="basic">Basic</button>
+            <button class="admin-filter-btn {% if filters.plan == 'free' %}admin-filter-btn--active{% endif %}" data-filter="plan" data-value="free">Free</button>
+            <button class="admin-filter-btn {% if filters.canceling %}admin-filter-btn--active{% endif %}" data-filter="canceling" data-value="true">Cancelando</button>
+        </div>
+    </div>
+    
+    <div class="admin-table-container">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>Cliente</th>
+                    <th>Plano</th>
+                    <th>Status</th>
+                    <th>Próxima Cobrança / Acesso Até</th>
+                    <th>Cancelamento Agendado</th>
+                    <th>Último Pagamento</th>
+                    <th>Stripe Customer ID</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for customer in customers %}
+                <tr>
+                    <td>
+                        <div style="font-weight: 500;">{{ customer.name }}</div>
+                        <div class="admin-text-sm admin-text-muted">{{ customer.email }}</div>
+                        <div class="admin-text-sm admin-text-muted">{{ customer.user_id[:8] }}...</div>
+                    </td>
+                    <td>
+                        <span class="admin-badge {{ customer.plan|lower }}">
+                            {{ customer.plan|upper }}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="admin-badge {{ customer.status_badge_class or customer.subscription_status }}">
+                            {{ customer.status_label or customer.subscription_status|upper }}
+                        </span>
+                    </td>
+                    <td>
+                        {% if customer.is_canceling %}
+                        <span style="color: #f59e0b;">Acesso até: {{ customer.access_until[:10] if customer.access_until else '-' }}</span>
+                        {% elif customer.next_billing_date %}
+                        {{ customer.next_billing_date[:10] }}
+                        {% else %}
+                        -
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if customer.is_canceling and customer.cancel_at %}
+                        {{ customer.cancel_at[:10] }}
+                        {% else %}
+                        -
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if customer.last_payment_date %}
+                        {{ customer.last_payment_date[:10] }}
+                        {% else %}
+                        -
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if customer.stripe_customer_id %}
+                        <span class="admin-text-sm">{{ customer.stripe_customer_id[:8] }}...</span>
+                        {% else %}
+                        -
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="/admin/billing/customer/{{ customer.user_id }}" class="admin-btn admin-btn--sm">
+                            Ver detalhes
+                        </a>
+                        {% if customer.stripe_customer_id %}
+                        <a href="https://dashboard.stripe.com/customers/{{ customer.stripe_customer_id }}" target="_blank" class="admin-btn admin-btn--sm">
+                            Stripe
+                        </a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% if not customers %}
+        <div style="padding: 2rem; text-align: center; color: var(--admin-text-secondary);">
+            Nenhum cliente encontrado.
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchInput');
+    const clearSearchBtn = document.getElementById('clearSearch');
+    const filterButtons = document.querySelectorAll('.admin-filter-btn');
+    
+    // Handle search
+    searchInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            const q = this.value.trim();
+            const url = new URL(window.location);
+            if (q) {
+                url.searchParams.set('q', q);
+            } else {
+                url.searchParams.delete('q');
+            }
+            window.location = url.toString();
+        }
+    });
+    
+    // Handle clear search button
+    if (clearSearchBtn) {
+        clearSearchBtn.addEventListener('click', function() {
+            const url = new URL(window.location);
+            url.searchParams.delete('q');
+            window.location = url.toString();
+        });
+    }
+    
+    // Handle filters
+    filterButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const filter = this.dataset.filter;
+            const value = this.dataset.value;
+            
+            const url = new URL(window.location);
+            
+            // Clear all filter types
+            url.searchParams.delete('status');
+            url.searchParams.delete('plan');
+            url.searchParams.delete('canceling');
+            url.searchParams.delete('q');
+            
+            // Set new filter value if not empty
+            if (value) {
+                url.searchParams.set(filter, value);
+            }
+            
+            window.location = url.toString();
+        });
+    });
+});
+</script>
+</div>
+</body>
+</html>

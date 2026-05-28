@@ -31,29 +31,39 @@ def handle_login():
         
         auth_handler = get_auth_handler()
         result = auth_handler.authenticate_user(email, password)
-        
+
         if result.get('success'):
             user_data = result['user']
             user = User(user_data)
-            
+
             # Set session as permanent if remember is True
             if remember:
                 session.permanent = True
-            
+
             login_user(user, remember=remember)
-            
+
             # Set session variables
             session['user_id'] = str(user_data['id'])
             session['user_email'] = user_data['email']
             session['user_plan'] = user_data.get('plan', 'free')
-            
+
             # Set region based on email
             if '.br' in email.lower():
                 session['user_region'] = 'BR'
             else:
                 session['user_region'] = 'UK'
-            
+
             return jsonify({'success': True, 'redirect': '/dashboard'})
+        elif result.get('code') == 'email_not_verified':
+            # Email not verified - return user data to show verification modal
+            user_data = result.get('user', {})
+            return jsonify({
+                'success': False,
+                'code': 'email_not_verified',
+                'email': result.get('email'),
+                'full_name': user_data.get('full_name'),
+                'error': result.get('error')
+            }), 200
         else:
             return jsonify({'success': False, 'error': result.get('error', 'Login failed')}), 401
             

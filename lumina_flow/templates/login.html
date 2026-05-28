@@ -495,18 +495,46 @@ document.addEventListener('DOMContentLoaded', function() {
             e.preventDefault();
             const formData = new FormData(e.target);
             const data = Object.fromEntries(formData.entries());
-            
+
             try {
                 const response = await fetch('/auth/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
                 });
-                
+
                 const result = await response.json();
-                
+
                 if (result.success) {
                     window.location.href = result.redirect;
+                } else if (result.code === 'email_not_verified') {
+                    // Show verification modal instead of error
+                    loginCard.style.display = 'none';
+                    signupCard.style.display = 'none';
+                    verificationCard.style.display = 'block';
+                    document.getElementById('verificationEmail').textContent = result.email;
+                    // Store email for resend functionality
+                    sessionStorage.setItem('pendingEmail', result.email);
+                    sessionStorage.setItem('pendingName', result.full_name || result.email.split('@')[0]);
+                    sessionStorage.setItem('pendingPassword', data.password);
+                    // Force reload translations from server to ensure latest version
+                    if (window.LuminaFlow && window.LuminaFlow.loadTranslations) {
+                        window.LuminaFlow.loadTranslations().then(() => {
+                            // Small delay to ensure modal is visible before updating
+                            setTimeout(() => {
+                                if (window.LuminaFlow.updateTranslations) {
+                                    window.LuminaFlow.updateTranslations();
+                                }
+                            }, 50);
+                        });
+                    } else {
+                        // Fallback: update translations with current data
+                        setTimeout(() => {
+                            if (window.LuminaFlow?.updateTranslations) {
+                                window.LuminaFlow.updateTranslations();
+                            }
+                        }, 50);
+                    }
                 } else {
                     const errorMessage = result.error || (window.LuminaFlow?.t ? window.LuminaFlow.t('auth.reset_modal_status_reset_error') : 'Login failed');
                     alert(errorMessage);
@@ -550,9 +578,23 @@ document.addEventListener('DOMContentLoaded', function() {
                     sessionStorage.setItem('pendingEmail', data.email);
                     sessionStorage.setItem('pendingName', data.full_name);
                     sessionStorage.setItem('pendingPassword', data.password);
-                    // Update translations for the verification modal
-                    if (window.LuminaFlow?.updateTranslations) {
-                        window.LuminaFlow.updateTranslations();
+                    // Force reload translations from server to ensure latest version
+                    if (window.LuminaFlow && window.LuminaFlow.loadTranslations) {
+                        window.LuminaFlow.loadTranslations().then(() => {
+                            // Small delay to ensure modal is visible before updating
+                            setTimeout(() => {
+                                if (window.LuminaFlow.updateTranslations) {
+                                    window.LuminaFlow.updateTranslations();
+                                }
+                            }, 50);
+                        });
+                    } else {
+                        // Fallback: update translations with current data
+                        setTimeout(() => {
+                            if (window.LuminaFlow?.updateTranslations) {
+                                window.LuminaFlow.updateTranslations();
+                            }
+                        }, 50);
                     }
                 } else {
                     alert(result.error || 'Signup failed');
@@ -654,6 +696,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     // Update translations for the verification modal
                     if (window.LuminaFlow?.updateTranslations) {
                         window.LuminaFlow.updateTranslations();
+                    }
+                    // Force reload translations from server to ensure latest version
+                    if (window.LuminaFlow && window.LuminaFlow.loadTranslations) {
+                        window.LuminaFlow.loadTranslations().then(() => {
+                            window.LuminaFlow.updateTranslations();
+                        });
                     }
                     alert('Email updated. Please check your new inbox for verification code.');
                 } else {

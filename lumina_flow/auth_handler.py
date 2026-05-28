@@ -229,7 +229,10 @@ class AuthHandler:
                 logger.warning('[Auth] Email not verified', extra={'email': user['email']})
                 return {
                     'success': False,
-                    'error': 'Please verify your email before logging in'
+                    'error': 'Please verify your email before logging in',
+                    'code': 'email_not_verified',
+                    'email': email,
+                    'user': user
                 }
             
             # Verify password
@@ -449,6 +452,21 @@ class AuthHandler:
                 'success': False,
                 'error': str(e)
             }
+
+
+def is_admin_user(email: str) -> bool:
+    """
+    Check if a user email is in the admin list
+    
+    Args:
+        email: User email to check
+        
+    Returns:
+        True if email is in ADMIN_EMAILS, False otherwise
+    """
+    from .config import Config
+    admin_emails = [e.strip().lower() for e in Config.ADMIN_EMAILS if e.strip()]
+    return email.lower() in admin_emails
 
 
 # Singleton instance

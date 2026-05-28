@@ -185,7 +185,7 @@ class SupabaseHandler:
     
     def update_user_subscription(self, user_id: str, plan: str = None, subscription_status: str = None, 
                                    stripe_customer_id: str = None, stripe_subscription_id: str = None,
-                                   next_billing_date: str = None) -> dict:
+                                   next_billing_date: str = None, cancel_at: str = None) -> dict:
         """
         Update user subscription information in profiles and sync with users table
         Uses UPDATE instead of UPSERT to avoid NOT NULL constraint violations
@@ -197,6 +197,7 @@ class SupabaseHandler:
             stripe_customer_id: Stripe customer ID - optional
             stripe_subscription_id: Stripe subscription ID - optional
             next_billing_date: Next billing date - optional
+            cancel_at: Cancellation date (when subscription will be canceled) - optional
             
         Returns:
             Dictionary with success status or error
@@ -217,6 +218,7 @@ class SupabaseHandler:
                 update_data['stripe_subscription_id'] = stripe_subscription_id
             if next_billing_date is not None:
                 update_data['next_billing_date'] = next_billing_date
+            # Note: cancel_at is only in subscriptions table, not profiles table
             
             logger.info(
                 '[DEBUG] Preparing to UPDATE profiles (not UPSERT)',

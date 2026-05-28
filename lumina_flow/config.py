@@ -48,6 +48,9 @@ class Config:
     
     # Brevo API (Email)
     BREVO_API_KEY = os.getenv('BREVO_API_KEY')
+    
+    # Admin
+    ADMIN_EMAILS = os.getenv('ADMIN_EMAILS', '').split(',') if os.getenv('ADMIN_EMAILS') else []
     BREVO_SENDER_EMAIL = os.getenv('BREVO_SENDER_EMAIL', 'noreply@luminaflow.com')
     
     # URLs

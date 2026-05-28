@@ -261,13 +261,69 @@ class StripeHandler:
             )
             return {
                 'success': True,
-                'subscription': subscription,
-                'cancel_at_period_end': subscription.get('cancel_at_period_end', False)
+                'subscription_id': subscription_id,
+                'status': getattr(subscription, 'status', None),
+                'cancel_at_period_end': getattr(subscription, 'cancel_at_period_end', False)
+            }
+        except stripe.error.InvalidRequestError as e:
+            error_msg = str(e)
+            # Check if error is due to incomplete/incomplete_expired subscription
+            if 'incomplete' in error_msg.lower() or 'cannot update a subscription' in error_msg.lower():
+                logger.warning(
+                    "Cannot modify subscription due to incomplete status",
+                    extra={'subscription_id': subscription_id, 'error': error_msg}
+                )
+                return {
+                    'success': False,
+                    'error': 'Não é possível modificar uma assinatura incompleta ou expirada. Por favor, faça um novo checkout.',
+                    'requires_new_checkout': True
+                }
+            logger.exception(
+                "Failed to modify subscription due to invalid request",
+                extra={'subscription_id': subscription_id, 'cancel_at_period_end': cancel_at_period_end}
+            )
+            return {
+                'success': False,
+                'error': str(e)
             }
         except Exception as e:
             logger.exception(
                 "Failed to modify subscription",
                 extra={'subscription_id': subscription_id, 'cancel_at_period_end': cancel_at_period_end}
+            )
+            return {
+                'success': False,
+                'error': str(e)
+            }
+    
+    def create_customer_portal_session(self, customer_id: str, return_url: str) -> dict:
+        """
+        Create a Stripe Customer Portal session for updating payment methods
+        
+        Args:
+            customer_id: Stripe customer ID
+            return_url: URL to redirect after portal session
+            
+        Returns:
+            Dictionary with success status and portal URL or error
+        """
+        try:
+            portal_session = stripe.billing_portal.Session.create(
+                customer=customer_id,
+                return_url=return_url
+            )
+            logger.info(
+                "Created Stripe Customer Portal session",
+                extra={'customer_id': customer_id}
+            )
+            return {
+                'success': True,
+                'url': portal_session.url
+            }
+        except Exception as e:
+            logger.exception(
+                "Failed to create customer portal session",
+                extra={'customer_id': customer_id}
             )
             return {
                 'success': False,

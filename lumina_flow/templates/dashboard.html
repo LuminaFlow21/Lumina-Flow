@@ -29,6 +29,47 @@
             <button class="banner-close" id="bannerClose">×</button>
         </div>
         {% endif %}
+
+        <!-- Subscription Cancellation Scheduled Alert -->
+        {% if profile_data.get('subscription_status') == 'active' and profile_data.get('cancel_at') %}
+        <div class="cancellation-scheduled-alert">
+            <div class="alert-content">
+                <div class="alert-icon">📅</div>
+                <div class="alert-message">
+                    <h3 data-i18n="dashboard.cancellation_scheduled_title">Cancelamento agendado</h3>
+                    <p data-i18n="dashboard.cancellation_scheduled_message">Seu plano foi cancelado e ficará ativo até <span class="cancel-date">{{ profile_data.get('cancel_at') }}</span>.</p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Payment Failed Alert -->
+        {% if profile_data.get('subscription_status') == 'past_due' %}
+        <div class="payment-failed-alert">
+            <div class="alert-content">
+                <div class="alert-icon">⚠️</div>
+                <div class="alert-message">
+                    <h3 data-i18n="dashboard.payment_failed_title">Pagamento não processado</h3>
+                    <p data-i18n="dashboard.payment_failed_message">Não conseguimos processar seu pagamento. Atualize sua forma de pagamento para evitar a perda de acesso ao plano.</p>
+                </div>
+                <button class="alert-btn" id="updatePaymentBtn" data-i18n="dashboard.update_payment_button">Atualizar forma de pagamento</button>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Subscription Canceled Alert -->
+        {% if profile_data.get('subscription_status') == 'canceled' %}
+        <div class="subscription-canceled-alert">
+            <div class="alert-content">
+                <div class="alert-icon">ℹ️</div>
+                <div class="alert-message">
+                    <h3 data-i18n="dashboard.subscription_canceled_title">Plano cancelado</h3>
+                    <p data-i18n="dashboard.subscription_canceled_message">Seu plano foi cancelado.</p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
         <!-- Header -->
         <div class="dashboard-header dashboard-header--center">
             <div>
@@ -153,6 +194,52 @@ document.addEventListener('DOMContentLoaded', () => {
     window.viewQuotation = function(quotationId) {
         window.location.href = `/dashboard/quotation/${quotationId}`;
     };
+
+    // Handle update payment button
+    const updatePaymentBtn = document.getElementById('updatePaymentBtn');
+    if (updatePaymentBtn) {
+        updatePaymentBtn.addEventListener('click', async () => {
+            try {
+                updatePaymentBtn.disabled = true;
+                updatePaymentBtn.textContent = 'Carregando...';
+                
+                const response = await fetch('/billing/customer-portal', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    window.location.href = data.url;
+                } else {
+                    alert('Erro: ' + (data.error || 'Não foi possível abrir o portal de pagamento'));
+                    updatePaymentBtn.disabled = false;
+                    updatePaymentBtn.textContent = 'Atualizar forma de pagamento';
+                }
+            } catch (error) {
+                console.error('Error opening customer portal:', error);
+                alert('Erro ao abrir o portal de pagamento. Tente novamente.');
+                updatePaymentBtn.disabled = false;
+                updatePaymentBtn.textContent = 'Atualizar forma de pagamento';
+            }
+        });
+    }
+
+    // Format cancellation date to Brazilian format (DD/MM/YYYY)
+    const cancelDateElement = document.querySelector('.cancel-date');
+    if (cancelDateElement) {
+        const isoDate = cancelDateElement.textContent;
+        if (isoDate && isoDate.includes('T')) {
+            const date = new Date(isoDate);
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = date.getFullYear();
+            cancelDateElement.textContent = `${day}/${month}/${year}`;
+        }
+    }
 
     const themeToggle = document.getElementById('themeToggle');
     const themeToggleMobile = document.getElementById('themeToggleMobileFloat');

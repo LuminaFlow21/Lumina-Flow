@@ -13,6 +13,317 @@ from ..supabase_handler import get_supabase_handler
 logger = logging.getLogger(__name__)
 
 
+def get_subscription_visual_state(billing_state: dict) -> dict:
+    """
+    Get visual state for subscription with professional badges.
+    
+    Returns consistent visual representation across the system.
+    
+    Args:
+        billing_state: Billing state dict from get_billing_display_state()
+    
+    Returns:
+        dict with:
+        - label: Human-readable label
+        - color_class: CSS class for color
+        - icon: Emoji icon
+        - description: Detailed explanation
+        - state_key: Internal state key (active, canceling, past_due, canceled, free)
+    """
+    is_canceling = billing_state.get('is_canceling', False)
+    subscription_status = billing_state.get('subscription_status', '').lower()
+    plan = billing_state.get('plan', '').lower()
+    
+    # Priority: canceling > subscription_status > plan
+    if is_canceling:
+        return {
+            'label': 'Cancelamento agendado',
+            'color_class': 'warning',
+            'icon': '🟡',
+            'description': 'O plano foi cancelado mas mantém acesso até a data final do período.',
+            'state_key': 'canceling'
+        }
+    elif subscription_status == 'active':
+        return {
+            'label': 'Ativo',
+            'color_class': 'success',
+            'icon': '🟢',
+            'description': 'Plano ativo e em dia.',
+            'state_key': 'active'
+        }
+    elif subscription_status == 'past_due':
+        return {
+            'label': 'Pagamento pendente',
+            'color_class': 'danger',
+            'icon': '🟠',
+            'description': 'A última cobrança falhou. O plano continua ativo temporariamente.',
+            'state_key': 'past_due'
+        }
+    elif subscription_status in ('canceled', 'incomplete_expired'):
+        return {
+            'label': 'Cancelado',
+            'color_class': 'neutral',
+            'icon': '🔴',
+            'description': 'O plano foi cancelado e o acesso expirou.',
+            'state_key': 'canceled'
+        }
+    elif plan == 'free':
+        return {
+            'label': 'Free',
+            'color_class': 'neutral',
+            'icon': '⚪',
+            'description': 'Plano gratuito.',
+            'state_key': 'free'
+        }
+    else:
+        # Default to inactive
+        return {
+            'label': 'Inativo',
+            'color_class': 'neutral',
+            'icon': '⚪',
+            'description': 'Sem assinatura ativa.',
+            'state_key': 'inactive'
+        }
+
+
+def get_billing_timeline(user_id: str, limit: int = 50) -> list:
+    """
+    Get billing timeline events for a user.
+    
+    Combines events from:
+    - billing_audit_logs
+    - stripe_webhook_logs
+    - payments
+    - subscriptions
+    
+    Args:
+        user_id: User ID
+        limit: Maximum number of events to return
+    
+    Returns:
+        List of timeline events sorted by date descending
+    """
+    try:
+        supabase = get_supabase_handler()
+        events = []
+        
+        # Get profile for stripe_customer_id
+        profile_response = supabase.admin_client.table('profiles') \
+            .select('stripe_customer_id') \
+            .eq('user_id', user_id) \
+            .execute()
+        
+        profile = profile_response.data[0] if profile_response.data else None
+        stripe_customer_id = profile.get('stripe_customer_id') if profile else None
+        
+        # Get audit logs
+        audit_logs_response = supabase.admin_client.table('billing_audit_logs') \
+            .select('*') \
+            .eq('user_id', user_id) \
+            .order('created_at', desc=True) \
+            .limit(limit) \
+            .execute()
+        
+        for log in audit_logs_response.data or []:
+            events.append({
+                'type': 'audit',
+                'event_type': log.get('event_type'),
+                'description': log.get('description', log.get('event_type')),
+                'created_at': log.get('created_at'),
+                'icon': '📋',
+                'color': 'blue'
+            })
+        
+        # Get webhooks
+        if stripe_customer_id:
+            webhooks_response = supabase.admin_client.table('stripe_webhook_logs') \
+                .select('*') \
+                .eq('stripe_customer_id', stripe_customer_id) \
+                .order('created_at', desc=True) \
+                .limit(limit) \
+                .execute()
+            
+            for webhook in webhooks_response.data or []:
+                event_type = webhook.get('event_type', 'unknown')
+                processing_error = webhook.get('processing_error')
+                
+                # Determine icon and color
+                if 'payment_succeeded' in event_type:
+                    icon = '✅'
+                    color = 'green'
+                elif 'payment_failed' in event_type:
+                    icon = '❌'
+                    color = 'red'
+                elif 'cancel' in event_type.lower():
+                    icon = '🟡'
+                    color = 'yellow'
+                elif processing_error:
+                    icon = '⚠️'
+                    color = 'orange'
+                else:
+                    icon = '🔔'
+                    color = 'blue'
+                
+                events.append({
+                    'type': 'webhook',
+                    'event_type': event_type,
+                    'description': f'Webhook: {event_type}',
+                    'created_at': webhook.get('created_at'),
+                    'processing_error': processing_error,
+                    'icon': icon,
+                    'color': color
+                })
+        
+        # Get payments
+        payments_response = supabase.admin_client.table('payments') \
+            .select('*') \
+            .eq('user_id', user_id) \
+            .order('created_at', desc=True) \
+            .limit(limit) \
+            .execute()
+        
+        for payment in payments_response.data or []:
+            status = payment.get('status')
+            if status == 'paid':
+                icon = '💰'
+                color = 'green'
+                description = f'Pagamento aprovado: R$ {payment.get("amount", 0) / 100:.2f}'
+            elif status == 'failed':
+                icon = '❌'
+                color = 'red'
+                description = f'Pagamento falhou: R$ {payment.get("amount", 0) / 100:.2f}'
+            else:
+                icon = '💳'
+                color = 'blue'
+                description = f'Pagamento: {status}'
+            
+            events.append({
+                'type': 'payment',
+                'event_type': f'payment_{status}',
+                'description': description,
+                'created_at': payment.get('created_at'),
+                'icon': icon,
+                'color': color
+            })
+        
+        # Get subscription events
+        subscription_response = supabase.admin_client.table('subscriptions') \
+            .select('*') \
+            .eq('user_id', user_id) \
+            .order('created_at', desc=True) \
+            .limit(limit) \
+            .execute()
+        
+        for subscription in subscription_response.data or []:
+            status = subscription.get('status')
+            cancel_at = subscription.get('cancel_at')
+            
+            if cancel_at:
+                icon = '🟡'
+                color = 'yellow'
+                description = f'Cancelamento agendado para {cancel_at[:10]}'
+            elif status == 'active':
+                icon = '✅'
+                color = 'green'
+                description = 'Assinatura ativada'
+            else:
+                icon = '📝'
+                color = 'blue'
+                description = f'Assinatura: {status}'
+            
+            events.append({
+                'type': 'subscription',
+                'event_type': f'subscription_{status}',
+                'description': description,
+                'created_at': subscription.get('created_at'),
+                'icon': icon,
+                'color': color
+            })
+        
+        # Sort by date descending
+        events.sort(key=lambda x: x.get('created_at', ''), reverse=True)
+        
+        # Limit results
+        return events[:limit]
+    
+    except Exception as e:
+        logger.exception('[BILLING] Error getting billing timeline', extra={'user_id': user_id})
+        return []
+
+
+def get_last_stripe_event(user_id: str) -> dict:
+    """
+    Get the last Stripe webhook event for a user.
+    
+    Args:
+        user_id: User ID
+    
+    Returns:
+        Dict with event data or None if not found
+    """
+    try:
+        supabase = get_supabase_handler()
+        
+        # Get profile for stripe_customer_id
+        profile_response = supabase.admin_client.table('profiles') \
+            .select('stripe_customer_id') \
+            .eq('user_id', user_id) \
+            .execute()
+        
+        profile = profile_response.data[0] if profile_response.data else None
+        stripe_customer_id = profile.get('stripe_customer_id') if profile else None
+        
+        if not stripe_customer_id:
+            return None
+        
+        # Get last webhook
+        webhook_response = supabase.admin_client.table('stripe_webhook_logs') \
+            .select('*') \
+            .eq('stripe_customer_id', stripe_customer_id) \
+            .order('created_at', desc=True) \
+            .limit(1) \
+            .execute()
+        
+        if webhook_response.data and len(webhook_response.data) > 0:
+            webhook = webhook_response.data[0]
+            return {
+                'event_type': webhook.get('event_type'),
+                'created_at': webhook.get('created_at'),
+                'processed': webhook.get('processed'),
+                'processing_error': webhook.get('processing_error'),
+                'stripe_event_id': webhook.get('stripe_event_id')
+            }
+        
+        return None
+    
+    except Exception as e:
+        logger.exception('[BILLING] Error getting last stripe event', extra={'user_id': user_id})
+        return None
+
+
+def get_webhooks_with_error_count() -> int:
+    """
+    Get count of webhooks with processing errors.
+    
+    Returns:
+        Number of webhooks with processing_error not null
+    """
+    try:
+        supabase = get_supabase_handler()
+        
+        # Count webhooks with processing_error
+        response = supabase.admin_client.table('stripe_webhook_logs') \
+            .select('*', count='exact') \
+            .not_.is_('processing_error', 'null') \
+            .execute()
+        
+        return response.count if response.count else 0
+    
+    except Exception as e:
+        logger.exception('[BILLING] Error getting webhooks with error count')
+        return 0
+
+
 def _serialize_for_json(obj: Any) -> Any:
     """
     Convert object to JSON-serializable format.
@@ -773,3 +1084,681 @@ def get_user_id_from_checkout_webhook(stripe_invoice_id: str = None, stripe_cust
             'success': False,
             'error': str(e)
         }
+
+
+def get_admin_billing_summary(filters: Dict[str, Any] = None) -> Dict[str, Any]:
+    """
+    Get billing summary for admin dashboard
+    
+    Args:
+        filters: Optional filters to apply (status, plan, etc.)
+    
+    Returns:
+        Dictionary with:
+        - active_subscriptions: count
+        - past_due_subscriptions: count
+        - canceled_subscriptions: count
+        - failed_payments: count (recent)
+        - estimated_monthly_revenue: total based on basic plans
+        - scheduled_cancellations: count
+    """
+    try:
+        supabase = get_supabase_handler()
+        filters = filters or {}
+        
+        # Build query with filters
+        query = supabase.admin_client.table('profiles').select('*')
+        
+        if filters.get('status'):
+            query = query.eq('subscription_status', filters['status'])
+        
+        if filters.get('plan'):
+            query = query.eq('plan', filters['plan'])
+        
+        profiles_response = query.execute()
+        
+        # Count subscriptions by status
+        active_count = 0
+        past_due_count = 0
+        canceled_count = 0
+        scheduled_cancellations = 0
+        estimated_monthly_revenue = 0
+        
+        if profiles_response.data:
+            for profile in profiles_response.data:
+                status = profile.get('subscription_status')
+                plan = profile.get('plan')
+                cancel_at = profile.get('cancel_at')
+                
+                if status == 'active':
+                    active_count += 1
+                    if cancel_at:
+                        scheduled_cancellations += 1
+                elif status == 'past_due':
+                    past_due_count += 1
+                elif status == 'canceled':
+                    canceled_count += 1
+                
+                # Estimate revenue (basic plans)
+                if plan == 'basic' and status in ['active', 'past_due']:
+                    estimated_monthly_revenue += 49  # Basic price in BRL
+        
+        # Count failed payments (recent)
+        failed_payments_query = supabase.admin_client.table('payments') \
+            .select('id') \
+            .eq('status', 'failed') \
+            .gte('created_at', datetime.now() - timedelta(days=30))
+        
+        if filters.get('has_failed_payment'):
+            # Get customer IDs with failed payments
+            failed_customers = supabase.admin_client.table('payments') \
+                .select('user_id') \
+                .eq('status', 'failed') \
+                .gte('created_at', datetime.now() - timedelta(days=30)) \
+                .execute()
+            
+            if failed_customers.data:
+                customer_ids = list(set(p.get('user_id') for p in failed_customers.data if p.get('user_id')))
+                if customer_ids:
+                    profiles_response = supabase.admin_client.table('profiles') \
+                        .select('*') \
+                        .in_('user_id', customer_ids) \
+                        .execute()
+        
+        failed_payments_response = failed_payments_query.execute()
+        failed_payments_count = len(failed_payments_response.data) if failed_payments_response.data else 0
+        
+        # Estimate monthly revenue (basic plan = R$ 29.90 or similar)
+        basic_plan_count = 0
+        if profiles_response.data:
+            basic_plan_count = sum(1 for p in profiles_response.data if p.get('plan') == 'basic')
+        
+        estimated_monthly_revenue = basic_plan_count * 29.90  # Assuming R$ 29.90 per month
+        
+        logger.info(
+            '[ADMIN] Billing summary fetched',
+            extra={
+                'active_subscriptions': active_count,
+                'past_due_subscriptions': past_due_count,
+                'canceled_subscriptions': canceled_count,
+                'failed_payments': failed_payments_count,
+                'estimated_monthly_revenue': estimated_monthly_revenue,
+                'scheduled_cancellations': scheduled_cancellations
+            }
+        )
+        
+        return {
+            'success': True,
+            'data': {
+                'active_subscriptions': active_count,
+                'past_due_subscriptions': past_due_count,
+                'canceled_subscriptions': canceled_count,
+                'failed_payments': failed_payments_count,
+                'estimated_monthly_revenue': estimated_monthly_revenue,
+                'scheduled_cancellations': scheduled_cancellations
+            }
+        }
+    except Exception as e:
+        logger.exception('[ADMIN] Error fetching billing summary')
+        return {
+            'success': False,
+            'error': str(e)
+        }
+
+
+def get_admin_customer_billing_details(user_id: str) -> Dict[str, Any]:
+    """
+    Get detailed billing information for a specific customer
+    
+    Args:
+        user_id: User ID
+        
+    Returns:
+        Dictionary with:
+        - profile: user profile data
+        - payments: list of payments
+        - webhooks: list of webhooks
+        - audit_logs: list of audit logs
+        - subscription: subscription details
+    """
+    try:
+        supabase = get_supabase_handler()
+        
+        # Get profile data
+        profile_response = supabase.admin_client.table('profiles') \
+            .select('*') \
+            .eq('user_id', user_id) \
+            .execute()
+        
+        profile = profile_response.data[0] if profile_response.data else None
+        
+        # Get unified billing display state
+        billing_state = get_billing_display_state(user_id, supabase)
+        
+        # Get user data
+        user_response = supabase.admin_client.table('users') \
+            .select('id', 'email', 'plan', 'created_at') \
+            .eq('id', user_id) \
+            .execute()
+        
+        user = user_response.data[0] if user_response.data else None
+        
+        # Get payments
+        payments_response = supabase.admin_client.table('payments') \
+            .select('*') \
+            .eq('user_id', user_id) \
+            .order('created_at', desc=True) \
+            .limit(50) \
+            .execute()
+        
+        payments = payments_response.data if payments_response.data else []
+        
+        # Calculate total paid amount and failed payment count
+        total_paid = sum(p.get('amount', 0) for p in payments if p.get('status') == 'paid')
+        failed_payment_count = sum(1 for p in payments if p.get('status') == 'failed')
+        
+        # Get webhooks
+        webhooks_response = supabase.admin_client.table('stripe_webhook_logs') \
+            .select('*') \
+            .eq('stripe_customer_id', profile.get('stripe_customer_id') if profile else None) \
+            .order('created_at', desc=True) \
+            .limit(50) \
+            .execute()
+        
+        webhooks = webhooks_response.data if webhooks_response.data else []
+        
+        # Get audit logs
+        audit_logs_response = supabase.admin_client.table('billing_audit_logs') \
+            .select('*') \
+            .eq('user_id', user_id) \
+            .order('created_at', desc=True) \
+            .limit(50) \
+            .execute()
+        
+        audit_logs = audit_logs_response.data if audit_logs_response.data else []
+        
+        # Get subscription details
+        subscription = None
+        cancel_at = None
+        canceled_at = None
+        is_canceling = False
+        
+        if profile and profile.get('stripe_subscription_id'):
+            subscription_response = supabase.admin_client.table('subscriptions') \
+                .select('*') \
+                .eq('stripe_subscription_id', profile.get('stripe_subscription_id')) \
+                .execute()
+            
+            subscription = subscription_response.data[0] if subscription_response.data else None
+            
+            if subscription:
+                cancel_at = subscription.get('cancel_at')
+                canceled_at = subscription.get('canceled_at')
+                
+                # Calculate is_canceling: cancel_at exists and is in the future
+                if cancel_at:
+                    try:
+                        cancel_date = datetime.fromisoformat(cancel_at.replace('Z', '+00:00'))
+                        is_canceling = cancel_date > datetime.now()
+                    except Exception:
+                        is_canceling = False
+        
+        # Add canceling info to profile data
+        if profile:
+            profile['is_canceling'] = is_canceling
+            profile['cancel_at'] = cancel_at or profile.get('cancel_at')
+            profile['canceled_at'] = canceled_at
+        
+        logger.info(
+            '[ADMIN] Customer billing details fetched',
+            extra={'user_id': user_id}
+        )
+        
+        return {
+            'success': True,
+            'data': {
+                'profile': profile,
+                'user': user,
+                'payments': payments,
+                'total_paid': total_paid,
+                'failed_payment_count': failed_payment_count,
+                'webhooks': webhooks,
+                'audit_logs': audit_logs,
+                'subscription': subscription,
+                'billing_state': billing_state
+            }
+        }
+    except Exception as e:
+        logger.exception('[ADMIN] Error fetching customer billing details', extra={'user_id': user_id})
+        return {
+            'success': False,
+            'error': str(e)
+        }
+
+
+def get_billing_display_state(user_id: str, supabase: 'SupabaseHandler' = None) -> dict:
+    """
+    Get unified billing display state for a user.
+    
+    This function consolidates billing state from profiles and subscriptions tables
+    to provide a consistent display state across the entire system.
+    
+    Returns:
+        dict with keys:
+            - plan: current plan (free, basic, etc)
+            - subscription_status: raw subscription status from profile
+            - subscription_status_raw: raw status from subscriptions table
+            - stripe_subscription_id: Stripe subscription ID
+            - stripe_customer_id: Stripe customer ID
+            - next_billing_date: next billing date from profile
+            - cancel_at: cancel_at from subscriptions table
+            - canceled_at: canceled_at from subscriptions table
+            - is_active: bool, subscription is active and not canceling
+            - is_canceling: bool, subscription is scheduled to cancel
+            - is_past_due: bool, subscription is past_due
+            - is_canceled: bool, subscription is canceled
+            - is_free: bool, user is on free plan
+            - access_until: date until user has access (cancel_at or next_billing_date)
+            - billing_message: human-readable message about billing state
+            - primary_action: suggested action for user
+            - status_label: display label for status
+            - status_badge_class: CSS class for status badge
+    """
+    from datetime import datetime
+    
+    if supabase is None:
+        supabase = get_supabase_handler()
+    
+    # Get profile
+    profile_response = supabase.admin_client.table('profiles') \
+        .select('*') \
+        .eq('user_id', user_id) \
+        .execute()
+    
+    profile = profile_response.data[0] if profile_response.data else {}
+    
+    # Get subscription data
+    subscription = None
+    cancel_at = None
+    canceled_at = None
+    subscription_status_raw = None
+    subscription_exists_in_stripe = False
+    
+    stripe_subscription_id = profile.get('stripe_subscription_id')
+    if stripe_subscription_id:
+        # First check if subscription exists in Stripe
+        try:
+            from ..stripe_handler import get_stripe_handler
+            stripe_handler = get_stripe_handler()
+            stripe_subscription = stripe_handler.stripe.Subscription.retrieve(stripe_subscription_id)
+            subscription_exists_in_stripe = stripe_subscription is not None
+        except Exception as e:
+            # Subscription doesn't exist in Stripe (was deleted)
+            logger.warning(f'Subscription {stripe_subscription_id} not found in Stripe', extra={'error': str(e)})
+            subscription_exists_in_stripe = False
+        
+        # Get subscription data from local database
+        subscription_response = supabase.admin_client.table('subscriptions') \
+            .select('*') \
+            .eq('stripe_subscription_id', stripe_subscription_id) \
+            .execute()
+        
+        subscription = subscription_response.data[0] if subscription_response.data else None
+    
+    if subscription:
+        cancel_at = subscription.get('cancel_at')
+        canceled_at = subscription.get('canceled_at')
+        subscription_status_raw = subscription.get('status')
+    
+    # Calculate state
+    plan = profile.get('plan', 'free')
+    subscription_status = profile.get('subscription_status', 'inactive')
+    next_billing_date = profile.get('next_billing_date')
+    
+    # Only override to free if subscription doesn't exist in Stripe AND status is not active
+    # This handles cases where users manually deleted Stripe resources but still have active subscriptions
+    if stripe_subscription_id and not subscription_exists_in_stripe:
+        if subscription_status != 'active':
+            plan = 'free'
+            subscription_status = 'inactive'
+    
+    # Calculate is_canceling: cancel_at exists and is in the future
+    is_canceling = False
+    if cancel_at:
+        try:
+            # Remove timezone info from cancel_at for comparison
+            # Format: 2026-06-28T03:02:29+00:00 -> 2026-06-28T03:02:29
+            if '+' in cancel_at:
+                cancel_date_str = cancel_at.split('+')[0]
+            else:
+                cancel_date_str = cancel_at.replace('Z', '')
+            cancel_date = datetime.fromisoformat(cancel_date_str)
+            now = datetime.now()
+            is_canceling = cancel_date > now
+        except Exception as e:
+            logger.warning(f'Error calculating is_canceling: {type(e).__name__}: {e}')
+            is_canceling = False
+    
+    # Calculate other states
+    is_active = (subscription_status == 'active' and not is_canceling and plan == 'basic')
+    is_past_due = (subscription_status == 'past_due')
+    is_canceled = (subscription_status == 'canceled')
+    is_free = (plan == 'free')
+    
+    # Calculate access_until
+    access_until = None
+    if is_canceling and cancel_at:
+        access_until = cancel_at
+    elif next_billing_date:
+        access_until = next_billing_date
+    
+    # Determine display state
+    if is_canceling:
+        status_label = 'Cancelamento agendado'
+        status_badge_class = 'canceling'
+        billing_message = f'Seu plano foi cancelado e ficará ativo até {format_date_br(access_until) if access_until else "o fim do período atual"}.'
+        primary_action = 'reactivate'
+    elif is_past_due:
+        status_label = 'Pagamento pendente'
+        status_badge_class = 'past_due'
+        billing_message = 'Não conseguimos processar seu pagamento. Atualize sua forma de pagamento.'
+        primary_action = 'update_payment'
+    elif is_canceled:
+        status_label = 'Cancelado'
+        status_badge_class = 'canceled'
+        billing_message = 'Seu plano está cancelado.'
+        primary_action = 'resubscribe'
+    elif is_free:
+        status_label = 'Free'
+        status_badge_class = 'free'
+        billing_message = 'Você está no plano gratuito.'
+        primary_action = 'upgrade'
+    elif is_active:
+        status_label = 'Ativo'
+        status_badge_class = 'active'
+        billing_message = 'Seu plano está ativo.'
+        primary_action = 'cancel'
+    else:
+        status_label = 'Inativo'
+        status_badge_class = 'inactive'
+        billing_message = 'Sua assinatura está inativa.'
+        primary_action = 'upgrade'
+    
+    return {
+        'plan': plan,
+        'subscription_status': subscription_status,
+        'subscription_status_raw': subscription_status_raw,
+        'stripe_subscription_id': stripe_subscription_id,
+        'stripe_customer_id': profile.get('stripe_customer_id'),
+        'next_billing_date': next_billing_date,
+        'cancel_at': cancel_at,
+        'canceled_at': canceled_at,
+        'is_active': is_active,
+        'is_canceling': is_canceling,
+        'is_past_due': is_past_due,
+        'is_canceled': is_canceled,
+        'is_free': is_free,
+        'access_until': access_until,
+        'billing_message': billing_message,
+        'primary_action': primary_action,
+        'status_label': status_label,
+        'status_badge_class': status_badge_class
+    }
+
+
+def search_admin_billing_customers(q: str = None, filters: Dict[str, Any] = None, limit: int = 50) -> Dict[str, Any]:
+    """
+    Search customers by query string and filters
+    
+    Args:
+        q: Search query (name, email, user_id, stripe_customer_id, stripe_subscription_id)
+        filters: Optional filters (status, plan, has_failed_payment, canceling)
+        limit: Maximum number of results
+    
+    Returns:
+        Dictionary with success status and list of customers
+    """
+    try:
+        supabase = get_supabase_handler()
+        filters = filters or {}
+        
+        # Build query with basic filters that can be applied at DB level
+        query = supabase.admin_client.table('profiles').select('*')
+        
+        # Only apply DB-level filters for plan (since it's in profiles)
+        # Don't apply status or canceling filters at DB level since they depend on billing_state
+        if filters.get('plan'):
+            query = query.eq('plan', filters['plan'])
+        
+        # Execute query with smaller limit to improve performance
+        profiles_response = query.order('created_at', desc=True).limit(limit * 2).execute()
+        profiles = profiles_response.data if profiles_response.data else []
+        
+        # Simple cache for billing states to avoid duplicate calculations
+        billing_state_cache = {}
+        
+        # Get billing state and user data for each profile
+        customers = []
+        for profile in profiles:
+            user_id = profile.get('user_id')
+            
+            # Check cache first
+            if user_id in billing_state_cache:
+                billing_state = billing_state_cache[user_id]
+            else:
+                # Get billing display state for this user
+                billing_state = get_billing_display_state(user_id, supabase)
+                billing_state_cache[user_id] = billing_state
+            
+            # Get user data
+            user_response = supabase.admin_client.table('users') \
+                .select('*') \
+                .eq('id', user_id) \
+                .execute()
+            
+            user = user_response.data[0] if user_response.data else None
+            
+            # Get last payment only if needed for has_failed_payment filter
+            last_payment = None
+            if filters.get('has_failed_payment'):
+                payment_response = supabase.admin_client.table('payments') \
+                    .select('*') \
+                    .eq('user_id', user_id) \
+                    .order('created_at', desc=True) \
+                    .limit(1) \
+                    .execute()
+                last_payment = payment_response.data[0] if payment_response.data else None
+            
+            customers.append({
+                'profile': profile,
+                'user': user,
+                'last_payment': last_payment,
+                'billing_state': billing_state
+            })
+        
+        # Apply filters based on billing_state
+        if filters:
+            filtered_customers = []
+            for customer in customers:
+                billing_state = customer.get('billing_state', {})
+                
+                # Filter by status
+                if filters.get('status'):
+                    if billing_state.get('subscription_status') != filters['status']:
+                        continue
+                
+                # Filter by canceling
+                if filters.get('canceling'):
+                    if not billing_state.get('is_canceling'):
+                        continue
+                
+                # Filter by has_failed_payment
+                if filters.get('has_failed_payment'):
+                    last_payment = customer.get('last_payment')
+                    if not last_payment or last_payment.get('status') != 'failed':
+                        continue
+                
+                filtered_customers.append(customer)
+            
+            customers = filtered_customers
+        
+        # Filter by search query if provided
+        if q:
+            q_lower = q.lower()
+            filtered_customers = []
+            for customer in customers:
+                profile = customer.get('profile', {})
+                user = customer.get('user', {})
+                billing_state = customer.get('billing_state', {})
+                
+                # Search in multiple fields
+                searchable_text = ' '.join(filter(None, [
+                    str(profile.get('full_name', '')),
+                    str(profile.get('user_id', '')),
+                    str(user.get('email', '')),
+                    str(billing_state.get('stripe_customer_id', '')),
+                    str(billing_state.get('stripe_subscription_id', ''))
+                ])).lower()
+                
+                if q_lower in searchable_text:
+                    filtered_customers.append(customer)
+            
+            customers = filtered_customers[:limit]
+        else:
+            customers = customers[:limit]
+        
+        logger.info(
+            '[ADMIN] Customer search completed',
+            extra={'q': q, 'filters': filters, 'count': len(customers)}
+        )
+        
+        return {
+            'success': True,
+            'data': customers
+        }
+    except Exception as e:
+        logger.exception('[ADMIN] Error searching customers')
+        return {
+            'success': False,
+            'error': str(e)
+        }
+
+
+def format_money(amount: float, currency: str = 'BRL') -> str:
+    """
+    Format amount as money string
+    
+    Args:
+        amount: Amount to format
+        currency: Currency code (BRL, GBP, USD)
+    
+    Returns:
+        Formatted money string
+    """
+    if currency == 'BRL':
+        return f'R$ {amount:.2f}'.replace('.', ',')
+    elif currency == 'GBP':
+        return f'£{amount:.2f}'
+    elif currency == 'USD':
+        return f'${amount:.2f}'
+    else:
+        return f'{amount:.2f} {currency}'
+
+
+def format_datetime_br(dt: str) -> str:
+    """
+    Format datetime to Brazilian format (DD/MM/YYYY HH:MM)
+    
+    Args:
+        dt: Datetime string (ISO format)
+    
+    Returns:
+        Formatted datetime string
+    """
+    if not dt:
+        return '-'
+    
+    try:
+        dt_obj = datetime.fromisoformat(dt.replace('Z', '+00:00'))
+        return dt_obj.strftime('%d/%m/%Y %H:%M')
+    except Exception:
+        return dt
+
+
+def format_date_br(dt: str) -> str:
+    """
+    Format date to Brazilian format (DD/MM/YYYY)
+    
+    Args:
+        dt: Date string (ISO format)
+    
+    Returns:
+        Formatted date string
+    """
+    if not dt:
+        return '-'
+    
+    try:
+        dt_obj = datetime.fromisoformat(dt.replace('Z', '+00:00'))
+        return dt_obj.strftime('%d/%m/%Y')
+    except Exception:
+        return dt
+
+
+def get_status_label(status: str) -> str:
+    """
+    Get human-readable status label
+    
+    Args:
+        status: Status code (active, past_due, canceled, inactive)
+    
+    Returns:
+        Human-readable status label
+    """
+    status_labels = {
+        'active': 'Ativo',
+        'past_due': 'Pagamento pendente',
+        'canceled': 'Cancelado',
+        'inactive': 'Inativo',
+        'trial': 'Teste'
+    }
+    return status_labels.get(status, status)
+
+
+def get_status_badge_class(status: str) -> str:
+    """
+    Get CSS badge class for status
+    
+    Args:
+        status: Status code
+    
+    Returns:
+        CSS class name
+    """
+    badge_classes = {
+        'active': 'admin-badge--active',
+        'past_due': 'admin-badge--past-due',
+        'canceled': 'admin-badge--canceled',
+        'inactive': 'admin-badge--inactive',
+        'trial': 'admin-badge--active'
+    }
+    return badge_classes.get(status, 'admin-badge--inactive')
+
+
+def get_plan_badge_class(plan: str) -> str:
+    """
+    Get CSS badge class for plan
+    
+    Args:
+        plan: Plan code
+    
+    Returns:
+        CSS class name
+    """
+    badge_classes = {
+        'basic': 'admin-badge--basic',
+        'pro': 'admin-badge--basic',
+        'enterprise': 'admin-badge--basic',
+        'free': 'admin-badge--free'
+    }
+    return badge_classes.get(plan, 'admin-badge--free')

@@ -21,7 +21,7 @@ let translations = {};
 // Load translations from JSON file
 async function loadTranslations() {
     try {
-        const response = await fetch('/translations.json?v=' + Date.now()); // Cache bust
+        const response = await fetch('/translations.json?v=' + Date.now() + Math.random()); // Aggressive cache bust
         translations = await response.json();
         console.log('[i18n] Translations loaded:', Object.keys(translations));
     } catch (error) {
@@ -347,6 +347,7 @@ function syncGlobalState() {
     window.LuminaFlow.updateDataLabels = updateDataLabels;
     window.LuminaFlow.updateCurrencyDisplays = updateCurrencyDisplays;
     window.LuminaFlow.applyRegionChange = applyRegionChange;
+    window.LuminaFlow.loadTranslations = loadTranslations;
     window.LuminaFlow.currentLanguage = currentLanguage;
     window.LuminaFlow.currentRegion = currentRegion;
 }

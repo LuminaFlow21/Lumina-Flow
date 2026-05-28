@@ -561,14 +561,16 @@ def test_dashboard():
 @login_required
 def dashboard_view():
     user_id = current_user.id
-    user_plan = current_user.plan
     supabase = get_supabase_handler()
 
-    subscription_result = supabase.get_user_subscription(user_id)
+    # Get unified billing display state
+    from ..services.billing_logs import get_billing_display_state
+    billing_state = get_billing_display_state(user_id, supabase)
+    
     subscription = {
-        'plan': user_plan,
-        'status': subscription_result.get('subscription_status', 'inactive') if subscription_result.get('success') else 'inactive',
-        'next_billing': subscription_result.get('next_billing_date') if subscription_result.get('success') else None
+        'plan': billing_state.get('plan'),
+        'status': billing_state.get('subscription_status'),
+        'next_billing': billing_state.get('next_billing_date')
     }
 
     quotations = get_user_quotations(user_id)
@@ -589,7 +591,8 @@ def dashboard_view():
         quotation_count=quotation_count, 
         can_create=can_create_new,
         profile_complete=profile_complete,
-        profile_data=profile_data
+        profile_data=profile_data,
+        billing_state=billing_state
     )
 
 @dashboard_bp.route('/quotation/select-type')
@@ -793,26 +796,22 @@ def profile():
     user_id = current_user.id
     supabase = get_supabase_handler()
     
-    sub_result = supabase.get_user_subscription(user_id)
-    subscription = {
-        'plan': current_user.plan,
-        'status': sub_result.get('subscription_status', 'inactive') if sub_result.get('success') else 'inactive'
-    }
+    # Get unified billing display state
+    from ..services.billing_logs import get_billing_display_state, get_subscription_visual_state
+    billing_state = get_billing_display_state(user_id, supabase)
+    
+    # Get visual state for subscription
+    visual_state = get_subscription_visual_state(billing_state)
     
     # Check if profile is complete
     profile_result = supabase.get_user_profile(user_id)
     profile_data = profile_result.get('data', {}) if profile_result.get('success') else {}
     profile_complete = bool(profile_data.get('profile_photo_url') and profile_data.get('whatsapp'))
     
-    subscription.update({
-        'stripe_customer_id': sub_result.get('stripe_customer_id') if sub_result.get('success') else None,
-        'stripe_subscription_id': sub_result.get('stripe_subscription_id') if sub_result.get('success') else None,
-        'next_billing': sub_result.get('next_billing_date') if sub_result.get('success') else None
-    })
-    
     return render_template(
         'profile.html',
-        subscription=subscription,
+        billing_state=billing_state,
+        visual_state=visual_state,
         user_email=current_user.email,
         profile_complete=profile_complete,
         profile_data=profile_data,
@@ -1296,6 +1295,21 @@ def cancel_subscription():
     if not subscription_id:
         return jsonify({'success': False, 'error': 'Nenhuma assinatura ativa foi encontrada.'}), 400
 
+    # Get subscription status from Stripe to check if it can be canceled
+    try:
+        subscription = stripe_handler.stripe.Subscription.retrieve(subscription_id)
+        subscription_status = subscription.get('status', '')
+        
+        # Cannot cancel incomplete, incomplete_expired, or canceled subscriptions
+        if subscription_status in ['incomplete', 'incomplete_expired', 'canceled']:
+            return jsonify({
+                'success': False,
+                'error': f'Não é possível cancelar uma assinatura com status "{subscription_status}". A assinatura já está finalizada ou não foi completada.'
+            }), 400
+    except Exception as e:
+        logger.warning('Failed to retrieve subscription status from Stripe', extra={'subscription_id': subscription_id, 'error': str(e)})
+        # Continue with attempt to modify subscription anyway
+
     # Use modify_subscription with cancel_at_period_end=True to cancel at end of period
     modify_result = stripe_handler.modify_subscription(subscription_id, cancel_at_period_end=True)
     if not modify_result.get('success'):
@@ -1304,6 +1318,7 @@ def cancel_subscription():
     # If cancel_at_period_end is set, Stripe will handle cancellation at period end
     # We update subscription_status to indicate pending cancellation
     cancel_at_period_end = modify_result.get('cancel_at_period_end', False)
+    cancel_at_date = modify_result.get('cancel_at')  # Get cancel_at from Stripe response
     if cancel_at_period_end:
         # Mark as will cancel at period end - user keeps access until then
         supabase.update_user_subscription(
@@ -1312,14 +1327,31 @@ def cancel_subscription():
             subscription_status='active',  # Still active until period ends
             stripe_customer_id=customer_id,
             stripe_subscription_id=subscription_id,
-            next_billing_date=None  # Will be cleared by webhook
+            next_billing_date=None,  # Clear next billing date
+            cancel_at=cancel_at_date  # Save cancel_at date
         )
+        
+        # Also update subscriptions table with user_id and cancel_at
+        try:
+            supabase.admin_client.table('subscriptions') \
+                .update({
+                    'user_id': user_id,
+                    'cancel_at': cancel_at_date,
+                    'updated_at': datetime.now().isoformat()
+                }) \
+                .eq('stripe_subscription_id', subscription_id) \
+                .execute()
+            logger.info('Updated subscriptions table with user_id and cancel_at', extra={'user_id': user_id, 'subscription_id': subscription_id})
+        except Exception as e:
+            logger.warning('Failed to update subscriptions table', extra={'user_id': user_id, 'error': str(e)})
+        
         logger.info(
             'Subscription set to cancel at period end',
             extra={
                 'user_id': user_id,
                 'subscription_id': subscription_id,
-                'cancel_at_period_end': True
+                'cancel_at_period_end': True,
+                'cancel_at': cancel_at_date
             }
         )
     else:
@@ -1343,6 +1375,83 @@ def cancel_subscription():
         )
 
     return jsonify({'success': True, 'cancel_at_period_end': cancel_at_period_end})
+
+
+@dashboard_bp.route('/api/subscription/reactivate', methods=['POST'])
+@login_required
+def reactivate_subscription():
+    """Reactivate a subscription that was set to cancel at period end"""
+    user_id = current_user.id
+    supabase = get_supabase_handler()
+    stripe_handler = get_stripe_handler()
+
+    profile_result = supabase.get_user_profile(user_id)
+    if not profile_result.get('success'):
+        return jsonify({'success': False, 'error': 'Não foi possível localizar o perfil do usuário.'}), 400
+
+    profile_data = profile_result.get('data') or {}
+    subscription_id = profile_data.get('stripe_subscription_id')
+    customer_id = profile_data.get('stripe_customer_id')
+
+    if not subscription_id:
+        return jsonify({'success': False, 'error': 'Nenhuma assinatura foi encontrada.'}), 400
+
+    # Get subscription status from Stripe to check if it can be reactivated
+    try:
+        subscription = stripe_handler.stripe.Subscription.retrieve(subscription_id)
+        subscription_status = subscription.get('status', '')
+        
+        # Cannot reactivate incomplete, incomplete_expired, or canceled subscriptions
+        if subscription_status in ['incomplete', 'incomplete_expired', 'canceled']:
+            return jsonify({
+                'success': False,
+                'error': f'Não é possível reativar uma assinatura com status "{subscription_status}". Por favor, faça um novo checkout para assinar novamente.',
+                'requires_new_checkout': True
+            }), 400
+    except Exception as e:
+        logger.warning('Failed to retrieve subscription status from Stripe', extra={'subscription_id': subscription_id, 'error': str(e)})
+        # Continue with attempt to modify subscription anyway
+    
+    # Use modify_subscription with cancel_at_period_end=False to reactivate
+    modify_result = stripe_handler.modify_subscription(subscription_id, cancel_at_period_end=False)
+    if not modify_result.get('success'):
+        return jsonify({'success': False, 'error': modify_result.get('error', 'Falha ao reativar a assinatura no Stripe.')}), 500
+
+    # Update profile to remove cancel_at and keep subscription active
+    supabase.update_user_subscription(
+        user_id=user_id,
+        plan='basic',
+        subscription_status='active',
+        stripe_customer_id=customer_id,
+        stripe_subscription_id=subscription_id,
+        next_billing_date=None,
+        cancel_at=None
+    )
+    
+    # Also update subscriptions table with user_id and clear cancel_at
+    try:
+        supabase.admin_client.table('subscriptions') \
+            .update({
+                'user_id': user_id,
+                'cancel_at': None,
+                'canceled_at': None,
+                'updated_at': datetime.now().isoformat()
+            }) \
+            .eq('stripe_subscription_id', subscription_id) \
+            .execute()
+        logger.info('Updated subscriptions table with user_id and cleared cancel_at', extra={'user_id': user_id, 'subscription_id': subscription_id})
+    except Exception as e:
+        logger.warning('Failed to update subscriptions table', extra={'user_id': user_id, 'error': str(e)})
+
+    logger.info(
+        'Subscription reactivated',
+        extra={
+            'user_id': user_id,
+            'subscription_id': subscription_id
+        }
+    )
+
+    return jsonify({'success': True})
 
 
 @dashboard_bp.route('/quotation/public/<quotation_id>')

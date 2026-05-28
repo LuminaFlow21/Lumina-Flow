@@ -518,8 +518,8 @@ a:hover {
     position: fixed;
     bottom: clamp(18px, 3vw, 32px);
     right: clamp(18px, 3vw, 32px);
-    width: 64px;
-    height: 64px;
+    width: 48px;
+    height: 48px;
     border-radius: var(--radius-full);
     background: linear-gradient(135deg, #25D366, #1ebe57);
     color: #FFFFFF;
@@ -540,8 +540,8 @@ a:hover {
 }
 
 .whatsapp-fab svg {
-    width: 28px;
-    height: 28px;
+    width: 24px;
+    height: 24px;
     fill: currentColor;
 }
 
@@ -569,6 +569,48 @@ a:hover {
 
 .dashboard-layout .whatsapp-fab {
     bottom: clamp(18px, 14vh, 75px);
+}
+
+/* Chatbot Floating Button */
+.chatbot-fab {
+    position: fixed;
+    bottom: calc(clamp(18px, 3vw, 32px) + 56px);
+    right: clamp(18px, 3vw, 32px);
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-full);
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: #FFFFFF;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 15px 35px rgba(99, 102, 241, 0.35), 0 4px 15px rgba(15, 23, 42, 0.15);
+    z-index: var(--z-popover);
+    cursor: pointer;
+    transition: transform var(--transition-base), box-shadow var(--transition-base);
+    animation: chatbot-pulse 2s ease-in-out infinite;
+    touch-action: none;
+}
+
+.chatbot-fab:hover {
+    transform: translateY(-4px) scale(1.03);
+    box-shadow: 0 20px 45px rgba(99, 102, 241, 0.4);
+}
+
+.chatbot-fab svg {
+    width: 24px;
+    height: 24px;
+    fill: currentColor;
+}
+
+@keyframes chatbot-pulse {
+    0% { box-shadow: 0 15px 35px rgba(99, 102, 241, 0.35); }
+    50% { box-shadow: 0 25px 55px rgba(99, 102, 241, 0.45); }
+    100% { box-shadow: 0 15px 35px rgba(99, 102, 241, 0.35); }
+}
+
+.dashboard-layout .chatbot-fab {
+    bottom: calc(clamp(18px, 14vh, 75px) + 56px);
 }
 
 .whatsapp-fab--dragging,
