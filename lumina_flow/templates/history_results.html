@@ -53,140 +53,18 @@
         '30': 'Últimos 30 dias' if is_br else 'Last 30 days',
         'all': 'Todo o histórico' if is_br else 'All time'
     } %}
-    {% set period_label = period_options.get(period_key, period_options['30']) %}
-    {% set total_label = 'Total de orçamentos analisados' if is_br else 'Total quotes analysed' %}
-    {% set approval_label = 'Taxa de aprovação' if is_br else 'Approval rate' %}
-    {% set rejection_label = 'Taxa de recusa' if is_br else 'Rejection rate' %}
-    {% set status_section_title = 'Andamento dos orçamentos' if is_br else 'Quote progress' %}
-    {% set status_section_desc = 'Resumo do volume de orçamentos criados no período selecionado.' if is_br else 'Summary of quotes created in the selected period.' %}
-    {% set rates_section_title = 'Taxas de conversão' if is_br else 'Conversion rates' %}
-    {% set rates_section_desc = 'Acompanhe a proporção de aprovações e recusas.' if is_br else 'Track approval and rejection ratios.' %}
-    {% set finance_section_title = 'Resultados financeiros' if is_br else 'Financial results' %}
-    {% set finance_section_desc = 'Valores movimentados com base nas negociações do período.' if is_br else 'Financial volume generated during the period.' %}
-    {% set conversion_section_title = 'Performance de conversão' if is_br else 'Conversion performance' %}
-    {% set conversion_section_desc = 'Identifique faixas de valor e templates com melhor resultado.' if is_br else 'Identify the best performing value bands and templates.' %}
-    {% set trends_section_title = 'Tendências financeiras' if is_br else 'Financial trends' %}
-    {% set trends_section_desc = 'Evolução do valor fechado e ticket médio.' if is_br else 'Evolution of closed value and average ticket.' %}
-    {% set services_section_title = 'Serviços e itens mais frequentes' if is_br else 'Most frequent services and items' %}
-    {% set services_section_desc = 'O que mais aparece nos orçamentos aprovados.' if is_br else 'What appears most often in approved quotes.' %}
-    {% set rejected_section_title = 'Serviços recorrentes nas recusas' if is_br else 'Recurring services in rejections' %}
-    {% set rejected_section_desc = 'Principais serviços citados em orçamentos recusados.' if is_br else 'Top services mentioned in rejected quotes.' %}
     {% set empty_period_title = 'Sem dados para este período' if is_br else 'No data for this period' %}
     {% set empty_period_desc = 'Amplie o intervalo de datas para visualizar seus resultados.' if is_br else 'Try expanding the date range to see your results.' %}
 
     {% set period_range = format_period_date(metrics.period.start) ~ ' – ' ~ format_period_date(metrics.period.end) %}
-    {% set total_display = metrics.counts_display.total if metrics.counts_display else '0' %}
-    {% set approval_display = metrics.rates_display.approval if metrics.rates_display else '0%' %}
-    {% set rejection_display = metrics.rates_display.rejection if metrics.rates_display else '0%' %}
-
-    {% set status_cards = [
-        {
-            'key': 'total',
-            'icon': 'sparkles',
-            'label': 'Orçamentos analisados' if is_br else 'Quotes analysed',
-            'value': total_display
-        },
-        {
-            'key': 'accepted',
-            'icon': 'check',
-            'label': 'Aprovados' if is_br else 'Approved',
-            'value': metrics.counts_display.accepted
-        },
-        {
-            'key': 'rejected',
-            'icon': 'close',
-            'label': 'Recusados' if is_br else 'Rejected',
-            'value': metrics.counts_display.rejected
-        },
-        {
-            'key': 'pending',
-            'icon': 'hourglass',
-            'label': 'Pendentes' if is_br else 'Pending',
-            'value': metrics.counts_display.pending
-        }
-    ] %}
-
-    {% set rate_cards = [
-        {
-            'key': 'approval',
-            'icon': 'check',
-            'label': approval_label,
-            'value': approval_display,
-            'modifier': 'positive'
-        },
-        {
-            'key': 'rejection',
-            'icon': 'close',
-            'label': rejection_label,
-            'value': rejection_display,
-            'modifier': 'negative'
-        }
-    ] %}
-
-    {% set financial_cards = [
-        {
-            'key': 'total_value',
-            'icon': 'activity',
-            'label': 'Valor orçado' if is_br else 'Total quoted value',
-            'value': metrics.financial_display.total_value
-        },
-        {
-            'key': 'closed_value',
-            'icon': 'trophy',
-            'label': 'Valor fechado' if is_br else 'Closed value',
-            'value': metrics.financial_display.closed_value
-        },
-        {
-            'key': 'lost_value',
-            'icon': 'fire',
-            'label': 'Valor perdido' if is_br else 'Lost value',
-            'value': metrics.financial_display.lost_value
-        },
-        {
-            'key': 'average_ticket',
-            'icon': 'layers',
-            'label': 'Ticket médio' if is_br else 'Average ticket',
-            'value': metrics.financial_display.average_ticket
-        }
-    ] %}
 
     <section class="results-hero">
-        <div class="results-hero__text">
-            <h1>{{ 'Resultados de Orçamentos' if is_br else 'Quotation results' }}</h1>
-            <p class="text-slate">{{ 'Acompanhe os indicadores principais e entenda a performance do período.' if is_br else 'Track key indicators and understand your performance for the selected period.' }}</p>
-            <div class="results-period">
-                <div class="results-period__current">
-                    <span class="results-period__label">{{ period_label }}</span>
-                    <strong class="results-period__range">{{ period_range }}</strong>
-                </div>
-                <div class="results-period__previous">
-                    <span class="results-period__label results-period__label--muted">{{ 'Duração' if is_br else 'Length' }}</span>
-                    <span class="results-period__range">{{ metrics.period.days }} {{ 'dias' if is_br else 'days' }}</span>
-                </div>
-            </div>
-        </div>
-        <div class="results-summary">
-            <div class="results-summary__item">
-                <span class="results-summary__label">{{ total_label }}</span>
-                <strong class="results-summary__value">{{ total_display }}</strong>
-            </div>
-            <div class="results-summary__item results-summary__item--accent">
-                <span class="results-summary__label">{{ approval_label }}</span>
-                <strong class="results-summary__value">{{ approval_display }}</strong>
-            </div>
-        </div>
+        <h1>{{ 'Resultados de Orçamentos' if is_br else 'Quotation results' }}</h1>
+        <p class="text-slate">{{ 'Acompanhe os indicadores principais.' if is_br else 'Track key indicators.' }}</p>
     </section>
 
     <div class="results-controls">
-        <nav class="results-tabs" aria-label="{{ 'Selecionar modo' if is_br else 'Select mode' }}">
-            {% set base_url = url_for('dashboard.history_results') %}
-            {% for tab_key, label in [('basic', 'Básico' if is_br else 'Basic'), ('advanced', 'Avançado' if is_br else 'Advanced')] %}
-                {% set tab_url = base_url ~ '?tab=' ~ tab_key ~ '&period=' ~ period_key %}
-                <a href="{{ tab_url }}" class="results-tab {% if active_tab == tab_key %}is-active{% endif %}" role="tab" aria-selected="{{ 'true' if active_tab == tab_key else 'false' }}">{{ label }}</a>
-            {% endfor %}
-        </nav>
         <form class="results-filter" method="get">
-            <input type="hidden" name="tab" value="{{ active_tab }}">
             <label class="results-filter__label" for="history-results-period">{{ 'Período' if is_br else 'Period' }}</label>
             <select id="history-results-period" name="period" onchange="this.form.submit()">
                 {% for option_key, option_label in period_options.items() %}
@@ -194,179 +72,94 @@
                 {% endfor %}
             </select>
         </form>
+        <div class="results-period-info">
+            <span class="results-period-info__range">{{ period_range }}</span>
+        </div>
     </div>
 
     {% if has_period_data %}
-        <div class="tab-panels">
-            <section class="tab-panel {% if active_tab == 'basic' %}is-active{% endif %}" data-tab="basic">
-                <section class="results-section results-section--metrics">
-                    <header class="results-section__header">
-                        <h2>{{ status_section_title }}</h2>
-                        <p>{{ status_section_desc }}</p>
-                    </header>
-                    <div class="metrics-grid metrics-grid--compact">
-                        {% for card in status_cards %}
-                            <article class="metric-card metric-card--{{ card.key }}">
-                                <div class="metric-card__icon">
-                                    {{ metric_icon(card.icon)|safe }}
-                                </div>
-                                <div class="metric-card__content">
-                                    <span class="metric-card__title">{{ card.label }}</span>
-                                    <span class="metric-card__value">{{ card.value }}</span>
-                                </div>
-                            </article>
-                        {% endfor %}
-                    </div>
-                </section>
-
-                <section class="results-section results-section--metrics">
-                    <header class="results-section__header">
-                        <h2>{{ rates_section_title }}</h2>
-                        <p>{{ rates_section_desc }}</p>
-                    </header>
-                    <div class="metrics-grid metrics-grid--rates">
-                        {% for card in rate_cards %}
-                            <article class="metric-card metric-card--rate metric-card--{{ card.key }} metric-card--{{ card.modifier }}">
-                                <div class="metric-card__icon">
-                                    {{ metric_icon(card.icon)|safe }}
-                                </div>
-                                <div class="metric-card__content">
-                                    <span class="metric-card__title">{{ card.label }}</span>
-                                    <span class="metric-card__value">{{ card.value }}</span>
-                                </div>
-                            </article>
-                        {% endfor %}
-                    </div>
-                </section>
-
-                <section class="results-section results-section--metrics">
-                    <header class="results-section__header">
-                        <h2>{{ finance_section_title }}</h2>
-                        <p>{{ finance_section_desc }}</p>
-                    </header>
-                    <div class="metrics-grid metrics-grid--financial">
-                        {% for card in financial_cards %}
-                            <article class="metric-card metric-card--{{ card.key }}">
-                                <div class="metric-card__icon">
-                                    {{ metric_icon(card.icon)|safe }}
-                                </div>
-                                <div class="metric-card__content">
-                                    <span class="metric-card__title">{{ card.label }}</span>
-                                    <span class="metric-card__value">{{ card.value }}</span>
-                                </div>
-                            </article>
-                        {% endfor %}
-                    </div>
-                </section>
-            </section>
-
-            <section class="tab-panel {% if active_tab == 'advanced' %}is-active{% endif %}" data-tab="advanced">
-                <section class="results-section">
-                    <header class="results-section__header">
-                        <h2>{{ conversion_section_title }}</h2>
-                        <p>{{ conversion_section_desc }}</p>
-                    </header>
-                    <div class="chart-grid chart-grid--two">
-                        <article class="chart-card" data-chart-key="conversion_by_value">
-                            <div class="chart-card__header">
-                                <h3>{{ 'Conversão por faixa de valor' if is_br else 'Conversion by value band' }}</h3>
-                                <p>{{ 'Descubra quais faixas apresentam melhor taxa de aprovação.' if is_br else 'See which price ranges convert better.' }}</p>
-                            </div>
-                            <div class="chart-card__body">
-                                <canvas class="chart-card__canvas" aria-label="Conversion by value band"></canvas>
-                                <div class="chart-card__empty">{{ 'Sem dados suficientes para este gráfico.' if is_br else 'Not enough data to render this chart.' }}</div>
-                            </div>
-                        </article>
-                        <article class="chart-card" data-chart-key="templates_conversion">
-                            <div class="chart-card__header">
-                                <h3>{{ 'Templates com maior conversão' if is_br else 'Top converting templates' }}</h3>
-                                <p>{{ 'Ranking dos modelos que mais fecham vendas.' if is_br else 'Ranking of the templates with higher win rate.' }}</p>
-                            </div>
-                            <div class="chart-card__body">
-                                <canvas class="chart-card__canvas" aria-label="Templates conversion"></canvas>
-                                <div class="chart-card__empty">{{ 'Sem dados suficientes para este gráfico.' if is_br else 'Not enough data to render this chart.' }}</div>
-                            </div>
-                        </article>
-                    </div>
-                </section>
-
-                <section class="results-section">
-                    <header class="results-section__header">
-                        <h2>{{ trends_section_title }}</h2>
-                        <p>{{ trends_section_desc }}</p>
-                    </header>
-                    <div class="chart-grid chart-grid--two">
-                        <article class="chart-card" data-chart-key="closed_value_over_time">
-                            <div class="chart-card__header">
-                                <h3>{{ 'Valor fechado por dia' if is_br else 'Closed value per day' }}</h3>
-                                <p>{{ 'Volume financeiro convertido em cada data.' if is_br else 'Financial volume closed on each day.' }}</p>
-                            </div>
-                            <div class="chart-card__body">
-                                <canvas class="chart-card__canvas" aria-label="Closed value over time"></canvas>
-                                <div class="chart-card__empty">{{ 'Sem dados suficientes para este gráfico.' if is_br else 'Not enough data to render this chart.' }}</div>
-                            </div>
-                        </article>
-                        <article class="chart-card" data-chart-key="ticket_over_time">
-                            <div class="chart-card__header">
-                                <h3>{{ 'Ticket médio por dia' if is_br else 'Average ticket per day' }}</h3>
-                                <p>{{ 'Valor médio dos orçamentos aprovados ao longo do tempo.' if is_br else 'Average approved quote value over time.' }}</p>
-                            </div>
-                            <div class="chart-card__body">
-                                <canvas class="chart-card__canvas" aria-label="Ticket over time"></canvas>
-                                <div class="chart-card__empty">{{ 'Sem dados suficientes para este gráfico.' if is_br else 'Not enough data to render this chart.' }}</div>
-                            </div>
-                        </article>
-                    </div>
-                </section>
-
-                <section class="results-section">
-                    <header class="results-section__header">
-                        <h2>{{ services_section_title }}</h2>
-                        <p>{{ services_section_desc }}</p>
-                    </header>
-                    <div class="chart-grid chart-grid--two">
-                        <article class="chart-card" data-chart-key="accepted_services">
-                            <div class="chart-card__header">
-                                <h3>{{ 'Serviços mais presentes nas vendas' if is_br else 'Top services in sales' }}</h3>
-                                <p>{{ 'Principais serviços citados em orçamentos aprovados.' if is_br else 'Services most present in accepted quotes.' }}</p>
-                            </div>
-                            <div class="chart-card__body">
-                                <canvas class="chart-card__canvas" aria-label="Accepted services"></canvas>
-                                <div class="chart-card__empty">{{ 'Sem dados suficientes para este gráfico.' if is_br else 'Not enough data to render this chart.' }}</div>
-                            </div>
-                        </article>
-                        <article class="chart-card" data-chart-key="accepted_items">
-                            <div class="chart-card__header">
-                                <h3>{{ 'Itens mais vendidos' if is_br else 'Top sold items' }}</h3>
-                                <p>{{ 'Itens presentes com maior frequência nos orçamentos fechados.' if is_br else 'Items most frequently included in sold quotes.' }}</p>
-                            </div>
-                            <div class="chart-card__body">
-                                <canvas class="chart-card__canvas" aria-label="Accepted items"></canvas>
-                                <div class="chart-card__empty">{{ 'Sem dados suficientes para este gráfico.' if is_br else 'Not enough data to render this chart.' }}</div>
-                            </div>
-                        </article>
-                    </div>
-                </section>
-
-                <section class="results-section">
-                    <header class="results-section__header">
-                        <h2>{{ rejected_section_title }}</h2>
-                        <p>{{ rejected_section_desc }}</p>
-                    </header>
-                    <div class="chart-grid">
-                        <article class="chart-card" data-chart-key="rejected_services">
-                            <div class="chart-card__header">
-                                <h3>{{ 'Serviços citados em recusas' if is_br else 'Services cited in rejections' }}</h3>
-                                <p>{{ 'Compreenda quais ofertas estão perdendo mais oportunidades.' if is_br else 'Understand which offerings lose the most opportunities.' }}</p>
-                            </div>
-                            <div class="chart-card__body">
-                                <canvas class="chart-card__canvas" aria-label="Rejected services"></canvas>
-                                <div class="chart-card__empty">{{ 'Sem dados suficientes para este gráfico.' if is_br else 'Not enough data to render this chart.' }}</div>
-                            </div>
-                        </article>
-                    </div>
-                </section>
-            </section>
+        <div class="metrics-grid">
+            <article class="metric-card">
+                <div class="metric-card__icon">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2l1.76 4.24L18 8l-4.24 1.76L12 14l-1.76-4.24L6 8l4.24-1.76L12 2z"/></svg>
+                </div>
+                <div class="metric-card__content">
+                    <span class="metric-card__title">{{ 'Orçamentos' if is_br else 'Total' }}</span>
+                    <span class="metric-card__value">{{ metrics.counts_display.total if metrics.counts_display else '0' }}</span>
+                </div>
+            </article>
+            <article class="metric-card metric-card--positive">
+                <div class="metric-card__icon">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M9.55 17.54 4.4 12.4l1.41-1.41 3.74 3.73 8.65-8.65 1.41 1.42z"/></svg>
+                </div>
+                <div class="metric-card__content">
+                    <span class="metric-card__title">{{ 'Aprovados' if is_br else 'Approved' }}</span>
+                    <span class="metric-card__value">{{ metrics.counts_display.accepted if metrics.counts_display else '0' }}</span>
+                </div>
+            </article>
+            <article class="metric-card metric-card--negative">
+                <div class="metric-card__icon">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M18.3 5.71 12 12l6.3 6.29-1.41 1.42L12 13.41l-6.29 6.3-1.42-1.42L10.59 12 4.29 5.71 5.71 4.3 12 10.59l6.29-6.3z"/></svg>
+                </div>
+                <div class="metric-card__content">
+                    <span class="metric-card__title">{{ 'Recusados' if is_br else 'Rejected' }}</span>
+                    <span class="metric-card__value">{{ metrics.counts_display.rejected if metrics.counts_display else '0' }}</span>
+                </div>
+            </article>
+            <article class="metric-card">
+                <div class="metric-card__icon">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M18 2v4a4 4 0 0 1-1.17 2.83L14 12l2.83 3.17A4 4 0 0 1 18 18v4H6v-4a4 4 0 0 1 1.17-2.83L10 12 7.17 8.83A4 4 0 0 1 6 6V2z"/></svg>
+                </div>
+                <div class="metric-card__content">
+                    <span class="metric-card__title">{{ 'Pendentes' if is_br else 'Pending' }}</span>
+                    <span class="metric-card__value">{{ metrics.counts_display.pending if metrics.counts_display else '0' }}</span>
+                </div>
+            </article>
+            <article class="metric-card metric-card--highlight">
+                <div class="metric-card__icon">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 3 7 21h2l2-6h2l2 6h2L12 3z"/></svg>
+                </div>
+                <div class="metric-card__content">
+                    <span class="metric-card__title">{{ 'Taxa de Aprovação' if is_br else 'Approval Rate' }}</span>
+                    <span class="metric-card__value">{{ metrics.rates_display.approval if metrics.rates_display else '0%' }}</span>
+                </div>
+            </article>
+            <article class="metric-card metric-card--highlight">
+                <div class="metric-card__icon">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M13.5 0s1.5 2.5 1.5 5.5c0 3-2.5 4.5-2.5 4.5s.5-2.5-1-5C10.5 2.5 7.5 1 7.5 1S9 3.5 9 6.5 7 12 7 12s-4-2.5-4-7c0-3 2-5 2-5S0 4 0 9c0 6.075 4.925 11 11 11s11-4.925 11-11C22 4 18.5.5 18.5.5s1 2.5.5 5.5c-.5 3-2.5 5-2.5 5s-.5-3-1.5-5c-1-2-1.5-3-1.5-3z"/></svg>
+                </div>
+                <div class="metric-card__content">
+                    <span class="metric-card__title">{{ 'Valor Total' if is_br else 'Total Value' }}</span>
+                    <span class="metric-card__value">{{ metrics.financial_display.total_value if metrics.financial_display else 'R$ 0' }}</span>
+                </div>
+            </article>
+            <article class="metric-card metric-card--highlight">
+                <div class="metric-card__icon">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M17 3h1a3 3 0 0 1 3 3c0 2.76-2.24 5-5 5a5.002 5.002 0 0 1-4 1.9A5.002 5.002 0 0 1 8 11c-2.76 0-5-2.24-5-5a3 3 0 0 1 3-3h1V1h10zm-1 2H8v2a3 3 0 0 0 6 0zM5 6a1 1 0 0 0 1 1 1 1 0 0 0-1-1zm14 0a1 1 0 0 0-1 1 1 1 0 0 0 1-1zm-7 8a7 7 0 0 0 3-.7V16a3 3 0 0 1-2 2.82V20h3v2H8v-2h3v-1.18A3 3 0 0 1 9 16v-2.7a7 7 0 0 0 3 .7z"/></svg>
+                </div>
+                <div class="metric-card__content">
+                    <span class="metric-card__title">{{ 'Faturamento' if is_br else 'Revenue' }}</span>
+                    <span class="metric-card__value">{{ metrics.financial_display.closed_value if metrics.financial_display else 'R$ 0' }}</span>
+                </div>
+            </article>
+            <article class="metric-card metric-card--highlight">
+                <div class="metric-card__icon">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M18.3 5.71 12 12l6.3 6.29-1.41 1.42L12 13.41l-6.29 6.3-1.42-1.42L10.59 12 4.29 5.71 5.71 4.3 12 10.59l6.29-6.3z"/></svg>
+                </div>
+                <div class="metric-card__content">
+                    <span class="metric-card__title">{{ 'Valor Perdido' if is_br else 'Lost Value' }}</span>
+                    <span class="metric-card__value">{{ metrics.financial_display.lost_value if metrics.financial_display else 'R$ 0' }}</span>
+                </div>
+            </article>
+            <article class="metric-card">
+                <div class="metric-card__icon">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 2l5 5h-5V4zM6 20V4h6v6h6v10H6z"/></svg>
+                </div>
+                <div class="metric-card__content">
+                    <span class="metric-card__title">{{ 'Template Top' if is_br else 'Top Template' }}</span>
+                    <span class="metric-card__value">{{ metrics.top_template.name if metrics.top_template else '-' }}</span>
+                </div>
+            </article>
         </div>
     {% else %}
         <div class="empty-state empty-state--inline">
@@ -380,289 +173,5 @@
         <p data-i18n="dashboard.history_results_empty_desc">Crie orçamentos para visualizar seus resultados consolidados aqui.</p>
         <a href="{{ url_for('dashboard.dashboard_view') }}" class="btn btn-primary" data-i18n="dashboard.new_quotation">Novo Orçamento</a>
     </div>
-{% endif %}
-{% endblock %}
-
-{% block extra_js %}
-{{ super() }}
-{% if has_quotations %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" integrity="sha384-ygrkQHIiph0QGlpIvUbc6FF2EePXuEruhhf9aqp0RfqqjWwSBrnR+67Jil48rS2H" crossorigin="anonymous"></script>
-<script>
-(function() {
-    let chartConfig = {};
-    try {
-        chartConfig = JSON.parse('{{ metrics.charts|tojson|escapejs }}');
-    } catch (error) {
-        chartConfig = {};
-    }
-    const locale = '{{ "pt-BR" if user_region == "BR" else "en-GB" }}';
-    const currencySymbol = '{{ metrics.currency.symbol }}';
-
-    if (typeof window.Chart === 'undefined') {
-        return;
-    }
-
-    const chartCards = document.querySelectorAll('[data-chart-key]');
-    if (!chartCards.length) {
-        return;
-    }
-
-    const chartInstances = {};
-    const bodyStyles = getComputedStyle(document.body);
-    const rootStyles = getComputedStyle(document.documentElement);
-    Chart.defaults.font.family = bodyStyles.getPropertyValue('font-family') || 'Inter, system-ui, sans-serif';
-    Chart.defaults.color = rootStyles.getPropertyValue('--color-text-main') || '#0f172a';
-
-    function hexToRgba(hex, alpha) {
-        if (!hex) return `rgba(0, 0, 0, ${alpha})`;
-        const normalized = hex.replace('#', '');
-        if (normalized.length !== 6) return hex;
-        const bigint = parseInt(normalized, 16);
-        const r = (bigint >> 16) & 255;
-        const g = (bigint >> 8) & 255;
-        const b = bigint & 255;
-        return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-    }
-
-    function readColors() {
-        const read = (variable, fallback) => (rootStyles.getPropertyValue(variable) || fallback).trim();
-        return {
-            primary: read('--color-primary', '#1565ff'),
-            success: read('--color-success', '#22c55e'),
-            warning: read('--color-warning', '#facc15'),
-            danger: read('--color-danger', '#ef4444'),
-            info: read('--color-info', '#0ea5e9'),
-            grid: read('--color-border', '#e2e8f0')
-        };
-    }
-
-    function formatNumber(value, options = {}) {
-        try {
-            return new Intl.NumberFormat(locale, options).format(value);
-        } catch (error) {
-            return value;
-        }
-    }
-
-    function formatDateLabel(label) {
-        if (!label) return label;
-        const date = new Date(label);
-        if (Number.isNaN(date.getTime())) {
-            return label;
-        }
-        return date.toLocaleDateString(locale, { day: '2-digit', month: 'short' });
-    }
-
-    function ensureEmptyState(card, hasData) {
-        const emptyState = card.querySelector('.chart-card__empty');
-        const canvas = card.querySelector('canvas');
-        if (!emptyState || !canvas) return;
-        if (hasData) {
-            card.classList.remove('chart-card--empty');
-            emptyState.classList.remove('is-visible');
-            canvas.style.display = '';
-        } else {
-            card.classList.add('chart-card--empty');
-            emptyState.classList.add('is-visible');
-            canvas.style.display = 'none';
-        }
-    }
-
-    function destroyCharts() {
-        Object.keys(chartInstances).forEach((key) => {
-            if (chartInstances[key]) {
-                chartInstances[key].destroy();
-            }
-        });
-        Object.keys(chartInstances).forEach((key) => delete chartInstances[key]);
-    }
-
-    function renderBarChart({ key, color, formatValue, horizontal = false }) {
-        const card = document.querySelector(`[data-chart-key="${key}"]`);
-        if (!card) return;
-        const data = chartConfig[key] || {};
-        const labels = data.labels || [];
-        const values = data.values || [];
-        const hasData = labels.length > 0 && values.some((value) => Number(value) !== 0);
-        ensureEmptyState(card, hasData);
-        if (!hasData) return;
-        const ctx = card.querySelector('canvas');
-        chartInstances[key] = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels,
-                datasets: [{
-                    data: values,
-                    backgroundColor: hexToRgba(color, 0.78),
-                    borderRadius: 10,
-                    maxBarThickness: horizontal ? 38 : 48
-                }]
-            },
-            options: {
-                indexAxis: horizontal ? 'y' : 'x',
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    x: horizontal ? {
-                        beginAtZero: true,
-                        grid: { color: hexToRgba(readColors().grid, 0.35) },
-                        ticks: { callback: (value) => formatValue(value) }
-                    } : { grid: { display: false } },
-                    y: horizontal ? { grid: { display: false } } : {
-                        beginAtZero: true,
-                        grid: { color: hexToRgba(readColors().grid, 0.35) },
-                        ticks: { callback: (value) => formatValue(value) }
-                    }
-                },
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        callbacks: {
-                            label: (context) => formatValue(horizontal ? context.parsed.x : context.parsed.y)
-                        }
-                    }
-                }
-            }
-        });
-    }
-
-    function renderLineChart({ key, color, fill = true, useCurrency = false }) {
-        const card = document.querySelector(`[data-chart-key="${key}"]`);
-        if (!card) return;
-        const data = chartConfig[key] || {};
-        const labels = data.labels || [];
-        const values = data.values || [];
-        const hasData = labels.length > 0 && values.some((value) => Number(value) !== 0);
-        ensureEmptyState(card, hasData);
-        if (!hasData) return;
-        const canvas = card.querySelector('canvas');
-        const ctx = canvas.getContext('2d');
-        const height = canvas.clientHeight || 320;
-        const gradient = fill ? (() => {
-            const g = ctx.createLinearGradient(0, 0, 0, height);
-            g.addColorStop(0, hexToRgba(color, 0.32));
-            g.addColorStop(1, hexToRgba(color, 0.05));
-            return g;
-        })() : hexToRgba(color, 0.12);
-
-        chartInstances[key] = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: labels.map(formatDateLabel),
-                datasets: [{
-                    data: values,
-                    borderColor: color,
-                    backgroundColor: gradient,
-                    fill,
-                    tension: 0.35,
-                    pointRadius: 3
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        grid: { color: hexToRgba(readColors().grid, 0.35) },
-                        ticks: {
-                            callback: (value) => useCurrency
-                                ? `${currencySymbol} ${formatNumber(value, { maximumFractionDigits: 0 })}`
-                                : formatNumber(value, { maximumFractionDigits: 0 })
-                        }
-                    },
-                    x: { grid: { display: false } }
-                },
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        callbacks: {
-                            label: (context) => {
-                                const rawValue = useCurrency ? `${currencySymbol} ${formatNumber(context.parsed.y, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : formatNumber(context.parsed.y, { maximumFractionDigits: 2 });
-                                return `${context.label}: ${rawValue}`;
-                            }
-                        }
-                    }
-                }
-            }
-        });
-    }
-
-    function renderCharts() {
-        const colors = readColors();
-        destroyCharts();
-
-        renderBarChart({
-            key: 'conversion_by_value',
-            color: colors.primary,
-            formatValue: (value) => `${formatNumber(value, { maximumFractionDigits: 1 })}%`
-        });
-
-        renderBarChart({
-            key: 'templates_conversion',
-            color: colors.primary,
-            formatValue: (value) => `${formatNumber(value, { maximumFractionDigits: 1 })}%`,
-            horizontal: true
-        });
-
-        renderBarChart({
-            key: 'accepted_services',
-            color: colors.success,
-            formatValue: (value) => formatNumber(value, { maximumFractionDigits: 0 }),
-            horizontal: true
-        });
-
-        renderBarChart({
-            key: 'accepted_items',
-            color: colors.info,
-            formatValue: (value) => formatNumber(value, { maximumFractionDigits: 0 }),
-            horizontal: true
-        });
-
-        renderBarChart({
-            key: 'rejected_services',
-            color: colors.danger,
-            formatValue: (value) => formatNumber(value, { maximumFractionDigits: 0 }),
-            horizontal: true
-        });
-
-        renderLineChart({
-            key: 'closed_value_over_time',
-            color: colors.primary,
-            useCurrency: true
-        });
-
-        renderLineChart({
-            key: 'ticket_over_time',
-            color: colors.success,
-            useCurrency: true
-        });
-    }
-
-    function scheduleRender() {
-        window.requestAnimationFrame(renderCharts);
-    }
-
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', renderCharts, { once: true });
-    } else {
-        renderCharts();
-    }
-
-    let resizeTimeout;
-    window.addEventListener('resize', () => {
-        clearTimeout(resizeTimeout);
-        resizeTimeout = setTimeout(scheduleRender, 160);
-    });
-
-    const originalApplyTheme = window.applyTheme;
-    if (typeof originalApplyTheme === 'function') {
-        window.applyTheme = function(theme) {
-            originalApplyTheme(theme);
-            scheduleRender();
-        };
-    }
-})();
-</script>
 {% endif %}
 {% endblock %}

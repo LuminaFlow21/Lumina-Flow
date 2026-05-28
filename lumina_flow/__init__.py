@@ -49,12 +49,14 @@ def create_app(config_name=None):
     from .blueprints.dashboard import dashboard_bp
     from .blueprints.payments import payments_bp
     from .blueprints.admin import admin_bp
+    from .blueprints.help import help_bp
 
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(dashboard_bp, url_prefix='/dashboard')
     app.register_blueprint(payments_bp)
     app.register_blueprint(admin_bp)
+    app.register_blueprint(help_bp)
 
     # --- Registra o Context Processor ---
     # Injeta variáveis em todos os templates

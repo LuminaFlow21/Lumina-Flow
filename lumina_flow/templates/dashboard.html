@@ -37,7 +37,7 @@
                 <div class="alert-icon">📅</div>
                 <div class="alert-message">
                     <h3 data-i18n="dashboard.cancellation_scheduled_title">Cancelamento agendado</h3>
-                    <p data-i18n="dashboard.cancellation_scheduled_message">Seu plano foi cancelado e ficará ativo até <span class="cancel-date">{{ profile_data.get('cancel_at') }}</span>.</p>
+                    <p>Seu plano foi cancelado e ficará ativo até <span class="cancel-date">{{ profile_data.get('cancel_at') }}</span>.</p>
                 </div>
             </div>
         </div>
@@ -57,6 +57,20 @@
         </div>
         {% endif %}
 
+        <!-- Payment Pending Alert -->
+        {% if profile_data.get('subscription_status') == 'incomplete' %}
+        <div class="payment-pending-alert">
+            <div class="alert-content">
+                <div class="alert-icon">⏳</div>
+                <div class="alert-message">
+                    <h3 data-i18n="dashboard.payment_pending_title">Pagamento pendente</h3>
+                    <p data-i18n="dashboard.payment_pending_message">Não conseguimos processar seu pagamento. Atualize sua forma de pagamento para evitar a perda de acesso ao plano.</p>
+                </div>
+                <button class="alert-btn" id="updatePaymentBtnPending" data-i18n="dashboard.update_payment_button">Atualizar forma de pagamento</button>
+            </div>
+        </div>
+        {% endif %}
+
         <!-- Subscription Canceled Alert -->
         {% if profile_data.get('subscription_status') == 'canceled' %}
         <div class="subscription-canceled-alert">
@@ -64,7 +78,7 @@
                 <div class="alert-icon">ℹ️</div>
                 <div class="alert-message">
                     <h3 data-i18n="dashboard.subscription_canceled_title">Plano cancelado</h3>
-                    <p data-i18n="dashboard.subscription_canceled_message">Seu plano foi cancelado.</p>
+                    <p data-i18n="dashboard.subscription_canceled_message">Seu plano foi cancelado. Faça upgrade para voltar a usar recursos ilimitados.</p>
                 </div>
             </div>
         </div>

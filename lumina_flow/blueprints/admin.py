@@ -4,6 +4,7 @@ Read-only admin panel for monitoring payments, subscriptions, webhooks and error
 """
 
 import logging
+from datetime import datetime
 from flask import Blueprint, render_template, jsonify, request
 from flask_login import login_required, current_user
 from ..auth_handler import is_admin_user
@@ -23,6 +24,7 @@ from ..services.billing_logs import (
     get_webhooks_with_error_count
 )
 from ..supabase_handler import get_supabase_handler
+from ..help_handler import get_help_handler
 
 logger = logging.getLogger(__name__)
 
@@ -33,12 +35,20 @@ def admin_required(f):
     """Decorator to require admin access"""
     def wrapper(*args, **kwargs):
         if not current_user.is_authenticated:
-            return jsonify({'error': 'Authentication required'}), 401
+            return render_template('admin_error.html'), 401
         if not is_admin_user(current_user.email):
-            return jsonify({'error': 'Admin access required'}), 403
+            return render_template('admin_error.html'), 403
         return f(*args, **kwargs)
     wrapper.__name__ = f.__name__
     return wrapper
+
+
+@admin_bp.route('/')
+@login_required
+@admin_required
+def admin_dashboard():
+    """Main admin dashboard with buttons to Lumy and Billing"""
+    return render_template('admin.html')
 
 
 @admin_bp.route('/billing')
@@ -168,3 +178,144 @@ def customer_billing_details(user_id):
     except Exception as e:
         logger.exception('[ADMIN] Error loading customer billing details', extra={'user_id': user_id})
         return render_template('admin_billing_customer.html', error=str(e))
+
+
+@admin_bp.route('/lumy')
+@login_required
+@admin_required
+def lumy_dashboard():
+    """Admin dashboard for managing Lumy help articles"""
+    try:
+        from ..supabase_handler import get_supabase_handler
+        help_handler = get_help_handler()
+        
+        # Get user profile data
+        supabase_handler = get_supabase_handler()
+        supabase = supabase_handler.admin_client
+        user_id = current_user.id if hasattr(current_user, 'id') else session.get('user_id')
+        
+        profile_data = {}
+        billing_state = {}
+        subscription = {}
+        
+        if user_id:
+            try:
+                profile_response = supabase.table('profiles').select('*').eq('user_id', user_id).execute()
+                if profile_response.data:
+                    profile_data = profile_response.data[0]
+                
+                billing_response = supabase.table('billing_states').select('*').eq('user_id', user_id).execute()
+                if billing_response.data:
+                    billing_state = billing_response.data[0]
+                
+                subscription_response = supabase.table('subscriptions').select('*').eq('user_id', user_id).execute()
+                if subscription_response.data:
+                    subscription = subscription_response.data[0]
+            except Exception as e:
+                logger.warning('[ADMIN] Error fetching user profile data', exc_info=True)
+        
+        # Get Q&A pairs for Lumy quick actions
+        qa_response = supabase.table('lumy_qa') \
+            .select('*') \
+            .order('order_index') \
+            .execute()
+        
+        qa_pairs = qa_response.data if qa_response.data else []
+        
+        return render_template(
+            'admin_lumy.html',
+            profile_data=profile_data,
+            billing_state=billing_state,
+            subscription=subscription,
+            qa_pairs=qa_pairs
+        )
+    except Exception as e:
+        logger.exception('[ADMIN] Error loading Lumy dashboard')
+        return render_template('admin_lumy.html', error=str(e), qa_pairs=[], profile_data={}, billing_state={}, subscription={})
+
+
+@admin_bp.route('/lumy/qa', methods=['POST'])
+@login_required
+@admin_required
+def create_lumy_qa():
+    """Create a new Lumy Q&A pair"""
+    try:
+        data = request.get_json()
+        supabase_handler = get_supabase_handler()
+        supabase = supabase_handler.admin_client
+        
+        result = supabase.table('lumy_qa').insert({
+            'label': data.get('label'),
+            'keywords': data.get('keywords'),
+            'answer': data.get('answer'),
+            'order_index': data.get('order_index', 0),
+            'is_popular': data.get('is_popular', False),
+            'is_active': data.get('is_active', True),
+            'created_at': datetime.utcnow().isoformat()
+        }).execute()
+        
+        return jsonify({'success': True})
+    except Exception as e:
+        logger.exception('[ADMIN] Error creating Lumy Q&A')
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@admin_bp.route('/lumy/qa/<qa_id>', methods=['PUT'])
+@login_required
+@admin_required
+def update_lumy_qa(qa_id):
+    """Update a Lumy Q&A pair"""
+    try:
+        data = request.get_json()
+        supabase_handler = get_supabase_handler()
+        supabase = supabase_handler.admin_client
+        
+        result = supabase.table('lumy_qa').update({
+            'label': data.get('label'),
+            'keywords': data.get('keywords'),
+            'answer': data.get('answer'),
+            'order_index': data.get('order_index'),
+            'is_popular': data.get('is_popular'),
+            'is_active': data.get('is_active'),
+            'updated_at': datetime.utcnow().isoformat()
+        }).eq('id', qa_id).execute()
+        
+        return jsonify({'success': True})
+    except Exception as e:
+        logger.exception('[ADMIN] Error updating Lumy Q&A')
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@admin_bp.route('/lumy/qa/<qa_id>', methods=['DELETE'])
+@login_required
+@admin_required
+def delete_lumy_qa(qa_id):
+    """Delete a Lumy Q&A pair"""
+    try:
+        supabase_handler = get_supabase_handler()
+        supabase = supabase_handler.admin_client
+        result = supabase.table('lumy_qa').delete().eq('id', qa_id).execute()
+        
+        return jsonify({'success': True})
+    except Exception as e:
+        logger.exception('[ADMIN] Error deleting Lumy Q&A')
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@admin_bp.route('/api/lumy/qa', methods=['GET'])
+def get_lumy_qa():
+    """Get all active Lumy Q&A pairs for the chatbot"""
+    try:
+        supabase_handler = get_supabase_handler()
+        supabase = supabase_handler.admin_client
+        result = supabase.table('lumy_qa') \
+            .select('*') \
+            .eq('is_active', True) \
+            .order('order_index') \
+            .execute()
+        
+        qa_pairs = result.data if result.data else []
+        return jsonify({'success': True, 'qa_pairs': qa_pairs})
+    except Exception as e:
+        logger.exception('[API] Error getting Lumy Q&A pairs')
+        return jsonify({'success': False, 'error': str(e), 'qa_pairs': []})

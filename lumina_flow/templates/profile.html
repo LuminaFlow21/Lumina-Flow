@@ -2,7 +2,7 @@
 {% block title %}Profile - Lumina Flow{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}?v=2">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}">
 {% endblock %}
 
@@ -40,7 +40,7 @@
                 <div class="alert-icon">📅</div>
                 <div class="alert-message">
                     <h3 data-i18n="dashboard.cancellation_scheduled_title">Cancelamento agendado</h3>
-                    <p data-i18n="dashboard.cancellation_scheduled_message">Seu plano foi cancelado e ficará ativo até <span class="cancel-date">{{ billing_state.access_until[:10] if billing_state.access_until else '-' }}</span>.</p>
+                    <p>Seu plano foi cancelado e ficará ativo até <span class="cancel-date">{{ billing_state.access_until[:10] if billing_state.access_until else '-' }}</span>.</p>
                 </div>
             </div>
         </div>
@@ -134,6 +134,29 @@
                     <div class="form-group">
                         <label class="form-label" data-i18n="dashboard.plan_type">Plano</label>
                         <input type="text" class="form-input" value="{{ billing_state.plan|capitalize }}" disabled>
+                    </div>
+                    {% if billing_state.plan != 'free' and billing_state.stripe_subscription_id %}
+                    <div class="form-group">
+                        <label class="form-label" data-i18n="dashboard.payment_method">Forma de Pagamento</label>
+                        <button type="button" class="btn btn-secondary" id="updatePaymentMethodBtn" style="width: auto;">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 8px;">
+                                <path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"></path>
+                                <path d="M3 5v14a2 2 0 0 0 2 2h16v-5"></path>
+                                <path d="M18 12a2 2 0 0 0 0 4h4v-4h-4z"></path>
+                            </svg>
+                            <span data-i18n="dashboard.update_payment_method">Atualizar forma de pagamento</span>
+                        </button>
+                    </div>
+                    {% endif %}
+                    <div class="form-group">
+                        <label class="form-label" data-i18n="dashboard.security">Segurança</label>
+                        <button type="button" class="btn btn-secondary" id="changePasswordBtn" style="width: auto;">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 8px;">
+                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                            </svg>
+                            <span data-i18n="dashboard.change_password">Mudar senha</span>
+                        </button>
                     </div>
                 </div>
 
@@ -300,6 +323,7 @@
 document.addEventListener('DOMContentLoaded', function() {
     console.log('[Profile] DOM loaded');
     
+    
     const themeToggle = document.getElementById('themeToggle');
     const themeToggleMobile = document.getElementById('themeToggleMobileFloat');
     const themeHandler = typeof window.toggleTheme === 'function' ? window.toggleTheme : null;
@@ -409,16 +433,16 @@ document.addEventListener('DOMContentLoaded', function() {
             try {
                 updatePaymentBtnProfile.disabled = true;
                 updatePaymentBtnProfile.textContent = 'Carregando...';
-                
-                const response = await fetch('/billing/customer-portal', {
+
+                const response = await fetch('/customer-portal', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     }
                 });
-                
+
                 const data = await response.json();
-                
+
                 if (data.success) {
                     window.location.href = data.url;
                 } else {
@@ -431,6 +455,42 @@ document.addEventListener('DOMContentLoaded', function() {
                 alert('Erro ao abrir o portal de pagamento. Tente novamente.');
                 updatePaymentBtnProfile.disabled = false;
                 updatePaymentBtnProfile.textContent = 'Atualizar forma de pagamento';
+            }
+        });
+    }
+
+    // Handle update payment method button in profile form
+    const updatePaymentMethodBtn = document.getElementById('updatePaymentMethodBtn');
+    if (updatePaymentMethodBtn) {
+        updatePaymentMethodBtn.addEventListener('click', async () => {
+            try {
+                updatePaymentMethodBtn.disabled = true;
+                const originalText = updatePaymentMethodBtn.innerHTML;
+                updatePaymentMethodBtn.innerHTML = '<span>Carregando...</span>';
+
+                const response = await fetch('/customer-portal', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                console.log('Response status:', response.status);
+                const data = await response.json();
+                console.log('Response data:', data);
+
+                if (data.success) {
+                    window.location.href = data.url;
+                } else {
+                    alert(data.error || 'Não foi possível abrir o portal de pagamento');
+                    updatePaymentMethodBtn.disabled = false;
+                    updatePaymentMethodBtn.innerHTML = originalText;
+                }
+            } catch (error) {
+                console.error('Error opening customer portal:', error);
+                alert('Erro ao abrir o portal de pagamento. Detalhes: ' + error.message);
+                updatePaymentMethodBtn.disabled = false;
+                updatePaymentMethodBtn.innerHTML = originalText;
             }
         });
     }
@@ -581,6 +641,262 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
+
+// Change password modal
+document.addEventListener('DOMContentLoaded', function() {
+    const changePasswordBtn = document.getElementById('changePasswordBtn');
+    const changePasswordModal = document.getElementById('changePasswordModal');
+    const changePasswordForm = document.getElementById('changePasswordForm');
+    const changePasswordCloseBtn = document.getElementById('changePasswordCloseBtn');
+
+    if (changePasswordBtn) {
+        changePasswordBtn.addEventListener('click', () => {
+            changePasswordModal.classList.add('modal-open');
+        });
+    }
+
+    if (changePasswordCloseBtn) {
+        changePasswordCloseBtn.addEventListener('click', () => {
+            changePasswordModal.classList.remove('modal-open');
+        });
+    }
+
+    if (changePasswordModal) {
+        changePasswordModal.addEventListener('click', (e) => {
+            if (e.target === changePasswordModal) {
+                changePasswordModal.classList.remove('modal-open');
+            }
+        });
+    }
+
+    // Password toggle functionality
+    const passwordToggleButtons = document.querySelectorAll('[data-password-toggle]');
+    passwordToggleButtons.forEach((button) => {
+        const targetSelector = button.getAttribute('data-password-target');
+        const targetInput = document.querySelector(targetSelector);
+        if (!targetInput) return;
+
+        // Add eye icon
+        button.innerHTML = `
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+        `;
+
+        button.addEventListener('click', () => {
+            const type = targetInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            targetInput.setAttribute('type', type);
+            
+            // Toggle icon
+            if (type === 'text') {
+                button.innerHTML = `
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                        <line x1="1" y1="1" x2="23" y2="23"></line>
+                    </svg>
+                `;
+            } else {
+                button.innerHTML = `
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                `;
+            }
+        });
+    });
+
+    if (changePasswordForm) {
+        changePasswordForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const currentPassword = document.getElementById('currentPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            
+            if (newPassword !== confirmPassword) {
+                alert('As senhas não coincidem');
+                return;
+            }
+            
+            if (newPassword.length < 6) {
+                alert('A senha deve ter pelo menos 6 caracteres');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/dashboard/api/change-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        current_password: currentPassword,
+                        new_password: newPassword
+                    })
+                });
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert('Senha alterada com sucesso');
+                    changePasswordModal.classList.remove('modal-open');
+                    changePasswordForm.reset();
+                } else {
+                    alert(result.error || 'Erro ao alterar senha');
+                }
+            } catch (error) {
+                alert('Erro ao alterar senha: ' + error.message);
+            }
+        });
+    }
+});
 </script>
+
+<!-- Change Password Modal -->
+<div id="changePasswordModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 data-i18n="dashboard.change_password">Mudar Senha</h2>
+            <button class="modal-close" id="changePasswordCloseBtn">&times;</button>
+        </div>
+        <form id="changePasswordForm">
+            <div class="form-group">
+                <label class="form-label" data-i18n="dashboard.current_password">Senha Atual</label>
+                <div class="password-field">
+                    <input type="password" id="currentPassword" class="form-input" required placeholder="••••••••">
+                    <button type="button" class="password-toggle" data-password-toggle data-password-target="#currentPassword"></button>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label" data-i18n="dashboard.new_password">Nova Senha</label>
+                <div class="password-field">
+                    <input type="password" id="newPassword" class="form-input" required minlength="6" placeholder="••••••••">
+                    <button type="button" class="password-toggle" data-password-toggle data-password-target="#newPassword"></button>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label" data-i18n="dashboard.confirm_password">Confirmar Nova Senha</label>
+                <div class="password-field">
+                    <input type="password" id="confirmPassword" class="form-input" required minlength="6" placeholder="••••••••">
+                    <button type="button" class="password-toggle" data-password-toggle data-password-target="#confirmPassword"></button>
+                </div>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" onclick="document.getElementById('changePasswordModal').classList.remove('modal-open')">
+                    <span data-i18n="common.cancel">Cancelar</span>
+                </button>
+                <button type="submit" class="btn btn-primary">
+                    <span data-i18n="dashboard.change_password">Mudar Senha</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.modal.modal-open {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-content {
+    background: var(--color-background, #ffffff);
+    border-radius: 16px;
+    padding: 32px;
+    width: 90%;
+    max-width: 500px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .modal-content {
+    background: var(--color-background, #1e293b);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+}
+
+.modal-header h2 {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--color-text-main, #1e293b);
+}
+
+[data-theme="dark"] .modal-header h2 {
+    color: var(--color-text-main, #f1f5f9);
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 32px;
+    cursor: pointer;
+    color: var(--color-text-muted, #64748b);
+    padding: 0;
+    line-height: 1;
+}
+
+.modal-close:hover {
+    color: var(--color-text-main, #1e293b);
+}
+
+[data-theme="dark"] .modal-close:hover {
+    color: var(--color-text-main, #f1f5f9);
+}
+
+.password-field {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.password-field input {
+    padding-right: 48px;
+}
+
+.password-toggle {
+    position: absolute;
+    right: 12px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--color-text-muted, #64748b);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+    border-radius: 4px;
+}
+
+.password-toggle:hover {
+    color: var(--color-text-main, #1e293b);
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="dark"] .password-toggle:hover {
+    color: var(--color-text-main, #f1f5f9);
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.password-toggle svg {
+    width: 20px;
+    height: 20px;
+}
+</style>
 {% endblock %}
 

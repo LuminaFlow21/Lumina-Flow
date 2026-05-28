@@ -357,6 +357,17 @@ def calculate_results_metrics(quotations: list, region: str = 'UK', period_key: 
     template_chart_data.sort(key=lambda entry: entry['value'], reverse=True)
     template_chart_data = template_chart_data[:6]
 
+    # Find top template (most accepted)
+    top_template = {'name': '-', 'count': 0}
+    if template_stats:
+        top_template_code = max(template_stats.items(), key=lambda x: x[1]['accepted'])[0]
+        top_template_stats = template_stats[top_template_code]
+        top_template_name = ALL_TEMPLATES.get(top_template_code, {}).get('name', top_template_code)
+        top_template = {
+            'name': top_template_name,
+            'count': top_template_stats['accepted']
+        }
+
     charts = {
         'conversion_by_value': conversion_chart,
         'ticket_over_time': ticket_chart,
@@ -392,6 +403,7 @@ def calculate_results_metrics(quotations: list, region: str = 'UK', period_key: 
             'code': default_currency,
             'symbol': currency_symbol
         },
+        'top_template': top_template,
         'charts': charts
     }
 
@@ -1500,4 +1512,72 @@ def quotation_public_view(quotation_id):
         generator_name=generator_name,
         public_view=True
     )
+
+
+@dashboard_bp.route('/api/change-password', methods=['POST'])
+@login_required
+def change_password():
+    """Change user password"""
+    try:
+        data = request.get_json()
+        current_password = data.get('current_password')
+        new_password = data.get('new_password')
+        
+        if not current_password or not new_password:
+            return jsonify({'success': False, 'error': 'Senha atual e nova senha são obrigatórias'}), 400
+        
+        if len(new_password) < 6:
+            return jsonify({'success': False, 'error': 'A nova senha deve ter pelo menos 6 caracteres'}), 400
+        
+        supabase_handler = get_supabase_handler()
+        supabase_admin = supabase_handler.admin_client
+        auth_handler = get_auth_handler()
+
+        # Fetch current user record from custom users table
+        user_result = auth_handler.get_user_by_id(current_user.id)
+        if not user_result.get('success'):
+            logger.warning('[DASHBOARD] User not found when attempting password change', extra={'user_id': current_user.id})
+            return jsonify({'success': False, 'error': 'Usuário não encontrado'}), 404
+
+        user = user_result['user']
+
+        # Verify current password using stored hash
+        if not auth_handler.verify_password(current_password, user.get('password_hash', '')):
+            logger.warning('[DASHBOARD] Invalid current password provided', extra={'user_id': current_user.id})
+            return jsonify({'success': False, 'error': 'Senha atual incorreta'}), 400
+
+        # Hash and store new password
+        new_password_hash = auth_handler.hash_password(new_password)
+        try:
+            supabase_admin.table('users').update({
+                'password_hash': new_password_hash,
+                'updated_at': datetime.now().isoformat()
+            }).eq('id', current_user.id).execute()
+            return jsonify({'success': True})
+        except Exception:
+            logger.exception('[DASHBOARD] Error updating password hash in database')
+            return jsonify({'success': False, 'error': 'Erro ao atualizar senha'}), 500
+            
+    except Exception as e:
+        logger.exception('[DASHBOARD] Error in change_password')
+        return jsonify({'success': False, 'error': 'Erro ao alterar senha'}), 500
+
+
+@dashboard_bp.route('/api/lumy/qa', methods=['GET'])
+def get_lumy_qa():
+    """Get all active Lumy Q&A pairs for the chatbot"""
+    try:
+        supabase_handler = get_supabase_handler()
+        supabase = supabase_handler.admin_client
+        result = supabase.table('lumy_qa') \
+            .select('*') \
+            .eq('is_active', True) \
+            .order('order_index') \
+            .execute()
+        
+        qa_pairs = result.data if result.data else []
+        return jsonify({'success': True, 'qa_pairs': qa_pairs})
+    except Exception as e:
+        logger.exception('[DASHBOARD] Error getting Lumy Q&A pairs')
+        return jsonify({'success': False, 'error': str(e), 'qa_pairs': []})
 

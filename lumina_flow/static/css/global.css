@@ -576,41 +576,109 @@ a:hover {
     position: fixed;
     bottom: calc(clamp(18px, 3vw, 32px) + 56px);
     right: clamp(18px, 3vw, 32px);
-    width: 48px;
-    height: 48px;
-    border-radius: var(--radius-full);
-    background: linear-gradient(135deg, #6366f1, #8b5cf6);
-    color: #FFFFFF;
+    border: none;
+    background: transparent;
+    padding: 0;
+    cursor: pointer;
+    z-index: var(--z-popover);
+    touch-action: none;
+    font: inherit;
+    color: inherit;
+}
+
+.chatbot-fab:focus-visible {
+    outline: 3px solid rgba(147, 197, 253, 0.8);
+    outline-offset: 4px;
+    border-radius: 999px;
+}
+
+.chatbot-fab__avatar {
+    position: relative;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.25);
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 15px 35px rgba(99, 102, 241, 0.35), 0 4px 15px rgba(15, 23, 42, 0.15);
-    z-index: var(--z-popover);
-    cursor: pointer;
-    transition: transform var(--transition-base), box-shadow var(--transition-base);
-    animation: chatbot-pulse 2s ease-in-out infinite;
-    touch-action: none;
+    box-shadow: 0 18px 35px rgba(76, 29, 149, 0.25);
+    border: 2px solid rgba(255, 255, 255, 0.45);
+    transition: transform var(--transition-fast), box-shadow var(--transition-fast);
 }
 
-.chatbot-fab:hover {
-    transform: translateY(-4px) scale(1.03);
-    box-shadow: 0 20px 45px rgba(99, 102, 241, 0.4);
+.chatbot-fab__avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
 }
 
-.chatbot-fab svg {
-    width: 24px;
-    height: 24px;
-    fill: currentColor;
+.chatbot-fab__avatar-fallback {
+    font-weight: 600;
+    letter-spacing: 0.04em;
 }
 
-@keyframes chatbot-pulse {
-    0% { box-shadow: 0 15px 35px rgba(99, 102, 241, 0.35); }
-    50% { box-shadow: 0 25px 55px rgba(99, 102, 241, 0.45); }
-    100% { box-shadow: 0 15px 35px rgba(99, 102, 241, 0.35); }
+.chatbot-fab__bubble {
+    position: absolute;
+    top: 2px;
+    right: 52px;
+    background: #f8fafc;
+    color: #1e1b4b;
+    border-radius: 20px;
+    padding: 6px 10px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    box-shadow: 0 12px 25px rgba(30, 27, 75, 0.2);
+}
+
+.chatbot-fab__bubble::after {
+    content: '';
+    position: absolute;
+    right: -6px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 10px;
+    height: 10px;
+    background: #f8fafc;
+    clip-path: polygon(0% 0%, 100% 50%, 0% 100%);
+}
+
+.chatbot-fab__bubble-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+    animation: chatbot-dot 1.4s ease-in-out infinite;
+}
+
+.chatbot-fab__bubble-dot:nth-child(2) {
+    animation-delay: 0.15s;
+}
+
+.chatbot-fab__bubble-dot:nth-child(3) {
+    animation-delay: 0.3s;
+}
+
+@keyframes chatbot-dot {
+    0%, 80%, 100% { transform: translateY(0); opacity: 0.5; }
+    40% { transform: translateY(-2px); opacity: 1; }
+}
+
+.chatbot-fab:hover .chatbot-fab__avatar {
+    transform: translateY(-3px);
+    box-shadow: 0 28px 40px rgba(76, 29, 149, 0.35);
 }
 
 .dashboard-layout .chatbot-fab {
     bottom: calc(clamp(18px, 14vh, 75px) + 56px);
+}
+
+@media (max-width: 640px) {
+    .chatbot-fab__avatar {
+        width: 52px;
+        height: 52px;
+    }
 }
 
 .whatsapp-fab--dragging,
