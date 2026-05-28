@@ -7,7 +7,10 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/global.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/lumy.css') }}">
-    <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/logo_sidebar.png') }}">
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='images/logo_sidebar.png') }}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='images/logo_sidebar.png') }}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='images/logo_sidebar.png') }}">
     {% block extra_css %}{% endblock %}
     {% set current_region = session.get('user_region', 'UK') %}
     {% set initial_code = 'PT' if current_region == 'BR' else 'EN' %}
