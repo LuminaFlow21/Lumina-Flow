@@ -169,7 +169,7 @@
         </div>
 
         {% set region_key = 'br' if user_region == 'BR' else 'uk' %}
-        {% set basic_price_label = pricing['basic']['%s_monthly' % region_key] if pricing and pricing.get('basic') else ('R$ 69' if region_key == 'br' else '£19') %}
+        {% set basic_price_label = pricing['basic']['%s_monthly' % region_key] if pricing and pricing.get('basic') else ('R$ 69' if region_key == 'br' else '£10.99') %}
         {% set basic_price_id = pricing['basic'].get('price_id_%s_monthly' % region_key) if pricing and pricing.get('basic') else None %}
 
         {% if billing_state.plan == 'basic' %}

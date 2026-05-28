@@ -19,9 +19,9 @@ PRICING = {
     },
     'basic': {
         'br_monthly': 'R$ 69',
-        'uk_monthly': '£19',
-        'br_annual': 'R$ 89',
-        'uk_annual': '£29',
+        'uk_monthly': '£10.99',
+        'br_annual': 'R$ 638.90',
+        'uk_annual': '£119.00',
         'price_id_br_monthly': os.getenv('STRIPE_PRICE_ID_BR_MONTHLY'),
         'price_id_uk_monthly': os.getenv('STRIPE_PRICE_ID_UK_MONTHLY'),
         'price_id_br_annual': os.getenv('STRIPE_PRICE_ID_BR_YEARLY'),
