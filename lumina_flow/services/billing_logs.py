@@ -663,6 +663,14 @@ def get_user_id_from_checkout_webhook(stripe_invoice_id: str = None, stripe_cust
     Returns:
         Dictionary with success status, user_id, customer_id, subscription_id, and error if any
     """
+    logger.info(
+        '[DEBUG] get_user_id_from_checkout_webhook called',
+        extra={
+            'stripe_invoice_id': stripe_invoice_id,
+            'stripe_customer_id': stripe_customer_id
+        }
+    )
+    
     try:
         supabase = get_supabase_handler()
         
@@ -673,9 +681,12 @@ def get_user_id_from_checkout_webhook(stripe_invoice_id: str = None, stripe_cust
         
         if stripe_invoice_id:
             query = query.eq('stripe_invoice_id', stripe_invoice_id)
+            logger.info('[DEBUG] Querying by stripe_invoice_id', extra={'stripe_invoice_id': stripe_invoice_id})
         elif stripe_customer_id:
             query = query.eq('stripe_customer_id', stripe_customer_id)
+            logger.info('[DEBUG] Querying by stripe_customer_id', extra={'stripe_customer_id': stripe_customer_id})
         else:
+            logger.warning('[DEBUG] No search criteria provided')
             return {
                 'success': False,
                 'error': 'Either stripe_invoice_id or stripe_customer_id is required'
@@ -683,7 +694,22 @@ def get_user_id_from_checkout_webhook(stripe_invoice_id: str = None, stripe_cust
         
         response = query.order('created_at', desc=True).limit(1).execute()
         
+        logger.info(
+            '[DEBUG] Query result from stripe_webhook_logs',
+            extra={
+                'results_count': len(response.data) if response.data else 0,
+                'has_data': bool(response.data)
+            }
+        )
+        
         if not response.data or len(response.data) == 0:
+            logger.warning(
+                '[DEBUG] No checkout.session.completed found in stripe_webhook_logs',
+                extra={
+                    'stripe_invoice_id': stripe_invoice_id,
+                    'stripe_customer_id': stripe_customer_id
+                }
+            )
             return {
                 'success': False,
                 'error': 'No checkout.session.completed found'
@@ -692,6 +718,7 @@ def get_user_id_from_checkout_webhook(stripe_invoice_id: str = None, stripe_cust
         # Extract user_id from raw_payload
         raw_payload = response.data[0].get('raw_payload', {})
         if not raw_payload:
+            logger.warning('[DEBUG] No raw_payload in webhook log')
             return {
                 'success': False,
                 'error': 'No raw_payload in webhook log'
@@ -704,14 +731,25 @@ def get_user_id_from_checkout_webhook(stripe_invoice_id: str = None, stripe_cust
         customer_id = data_object.get('customer')
         subscription_id = data_object.get('subscription')
         
+        logger.info(
+            '[DEBUG] Extracted data from raw_payload',
+            extra={
+                'user_id': user_id,
+                'customer_id': customer_id,
+                'subscription_id': subscription_id,
+                'metadata_keys': list(metadata.keys()) if metadata else []
+            }
+        )
+        
         if not user_id:
+            logger.warning('[DEBUG] No user_id in checkout metadata', extra={'metadata': metadata})
             return {
                 'success': False,
                 'error': 'No user_id in checkout metadata'
             }
         
         logger.info(
-            'Found user_id from checkout webhook',
+            '[SUCCESS] Found user_id from checkout webhook',
             extra={
                 'user_id': user_id,
                 'customer_id': customer_id,

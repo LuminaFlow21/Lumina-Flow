@@ -80,7 +80,14 @@ def stripe_webhook():
     
     # Check idempotency: skip if already processed
     if is_webhook_processed(stripe_event_id):
-        logger.info('Webhook already processed, skipping', extra={'event_type': event_type, 'event_id': stripe_event_id})
+        logger.warning(
+            '[IDEMPOTENCY] Webhook already processed, SKIPPING',
+            extra={
+                'event_type': event_type,
+                'event_id': stripe_event_id,
+                'reason': 'Event already marked as processed in stripe_webhook_logs'
+            }
+        )
         return jsonify({'status': 'success', 'message': 'Already processed'}), 200
     
     # Save webhook log before processing - convert event to dict
@@ -121,6 +128,7 @@ def stripe_webhook():
 
 def _handle_checkout_session_completed(event):
     """Handle checkout.session.completed event"""
+    stripe_event_id = event['id']
     session_data = _stripe_object_to_dict(event['data']['object'])
     customer_id = session_data.get('customer')
     subscription_id = session_data.get('subscription')
@@ -128,17 +136,29 @@ def _handle_checkout_session_completed(event):
     user_id = metadata.get('user_id')
     
     logger.info(
-        'Checkout session completed',
+        '[DEBUG] Checkout session completed - START',
         extra={
+            'stripe_event_id': stripe_event_id,
             'customer_id': customer_id,
             'subscription_id': subscription_id,
-            'user_id': user_id
+            'user_id': user_id,
+            'metadata_keys': list(metadata.keys())
         }
     )
     
     # Update profile with stripe_customer_id and stripe_subscription_id
     # This allows invoice.payment_succeeded to find the user later
     if user_id and customer_id and subscription_id:
+        logger.info(
+            '[DEBUG] Preparing to update profile with Stripe IDs',
+            extra={
+                'user_id': user_id,
+                'stripe_customer_id': customer_id,
+                'stripe_subscription_id': subscription_id,
+                'target_plan': 'free',
+                'target_status': 'inactive'
+            }
+        )
         try:
             supabase = get_supabase_handler()
             update_result = supabase.update_user_subscription(
@@ -150,9 +170,18 @@ def _handle_checkout_session_completed(event):
                 next_billing_date=None
             )
 
+            logger.info(
+                '[DEBUG] Supabase update_user_subscription result',
+                extra={
+                    'update_success': update_result.get('success'),
+                    'update_error': update_result.get('error'),
+                    'update_data': update_result.get('data')
+                }
+            )
+
             if update_result.get('success'):
                 logger.info(
-                    'Profiles/users synced after checkout session',
+                    '[SUCCESS] Profiles/users synced after checkout session',
                     extra={
                         'user_id': user_id,
                         'stripe_customer_id': customer_id,
@@ -163,19 +192,34 @@ def _handle_checkout_session_completed(event):
                 )
             else:
                 logger.error(
-                    'Failed to sync profiles/users after checkout session',
+                    '[ERROR] Failed to sync profiles/users after checkout session',
                     extra={
                         'user_id': user_id,
                         'stripe_customer_id': customer_id,
                         'subscription_id': subscription_id,
-                        'error': update_result.get('error')
+                        'error': update_result.get('error'),
+                        'full_update_result': str(update_result)
                     }
                 )
         except Exception as e:
             logger.exception(
-                'Error updating profile with Stripe IDs',
-                extra={'user_id': user_id, 'customer_id': customer_id}
+                '[ERROR] Exception updating profile with Stripe IDs',
+                extra={
+                    'user_id': user_id,
+                    'customer_id': customer_id,
+                    'exception_type': type(e).__name__,
+                    'exception_message': str(e)
+                }
             )
+    else:
+        logger.warning(
+            '[DEBUG] Missing required IDs for profile update',
+            extra={
+                'user_id': user_id,
+                'customer_id': customer_id,
+                'subscription_id': subscription_id
+            }
+        )
     
     # Create audit log - subscription will be activated by invoice.payment_succeeded
     create_billing_audit_log(
@@ -415,7 +459,8 @@ def _handle_subscription_deleted(event):
 
 
 def _handle_invoice_payment_succeeded(event):
-    """Handle invoice.payment_succeeded event"""
+    """Handle invoice.payment_succeeded event - SOURCE OF TRUTH for plan activation"""
+    stripe_event_id = event['id']
     invoice_data = _stripe_object_to_dict(event['data']['object'])
     stripe_invoice_id = invoice_data.get('id')
     stripe_customer_id = invoice_data.get('customer')
@@ -423,49 +468,107 @@ def _handle_invoice_payment_succeeded(event):
     amount_paid = invoice_data.get('amount_paid')
     currency = invoice_data.get('currency')
     
+    # Log all available IDs for debugging
     logger.info(
-        'Invoice payment succeeded',
+        '[DEBUG] Invoice payment succeeded - START',
         extra={
+            'stripe_event_id': stripe_event_id,
             'stripe_invoice_id': stripe_invoice_id,
             'stripe_customer_id': stripe_customer_id,
-            'stripe_subscription_id': stripe_subscription_id,
+            'stripe_subscription_id_from_invoice': stripe_subscription_id,
             'amount_paid': amount_paid,
-            'currency': currency
+            'currency': currency,
+            'invoice_data_keys': list(invoice_data.keys())
         }
     )
     
+    # Try to extract subscription_id from other possible locations
+    subscription_id_from_parent = None
+    if 'parent' in invoice_data:
+        parent = invoice_data.get('parent', {})
+        if isinstance(parent, dict):
+            subscription_details = parent.get('subscription_details', {})
+            if isinstance(subscription_details, dict):
+                subscription_id_from_parent = subscription_details.get('subscription')
+    
+    if subscription_id_from_parent:
+        logger.info(
+            '[DEBUG] Found subscription_id from invoice.parent.subscription_details',
+            extra={'subscription_id_from_parent': subscription_id_from_parent}
+        )
+        if not stripe_subscription_id:
+            stripe_subscription_id = subscription_id_from_parent
+    
     # Get user_id by finding profile via stripe_customer_id
     user_id = _get_user_id_from_customer(stripe_customer_id)
+    logger.info(
+        '[DEBUG] user_id lookup by stripe_customer_id',
+        extra={
+            'stripe_customer_id': stripe_customer_id,
+            'user_id_found': user_id
+        }
+    )
     
     # Fallback: try to get user_id from checkout.session.completed webhook
     if not user_id:
+        logger.info(
+            '[DEBUG] user_id not found by stripe_customer_id, trying fallback from checkout.session.completed',
+            extra={
+                'stripe_invoice_id': stripe_invoice_id,
+                'stripe_customer_id': stripe_customer_id
+            }
+        )
         checkout_result = get_user_id_from_checkout_webhook(
             stripe_invoice_id=stripe_invoice_id,
             stripe_customer_id=stripe_customer_id
+        )
+        logger.info(
+            '[DEBUG] checkout.session.completed fallback result',
+            extra={
+                'checkout_success': checkout_result.get('success'),
+                'checkout_user_id': checkout_result.get('user_id'),
+                'checkout_subscription_id': checkout_result.get('subscription_id'),
+                'checkout_error': checkout_result.get('error')
+            }
         )
         if checkout_result.get('success'):
             user_id = checkout_result.get('user_id')
             # Use subscription_id from checkout if not in invoice
             if not stripe_subscription_id:
                 stripe_subscription_id = checkout_result.get('subscription_id')
-            logger.info('Found user_id from checkout webhook fallback', extra={'user_id': user_id})
+            logger.info('[DEBUG] Found user_id from checkout webhook fallback', extra={'user_id': user_id})
     
     # If invoice.subscription is null, try to get subscription_id from profile
     if not stripe_subscription_id and user_id:
+        logger.info('[DEBUG] subscription_id still null, trying to get from profile', extra={'user_id': user_id})
         try:
             supabase = get_supabase_handler()
             profile_result = supabase.get_user_subscription(user_id)
+            logger.info(
+                '[DEBUG] profile.get_user_subscription result',
+                extra={
+                    'profile_success': profile_result.get('success'),
+                    'profile_stripe_subscription_id': profile_result.get('stripe_subscription_id'),
+                    'profile_error': profile_result.get('error')
+                }
+            )
             if profile_result.get('success'):
                 stripe_subscription_id = profile_result.get('stripe_subscription_id')
                 logger.info(
-                    'Retrieved subscription_id from profile',
+                    '[DEBUG] Retrieved subscription_id from profile',
                     extra={'stripe_subscription_id': stripe_subscription_id}
                 )
         except Exception as e:
-            logger.exception('Error getting subscription_id from profile', extra={'user_id': user_id})
+            logger.exception('[DEBUG] Error getting subscription_id from profile', extra={'user_id': user_id})
     
     if user_id is None:
-        logger.warning('Could not find user_id for customer in profiles or checkout webhooks', extra={'stripe_customer_id': stripe_customer_id})
+        logger.error(
+            '[DEBUG] CRITICAL: Could not find user_id for customer in profiles or checkout webhooks',
+            extra={
+                'stripe_customer_id': stripe_customer_id,
+                'stripe_invoice_id': stripe_invoice_id
+            }
+        )
     
     # Upsert payment to billing table with user_id if found
     payment_extra_data = None
@@ -479,6 +582,18 @@ def _handle_invoice_payment_succeeded(event):
         if stripe_subscription_id:
             next_billing_date = _get_next_billing_date(stripe_subscription_id)
         
+        logger.info(
+            '[DEBUG] Preparing to update profile/users',
+            extra={
+                'user_id': user_id,
+                'target_plan': 'basic',
+                'target_status': 'active',
+                'stripe_customer_id': stripe_customer_id,
+                'stripe_subscription_id': stripe_subscription_id,
+                'next_billing_date': next_billing_date
+            }
+        )
+        
         try:
             supabase = get_supabase_handler()
             update_result = supabase.update_user_subscription(
@@ -490,14 +605,31 @@ def _handle_invoice_payment_succeeded(event):
                 next_billing_date=next_billing_date
             )
 
+            logger.info(
+                '[DEBUG] Supabase update_user_subscription result',
+                extra={
+                    'update_success': update_result.get('success'),
+                    'update_error': update_result.get('error'),
+                    'update_data': update_result.get('data')
+                }
+            )
+
             if update_result.get('success'):
                 # Update auth handler only when Supabase confirmed
                 from ..auth_handler import get_auth_handler
                 auth_handler = get_auth_handler()
-                auth_handler.update_user_plan(user_id, 'basic')
+                auth_result = auth_handler.update_user_plan(user_id, 'basic')
+                
+                logger.info(
+                    '[DEBUG] Auth handler update_user_plan result',
+                    extra={
+                        'user_id': user_id,
+                        'auth_result': str(auth_result)
+                    }
+                )
 
                 logger.info(
-                    'Profiles/users synced after invoice payment succeeded',
+                    '[SUCCESS] Profiles/users synced after invoice payment succeeded',
                     extra={
                         'user_id': user_id,
                         'plan': 'basic',
@@ -509,18 +641,25 @@ def _handle_invoice_payment_succeeded(event):
                 )
             else:
                 logger.error(
-                    'Failed to sync profiles/users after invoice payment succeeded',
+                    '[ERROR] Failed to sync profiles/users after invoice payment succeeded',
                     extra={
                         'user_id': user_id,
                         'stripe_customer_id': stripe_customer_id,
                         'stripe_subscription_id': stripe_subscription_id,
-                        'error': update_result.get('error')
+                        'error': update_result.get('error'),
+                        'full_update_result': str(update_result)
                     }
                 )
         except Exception as e:
             logger.exception(
-                'Error activating user subscription',
-                extra={'user_id': user_id}
+                '[ERROR] Exception activating user subscription',
+                extra={
+                    'user_id': user_id,
+                    'stripe_customer_id': stripe_customer_id,
+                    'stripe_subscription_id': stripe_subscription_id,
+                    'exception_type': type(e).__name__,
+                    'exception_message': str(e)
+                }
             )
     
     # Create audit log (even with null user_id/company_id)

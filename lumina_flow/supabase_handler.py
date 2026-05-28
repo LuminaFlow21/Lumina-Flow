@@ -188,6 +188,7 @@ class SupabaseHandler:
                                    next_billing_date: str = None) -> dict:
         """
         Update user subscription information in profiles and sync with users table
+        Uses UPDATE instead of UPSERT to avoid NOT NULL constraint violations
         
         Args:
             user_id: User ID
@@ -200,8 +201,11 @@ class SupabaseHandler:
         Returns:
             Dictionary with success status or error
         """
+        import logging
+        logger = logging.getLogger(__name__)
+        
         try:
-            update_data = {'user_id': user_id}
+            update_data = {}
             
             if plan is not None:
                 update_data['plan'] = plan
@@ -214,22 +218,70 @@ class SupabaseHandler:
             if next_billing_date is not None:
                 update_data['next_billing_date'] = next_billing_date
             
+            logger.info(
+                '[DEBUG] Preparing to UPDATE profiles (not UPSERT)',
+                extra={
+                    'user_id': user_id,
+                    'update_data': update_data
+                }
+            )
+            
+            # Use UPDATE instead of UPSERT to avoid NOT NULL constraint violations
+            # The profile record already exists, we just need to update specific fields
             response = self.admin_client.table('profiles') \
-                .upsert(update_data, on_conflict='user_id') \
+                .update(update_data) \
+                .eq('user_id', user_id) \
                 .execute()
+
+            logger.info(
+                '[DEBUG] Supabase profiles UPDATE response',
+                extra={
+                    'response_data': response.data,
+                    'response_count': len(response.data) if response.data else 0,
+                    'status_code': getattr(response, 'status_code', 'unknown')
+                }
+            )
 
             # Keep users table in sync only if plan was provided
             if plan is not None:
-                self.admin_client.table('users') \
-                    .update({'plan': plan, 'updated_at': datetime.now().isoformat()}) \
+                users_update_data = {'plan': plan, 'updated_at': datetime.now().isoformat()}
+                logger.info(
+                    '[DEBUG] Preparing to update users table',
+                    extra={
+                        'user_id': user_id,
+                        'users_update_data': users_update_data
+                    }
+                )
+                
+                users_response = self.admin_client.table('users') \
+                    .update(users_update_data) \
                     .eq('id', user_id) \
                     .execute()
+
+                logger.info(
+                    '[DEBUG] Supabase users update response',
+                    extra={
+                        'users_response_data': users_response.data,
+                        'users_response_count': len(users_response.data) if users_response.data else 0,
+                        'users_status_code': getattr(users_response, 'status_code', 'unknown')
+                    }
+                )
 
             return {
                 'success': True,
                 'data': response.data
             }
         except Exception as e:
+            logger.exception(
+                '[ERROR] Exception in update_user_subscription',
+                extra={
+                    'user_id': user_id,
+                    'plan': plan,
+                    'subscription_status': subscription_status,
+                    'exception_type': type(e).__name__,
+                    'exception_message': str(e)
+                }
+            )
             return {
                 'success': False,
                 'error': str(e)

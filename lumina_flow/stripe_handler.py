@@ -323,8 +323,11 @@ class StripeHandler:
         """
         try:
             subscription = stripe.Subscription.retrieve(subscription_id)
-            timestamp = subscription.current_period_end
-            return datetime.fromtimestamp(timestamp).isoformat()
+            # Use safe attribute access as current_period_end may not exist
+            timestamp = getattr(subscription, 'current_period_end', None)
+            if timestamp:
+                return datetime.fromtimestamp(timestamp).isoformat()
+            return None
         except Exception:
             logger.exception("Failed to fetch next billing date", extra={'subscription_id': subscription_id})
             return None
