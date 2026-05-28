@@ -550,6 +550,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     sessionStorage.setItem('pendingEmail', data.email);
                     sessionStorage.setItem('pendingName', data.full_name);
                     sessionStorage.setItem('pendingPassword', data.password);
+                    // Update translations for the verification modal
+                    if (window.LuminaFlow?.updateTranslations) {
+                        window.LuminaFlow.updateTranslations();
+                    }
                 } else {
                     alert(result.error || 'Signup failed');
                 }
@@ -647,6 +651,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     document.getElementById('changeEmailCard').style.display = 'none';
                     document.getElementById('verificationCard').style.display = 'block';
                     document.getElementById('verificationEmail').textContent = data.new_email;
+                    // Update translations for the verification modal
+                    if (window.LuminaFlow?.updateTranslations) {
+                        window.LuminaFlow.updateTranslations();
+                    }
                     alert('Email updated. Please check your new inbox for verification code.');
                 } else {
                     alert(result.error || 'Failed to change email');

@@ -214,7 +214,7 @@ class StripeHandler:
     
     def cancel_subscription(self, subscription_id: str) -> dict:
         """
-        Cancel a subscription
+        Cancel a subscription immediately (legacy method - use modify_subscription for cancel_at_period_end)
         
         Args:
             subscription_id: Stripe subscription ID
@@ -224,13 +224,51 @@ class StripeHandler:
         """
         try:
             subscription = stripe.Subscription.delete(subscription_id)
-            logger.info("Cancelled Stripe subscription", extra={'subscription_id': subscription_id})
+            logger.info("Cancelled Stripe subscription immediately", extra={'subscription_id': subscription_id})
             return {
                 'success': True,
                 'subscription': subscription
             }
         except Exception as e:
             logger.exception("Failed to cancel subscription", extra={'subscription_id': subscription_id})
+            return {
+                'success': False,
+                'error': str(e)
+            }
+    
+    def modify_subscription(self, subscription_id: str, cancel_at_period_end: bool = False) -> dict:
+        """
+        Modify a subscription (e.g., set cancel_at_period_end)
+        
+        Args:
+            subscription_id: Stripe subscription ID
+            cancel_at_period_end: If True, cancel at end of current period
+            
+        Returns:
+            Dictionary with success status or error
+        """
+        try:
+            subscription = stripe.Subscription.modify(
+                subscription_id,
+                cancel_at_period_end=cancel_at_period_end
+            )
+            logger.info(
+                "Modified Stripe subscription",
+                extra={
+                    'subscription_id': subscription_id,
+                    'cancel_at_period_end': cancel_at_period_end
+                }
+            )
+            return {
+                'success': True,
+                'subscription': subscription,
+                'cancel_at_period_end': subscription.get('cancel_at_period_end', False)
+            }
+        except Exception as e:
+            logger.exception(
+                "Failed to modify subscription",
+                extra={'subscription_id': subscription_id, 'cancel_at_period_end': cancel_at_period_end}
+            )
             return {
                 'success': False,
                 'error': str(e)

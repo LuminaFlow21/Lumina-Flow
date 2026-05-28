@@ -7,6 +7,7 @@ import json
 from ..supabase_handler import get_supabase_handler
 from ..stripe_handler import get_stripe_handler
 from ..auth_handler import get_auth_handler
+from ..services.billing_logs import get_user_id_from_checkout_webhook
 from .main import PRICING
 import os
 import base64
@@ -1263,26 +1264,85 @@ def cancel_subscription():
     subscription_id = profile_data.get('stripe_subscription_id')
     customer_id = profile_data.get('stripe_customer_id')
 
+    # Fallback: recover subscription_id from checkout webhook logs if missing
+    if not subscription_id and customer_id:
+        checkout_lookup = get_user_id_from_checkout_webhook(stripe_customer_id=customer_id)
+        if checkout_lookup.get('success'):
+            recovered_subscription_id = checkout_lookup.get('subscription_id')
+            recovered_customer_id = checkout_lookup.get('customer_id') or customer_id
+            if recovered_subscription_id:
+                subscription_id = recovered_subscription_id
+                customer_id = recovered_customer_id
+                plan_value = profile_data.get('plan') or current_user.plan or 'basic'
+                status_value = profile_data.get('subscription_status') or 'active'
+                next_billing_value = profile_data.get('next_billing_date')
+                try:
+                    supabase.update_user_subscription(
+                        user_id=user_id,
+                        plan=plan_value,
+                        subscription_status=status_value,
+                        stripe_customer_id=customer_id,
+                        stripe_subscription_id=subscription_id,
+                        next_billing_date=next_billing_value
+                    )
+                    profile_data['stripe_subscription_id'] = subscription_id
+                    profile_data['stripe_customer_id'] = customer_id
+                except Exception:
+                    logger.exception(
+                        'Failed to persist recovered Stripe identifiers before cancellation',
+                        extra={'user_id': user_id}
+                    )
+
     if not subscription_id:
         return jsonify({'success': False, 'error': 'Nenhuma assinatura ativa foi encontrada.'}), 400
 
-    cancel_result = stripe_handler.cancel_subscription(subscription_id)
-    if not cancel_result.get('success'):
-        return jsonify({'success': False, 'error': cancel_result.get('error', 'Falha ao cancelar a assinatura no Stripe.')}), 500
+    # Use modify_subscription with cancel_at_period_end=True to cancel at end of period
+    modify_result = stripe_handler.modify_subscription(subscription_id, cancel_at_period_end=True)
+    if not modify_result.get('success'):
+        return jsonify({'success': False, 'error': modify_result.get('error', 'Falha ao cancelar a assinatura no Stripe.')}), 500
 
-    supabase.update_user_subscription(
-        user_id=user_id,
-        plan='free',
-        subscription_status='canceled',
-        stripe_customer_id=customer_id,
-        stripe_subscription_id=None,
-        next_billing_date=None
-    )
+    # If cancel_at_period_end is set, Stripe will handle cancellation at period end
+    # We update subscription_status to indicate pending cancellation
+    cancel_at_period_end = modify_result.get('cancel_at_period_end', False)
+    if cancel_at_period_end:
+        # Mark as will cancel at period end - user keeps access until then
+        supabase.update_user_subscription(
+            user_id=user_id,
+            plan='basic',  # Keep basic until period ends
+            subscription_status='active',  # Still active until period ends
+            stripe_customer_id=customer_id,
+            stripe_subscription_id=subscription_id,
+            next_billing_date=None  # Will be cleared by webhook
+        )
+        logger.info(
+            'Subscription set to cancel at period end',
+            extra={
+                'user_id': user_id,
+                'subscription_id': subscription_id,
+                'cancel_at_period_end': True
+            }
+        )
+    else:
+        # Immediate cancellation (fallback)
+        supabase.update_user_subscription(
+            user_id=user_id,
+            plan='free',
+            subscription_status='canceled',
+            stripe_customer_id=customer_id,
+            stripe_subscription_id=None,
+            next_billing_date=None
+        )
+        auth_handler.update_user_plan(user_id, 'free')
+        current_user.plan = 'free'
+        logger.info(
+            'Subscription canceled immediately',
+            extra={
+                'user_id': user_id,
+                'subscription_id': subscription_id
+            }
+        )
 
-    auth_handler.update_user_plan(user_id, 'free')
-    current_user.plan = 'free'
-
-    return jsonify({'success': True})
+    return jsonify({'success': True, 'cancel_at_period_end': cancel_at_period_end})
 
 
 @dashboard_bp.route('/quotation/public/<quotation_id>')

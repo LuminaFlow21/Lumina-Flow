@@ -5,11 +5,13 @@ from ..supabase_handler import get_supabase_handler
 from ..stripe_handler import get_stripe_handler
 from ..services.billing_logs import (
     save_webhook_log,
+    is_webhook_processed,
     mark_webhook_processed,
     mark_webhook_failed,
     create_billing_audit_log,
     upsert_subscription_from_stripe,
-    upsert_payment_from_invoice
+    upsert_payment_from_invoice,
+    get_user_id_from_checkout_webhook
 )
 from .dashboard import login_required
 
@@ -76,8 +78,14 @@ def stripe_webhook():
     
     logger.info('Stripe webhook received', extra={'event_type': event_type, 'event_id': stripe_event_id})
     
-    # Save webhook log before processing
-    log_result = save_webhook_log(event)
+    # Check idempotency: skip if already processed
+    if is_webhook_processed(stripe_event_id):
+        logger.info('Webhook already processed, skipping', extra={'event_type': event_type, 'event_id': stripe_event_id})
+        return jsonify({'status': 'success', 'message': 'Already processed'}), 200
+    
+    # Save webhook log before processing - convert event to dict
+    event_dict = _stripe_object_to_dict(event)
+    log_result = save_webhook_log(event_dict)
     if not log_result.get('success'):
         logger.error('Failed to save webhook log', extra={'stripe_event_id': stripe_event_id})
         # Continue processing even if log save fails
@@ -113,7 +121,7 @@ def stripe_webhook():
 
 def _handle_checkout_session_completed(event):
     """Handle checkout.session.completed event"""
-    session_data = event['data']['object']
+    session_data = _stripe_object_to_dict(event['data']['object'])
     customer_id = session_data.get('customer')
     subscription_id = session_data.get('subscription')
     metadata = session_data.get('metadata', {})
@@ -127,6 +135,47 @@ def _handle_checkout_session_completed(event):
             'user_id': user_id
         }
     )
+    
+    # Update profile with stripe_customer_id and stripe_subscription_id
+    # This allows invoice.payment_succeeded to find the user later
+    if user_id and customer_id and subscription_id:
+        try:
+            supabase = get_supabase_handler()
+            update_result = supabase.update_user_subscription(
+                user_id=user_id,
+                plan='free',  # Keep free until payment succeeds
+                subscription_status='inactive',  # Profile will be activated on payment success
+                stripe_customer_id=customer_id,
+                stripe_subscription_id=subscription_id,
+                next_billing_date=None
+            )
+
+            if update_result.get('success'):
+                logger.info(
+                    'Profiles/users synced after checkout session',
+                    extra={
+                        'user_id': user_id,
+                        'stripe_customer_id': customer_id,
+                        'stripe_subscription_id': subscription_id,
+                        'plan': 'free',
+                        'subscription_status': 'inactive'
+                    }
+                )
+            else:
+                logger.error(
+                    'Failed to sync profiles/users after checkout session',
+                    extra={
+                        'user_id': user_id,
+                        'stripe_customer_id': customer_id,
+                        'subscription_id': subscription_id,
+                        'error': update_result.get('error')
+                    }
+                )
+        except Exception as e:
+            logger.exception(
+                'Error updating profile with Stripe IDs',
+                extra={'user_id': user_id, 'customer_id': customer_id}
+            )
     
     # Create audit log - subscription will be activated by invoice.payment_succeeded
     create_billing_audit_log(
@@ -145,25 +194,74 @@ def _handle_checkout_session_completed(event):
 
 def _handle_subscription_created(event):
     """Handle customer.subscription.created event"""
-    subscription_data = event['data']['object']
+    subscription_data = _stripe_object_to_dict(event['data']['object'])
     stripe_subscription_id = subscription_data.get('id')
     stripe_customer_id = subscription_data.get('customer')
+    status = subscription_data.get('status')
     
     logger.info(
         'Subscription created',
         extra={
             'stripe_subscription_id': stripe_subscription_id,
-            'stripe_customer_id': stripe_customer_id
+            'stripe_customer_id': stripe_customer_id,
+            'status': status
         }
     )
     
     # Upsert subscription to billing table
     upsert_subscription_from_stripe(subscription_data)
     
-    # Try to get user_id from customer metadata (if available)
+    # Try to find profile by stripe_customer_id and update stripe_subscription_id
     user_id = _get_user_id_from_customer(stripe_customer_id)
     
-    # Create audit log
+    # Fallback: try to get user_id from checkout.session.completed webhook
+    if not user_id:
+        checkout_result = get_user_id_from_checkout_webhook(stripe_customer_id=stripe_customer_id)
+        if checkout_result.get('success'):
+            user_id = checkout_result.get('user_id')
+            logger.info('Found user_id from checkout webhook fallback', extra={'user_id': user_id})
+    
+    if user_id:
+        try:
+            supabase = get_supabase_handler()
+            update_result = supabase.update_user_subscription(
+                user_id=user_id,
+                plan='free',  # Keep free until payment
+                subscription_status=status,  # Use actual status from Stripe
+                stripe_customer_id=stripe_customer_id,
+                stripe_subscription_id=stripe_subscription_id,
+                next_billing_date=None
+            )
+            if update_result.get('success'):
+                logger.info(
+                    'Profiles/users synced after subscription created',
+                    extra={
+                        'user_id': user_id,
+                        'plan': 'free',
+                        'subscription_status': status,
+                        'stripe_customer_id': stripe_customer_id,
+                        'stripe_subscription_id': stripe_subscription_id
+                    }
+                )
+            else:
+                logger.error(
+                    'Failed to sync profiles/users after subscription created',
+                    extra={
+                        'user_id': user_id,
+                        'stripe_customer_id': stripe_customer_id,
+                        'stripe_subscription_id': stripe_subscription_id,
+                        'error': update_result.get('error')
+                    }
+                )
+        except Exception as e:
+            logger.exception(
+                'Error updating profile with subscription ID',
+                extra={'user_id': user_id}
+            )
+    else:
+        logger.warning('Could not find user_id for customer in profiles or checkout webhooks', extra={'stripe_customer_id': stripe_customer_id})
+    
+    # Create audit log (even with null user_id/company_id)
     create_billing_audit_log(
         user_id=user_id,
         company_id=None,
@@ -172,56 +270,75 @@ def _handle_subscription_created(event):
         description='Subscription created in Stripe',
         metadata={
             'stripe_subscription_id': stripe_subscription_id,
-            'stripe_customer_id': stripe_customer_id
+            'stripe_customer_id': stripe_customer_id,
+            'status': status
         }
     )
 
 
 def _handle_subscription_updated(event):
-    """Handle customer.subscription.updated event"""
-    subscription_data = event['data']['object']
+    """
+    Handle customer.subscription.updated event.
+    Synchronizes status, next billing date, cancel_at_period_end, current period.
+    Does NOT change plan - plan changes are event-specific.
+    """
+    subscription_data = _stripe_object_to_dict(event['data']['object'])
     stripe_subscription_id = subscription_data.get('id')
     stripe_customer_id = subscription_data.get('customer')
     status = subscription_data.get('status')
+    cancel_at_period_end = subscription_data.get('cancel_at_period_end')
     
     logger.info(
         'Subscription updated',
         extra={
             'stripe_subscription_id': stripe_subscription_id,
-            'status': status
+            'status': status,
+            'cancel_at_period_end': cancel_at_period_end
         }
     )
     
     # Upsert subscription to billing table
     upsert_subscription_from_stripe(subscription_data)
     
-    # Update Supabase profile with new status
+    # Update Supabase profile with new status and billing info (no plan change)
     user_id = _get_user_id_from_customer(stripe_customer_id)
     if user_id:
-        _update_profile_subscription(
+        update_result = _update_profile_subscription(
             user_id=user_id,
             stripe_customer_id=stripe_customer_id,
             stripe_subscription_id=stripe_subscription_id,
             subscription_status=status
         )
+        if not update_result.get('success'):
+            logger.error(
+                'Failed to sync subscription update',
+                extra={
+                    'user_id': user_id,
+                    'stripe_subscription_id': stripe_subscription_id,
+                    'error': update_result.get('error')
+                }
+            )
+    else:
+        logger.warning('Could not find user_id for customer in profiles', extra={'stripe_customer_id': stripe_customer_id})
     
-    # Create audit log
+    # Create audit log (even with null user_id/company_id)
     create_billing_audit_log(
         user_id=user_id,
         company_id=None,
         stripe_event_id=event['id'],
         event='customer.subscription.updated',
-        description=f'Subscription updated to status: {status}',
+        description=f'Subscription updated to status: {status}, cancel_at_period_end: {cancel_at_period_end}',
         metadata={
             'stripe_subscription_id': stripe_subscription_id,
-            'status': status
+            'status': status,
+            'cancel_at_period_end': cancel_at_period_end
         }
     )
 
 
 def _handle_subscription_deleted(event):
     """Handle customer.subscription.deleted event"""
-    subscription_data = event['data']['object']
+    subscription_data = _stripe_object_to_dict(event['data']['object'])
     stripe_subscription_id = subscription_data.get('id')
     stripe_customer_id = subscription_data.get('customer')
     
@@ -241,21 +358,49 @@ def _handle_subscription_deleted(event):
     if user_id:
         # Update profile: plan to free, status to canceled, clear subscription_id
         supabase = get_supabase_handler()
-        supabase.update_user_subscription(
-            user_id=user_id,
-            plan='free',
-            subscription_status='canceled',
-            stripe_customer_id=stripe_customer_id,
-            stripe_subscription_id=None,
-            next_billing_date=None
-        )
-        
-        # Update auth handler
-        from ..auth_handler import get_auth_handler
-        auth_handler = get_auth_handler()
-        auth_handler.update_user_plan(user_id, 'free')
+        try:
+            update_result = supabase.update_user_subscription(
+                user_id=user_id,
+                plan='free',
+                subscription_status='canceled',
+                stripe_customer_id=stripe_customer_id,
+                stripe_subscription_id=None,
+                next_billing_date=None
+            )
+
+            if update_result.get('success'):
+                # Update auth handler only when Supabase confirmed
+                from ..auth_handler import get_auth_handler
+                auth_handler = get_auth_handler()
+                auth_handler.update_user_plan(user_id, 'free')
+
+                logger.info(
+                    'Profiles/users synced after subscription deleted',
+                    extra={
+                        'user_id': user_id,
+                        'plan': 'free',
+                        'subscription_status': 'canceled',
+                        'stripe_customer_id': stripe_customer_id
+                    }
+                )
+            else:
+                logger.error(
+                    'Failed to sync profiles/users after subscription deleted',
+                    extra={
+                        'user_id': user_id,
+                        'stripe_customer_id': stripe_customer_id,
+                        'error': update_result.get('error')
+                    }
+                )
+        except Exception as e:
+            logger.exception(
+                'Error canceling subscription in Supabase',
+                extra={'user_id': user_id, 'stripe_customer_id': stripe_customer_id}
+            )
+    else:
+        logger.warning('Could not find user_id for customer in profiles', extra={'stripe_customer_id': stripe_customer_id})
     
-    # Create audit log
+    # Create audit log (even with null user_id/company_id)
     create_billing_audit_log(
         user_id=user_id,
         company_id=None,
@@ -271,7 +416,7 @@ def _handle_subscription_deleted(event):
 
 def _handle_invoice_payment_succeeded(event):
     """Handle invoice.payment_succeeded event"""
-    invoice_data = event['data']['object']
+    invoice_data = _stripe_object_to_dict(event['data']['object'])
     stripe_invoice_id = invoice_data.get('id')
     stripe_customer_id = invoice_data.get('customer')
     stripe_subscription_id = invoice_data.get('subscription')
@@ -282,39 +427,103 @@ def _handle_invoice_payment_succeeded(event):
         'Invoice payment succeeded',
         extra={
             'stripe_invoice_id': stripe_invoice_id,
+            'stripe_customer_id': stripe_customer_id,
             'stripe_subscription_id': stripe_subscription_id,
             'amount_paid': amount_paid,
             'currency': currency
         }
     )
     
-    # Upsert payment to billing table
-    upsert_payment_from_invoice(invoice_data)
-    
-    # Get user_id
+    # Get user_id by finding profile via stripe_customer_id
     user_id = _get_user_id_from_customer(stripe_customer_id)
     
-    # Update profile: activate subscription, update next_billing_date
-    if user_id and stripe_subscription_id:
-        # Get next billing date from subscription
-        next_billing_date = _get_next_billing_date(stripe_subscription_id)
-        
-        supabase = get_supabase_handler()
-        supabase.update_user_subscription(
-            user_id=user_id,
-            plan='basic',  # TODO: Determine plan from price/metadata
-            subscription_status='active',
-            stripe_customer_id=stripe_customer_id,
-            stripe_subscription_id=stripe_subscription_id,
-            next_billing_date=next_billing_date
+    # Fallback: try to get user_id from checkout.session.completed webhook
+    if not user_id:
+        checkout_result = get_user_id_from_checkout_webhook(
+            stripe_invoice_id=stripe_invoice_id,
+            stripe_customer_id=stripe_customer_id
         )
-        
-        # Update auth handler
-        from ..auth_handler import get_auth_handler
-        auth_handler = get_auth_handler()
-        auth_handler.update_user_plan(user_id, 'basic')
+        if checkout_result.get('success'):
+            user_id = checkout_result.get('user_id')
+            # Use subscription_id from checkout if not in invoice
+            if not stripe_subscription_id:
+                stripe_subscription_id = checkout_result.get('subscription_id')
+            logger.info('Found user_id from checkout webhook fallback', extra={'user_id': user_id})
     
-    # Create audit log
+    # If invoice.subscription is null, try to get subscription_id from profile
+    if not stripe_subscription_id and user_id:
+        try:
+            supabase = get_supabase_handler()
+            profile_result = supabase.get_user_subscription(user_id)
+            if profile_result.get('success'):
+                stripe_subscription_id = profile_result.get('stripe_subscription_id')
+                logger.info(
+                    'Retrieved subscription_id from profile',
+                    extra={'stripe_subscription_id': stripe_subscription_id}
+                )
+        except Exception as e:
+            logger.exception('Error getting subscription_id from profile', extra={'user_id': user_id})
+    
+    if user_id is None:
+        logger.warning('Could not find user_id for customer in profiles or checkout webhooks', extra={'stripe_customer_id': stripe_customer_id})
+    
+    # Upsert payment to billing table with user_id if found
+    payment_extra_data = None
+    if user_id:
+        payment_extra_data = {'user_id': user_id}
+    upsert_payment_from_invoice(invoice_data, extra_data=payment_extra_data)
+    
+    # Update profile: activate subscription, update next_billing_date
+    if user_id:
+        next_billing_date = None
+        if stripe_subscription_id:
+            next_billing_date = _get_next_billing_date(stripe_subscription_id)
+        
+        try:
+            supabase = get_supabase_handler()
+            update_result = supabase.update_user_subscription(
+                user_id=user_id,
+                plan='basic',
+                subscription_status='active',
+                stripe_customer_id=stripe_customer_id,
+                stripe_subscription_id=stripe_subscription_id,
+                next_billing_date=next_billing_date
+            )
+
+            if update_result.get('success'):
+                # Update auth handler only when Supabase confirmed
+                from ..auth_handler import get_auth_handler
+                auth_handler = get_auth_handler()
+                auth_handler.update_user_plan(user_id, 'basic')
+
+                logger.info(
+                    'Profiles/users synced after invoice payment succeeded',
+                    extra={
+                        'user_id': user_id,
+                        'plan': 'basic',
+                        'subscription_status': 'active',
+                        'next_billing_date': next_billing_date,
+                        'stripe_customer_id': stripe_customer_id,
+                        'stripe_subscription_id': stripe_subscription_id
+                    }
+                )
+            else:
+                logger.error(
+                    'Failed to sync profiles/users after invoice payment succeeded',
+                    extra={
+                        'user_id': user_id,
+                        'stripe_customer_id': stripe_customer_id,
+                        'stripe_subscription_id': stripe_subscription_id,
+                        'error': update_result.get('error')
+                    }
+                )
+        except Exception as e:
+            logger.exception(
+                'Error activating user subscription',
+                extra={'user_id': user_id}
+            )
+    
+    # Create audit log (even with null user_id/company_id)
     create_billing_audit_log(
         user_id=user_id,
         company_id=None,
@@ -332,7 +541,7 @@ def _handle_invoice_payment_succeeded(event):
 
 def _handle_invoice_payment_failed(event):
     """Handle invoice.payment_failed event"""
-    invoice_data = event['data']['object']
+    invoice_data = _stripe_object_to_dict(event['data']['object'])
     stripe_invoice_id = invoice_data.get('id')
     stripe_customer_id = invoice_data.get('customer')
     stripe_subscription_id = invoice_data.get('subscription')
@@ -343,29 +552,78 @@ def _handle_invoice_payment_failed(event):
         'Invoice payment failed',
         extra={
             'stripe_invoice_id': stripe_invoice_id,
+            'stripe_customer_id': stripe_customer_id,
             'stripe_subscription_id': stripe_subscription_id,
             'amount_due': amount_due
         }
     )
     
-    # Upsert payment to billing table
-    upsert_payment_from_invoice(invoice_data)
-    
-    # Get user_id and update profile
+    # Get user_id by finding profile via stripe_customer_id
     user_id = _get_user_id_from_customer(stripe_customer_id)
-    if user_id and stripe_subscription_id:
-        # Update profile: mark as past_due
-        supabase = get_supabase_handler()
-        supabase.update_user_subscription(
-            user_id=user_id,
-            plan='basic',  # Keep current plan
-            subscription_status='past_due',
-            stripe_customer_id=stripe_customer_id,
-            stripe_subscription_id=stripe_subscription_id,
-            next_billing_date=None
-        )
     
-    # Create audit log
+    # If invoice.subscription is null, try to get subscription_id from profile
+    if not stripe_subscription_id and user_id:
+        try:
+            supabase = get_supabase_handler()
+            profile_result = supabase.get_user_subscription(user_id)
+            if profile_result.get('success'):
+                stripe_subscription_id = profile_result.get('stripe_subscription_id')
+                logger.info(
+                    'Retrieved subscription_id from profile',
+                    extra={'stripe_subscription_id': stripe_subscription_id}
+                )
+        except Exception as e:
+            logger.exception('Error getting subscription_id from profile', extra={'user_id': user_id})
+    
+    if user_id is None:
+        logger.warning('Could not find user_id for customer in profiles', extra={'stripe_customer_id': stripe_customer_id})
+    
+    # Upsert payment to billing table with user_id if found
+    payment_extra_data = None
+    if user_id:
+        payment_extra_data = {'user_id': user_id}
+    upsert_payment_from_invoice(invoice_data, extra_data=payment_extra_data)
+    
+    # Update profile: mark as past_due if user found
+    if user_id:
+        try:
+            supabase = get_supabase_handler()
+            update_result = supabase.update_user_subscription(
+                user_id=user_id,
+                plan='basic',  # Keep current plan
+                subscription_status='past_due',
+                stripe_customer_id=stripe_customer_id,
+                stripe_subscription_id=stripe_subscription_id,
+                next_billing_date=None
+            )
+            if update_result.get('success'):
+                logger.info(
+                    'Profiles/users synced after invoice payment failed',
+                    extra={
+                        'user_id': user_id,
+                        'plan': 'basic',
+                        'subscription_status': 'past_due',
+                        'stripe_customer_id': stripe_customer_id,
+                        'stripe_subscription_id': stripe_subscription_id
+                    }
+                )
+            else:
+                logger.error(
+                    'Failed to sync profiles/users after invoice payment failed',
+                    extra={
+                        'user_id': user_id,
+                        'stripe_customer_id': stripe_customer_id,
+                        'stripe_subscription_id': stripe_subscription_id,
+                        'error': update_result.get('error')
+                    }
+                )
+        except Exception as e:
+            logger.exception(
+                'Error marking subscription as past_due',
+                extra={'user_id': user_id}
+            )
+    
+    # Create audit log (even with null user_id/company_id)
     create_billing_audit_log(
         user_id=user_id,
         company_id=None,
@@ -399,28 +657,73 @@ def _get_user_id_from_customer(stripe_customer_id):
 
 
 def _update_profile_subscription(user_id, stripe_customer_id, stripe_subscription_id, subscription_status):
-    """Update profile subscription status"""
+    """
+    Update profile subscription status and next billing date.
+    NOTE: Does NOT change plan automatically - plan changes are handled by specific handlers.
+    """
     try:
         supabase = get_supabase_handler()
-        # Determine plan based on status
-        plan = 'basic' if subscription_status in ['active', 'trialing'] else 'free'
         
-        supabase.update_user_subscription(
+        # Get next billing date if subscription exists
+        next_billing_date = None
+        if stripe_subscription_id:
+            next_billing_date = _get_next_billing_date(stripe_subscription_id)
+        
+        # Update without changing plan (plan changes are event-specific)
+        update_result = supabase.update_user_subscription(
             user_id=user_id,
-            plan=plan,
+            plan=None,  # Don't change plan
             subscription_status=subscription_status,
             stripe_customer_id=stripe_customer_id,
             stripe_subscription_id=stripe_subscription_id,
-            next_billing_date=None
+            next_billing_date=next_billing_date
         )
         
-        # Update auth handler
-        from ..auth_handler import get_auth_handler
-        auth_handler = get_auth_handler()
-        auth_handler.update_user_plan(user_id, plan)
+        if update_result.get('success'):
+            logger.info(
+                'Profile subscription status updated',
+                extra={
+                    'user_id': user_id,
+                    'subscription_status': subscription_status,
+                    'stripe_subscription_id': stripe_subscription_id,
+                    'next_billing_date': next_billing_date
+                }
+            )
+            return {'success': True}
+        else:
+            logger.error(
+                'Failed to update profile subscription status',
+                extra={
+                    'user_id': user_id,
+                    'subscription_status': subscription_status,
+                    'error': update_result.get('error')
+                }
+            )
+            return {'success': False, 'error': update_result.get('error')}
         
     except Exception as e:
-        logger.exception('Error updating profile subscription', extra={'user_id': user_id})
+        logger.exception(
+            'Error updating profile subscription',
+            extra={'user_id': user_id}
+        )
+        return {'success': False, 'error': str(e)}
+
+
+def _stripe_object_to_dict(obj):
+    """Convert Stripe object to dict safely"""
+    if obj is None:
+        return {}
+    if hasattr(obj, 'to_dict'):
+        try:
+            return obj.to_dict()
+        except Exception:
+            pass
+    if isinstance(obj, dict):
+        return obj
+    try:
+        return dict(obj)
+    except Exception:
+        return {}
 
 
 def _get_next_billing_date(stripe_subscription_id):

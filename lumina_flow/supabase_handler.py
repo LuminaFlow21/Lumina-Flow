@@ -183,29 +183,30 @@ class SupabaseHandler:
                 'error': str(e)
             }
     
-    def update_user_subscription(self, user_id: str, plan: str, subscription_status: str, 
+    def update_user_subscription(self, user_id: str, plan: str = None, subscription_status: str = None, 
                                    stripe_customer_id: str = None, stripe_subscription_id: str = None,
                                    next_billing_date: str = None) -> dict:
         """
-        Update user subscription information
+        Update user subscription information in profiles and sync with users table
         
         Args:
             user_id: User ID
-            plan: Plan type (free, basic, pro, enterprise)
-            subscription_status: Subscription status (active, inactive, trial)
-            stripe_customer_id: Stripe customer ID
-            stripe_subscription_id: Stripe subscription ID
-            next_billing_date: Next billing date
+            plan: Plan type (free, basic, pro, enterprise) - optional, only updates if provided
+            subscription_status: Subscription status (active, inactive, trial, past_due, canceled) - optional
+            stripe_customer_id: Stripe customer ID - optional
+            stripe_subscription_id: Stripe subscription ID - optional
+            next_billing_date: Next billing date - optional
             
         Returns:
             Dictionary with success status or error
         """
         try:
-            update_data = {
-                'plan': plan,
-                'subscription_status': subscription_status
-            }
+            update_data = {'user_id': user_id}
             
+            if plan is not None:
+                update_data['plan'] = plan
+            if subscription_status is not None:
+                update_data['subscription_status'] = subscription_status
             if stripe_customer_id is not None:
                 update_data['stripe_customer_id'] = stripe_customer_id
             if stripe_subscription_id is not None:
@@ -214,14 +215,15 @@ class SupabaseHandler:
                 update_data['next_billing_date'] = next_billing_date
             
             response = self.admin_client.table('profiles') \
-                .upsert({**update_data, 'user_id': user_id}, on_conflict='user_id') \
+                .upsert(update_data, on_conflict='user_id') \
                 .execute()
 
-            # Keep users table in sync
-            self.admin_client.table('users') \
-                .update({'plan': plan, 'updated_at': datetime.now().isoformat()}) \
-                .eq('id', user_id) \
-                .execute()
+            # Keep users table in sync only if plan was provided
+            if plan is not None:
+                self.admin_client.table('users') \
+                    .update({'plan': plan, 'updated_at': datetime.now().isoformat()}) \
+                    .eq('id', user_id) \
+                    .execute()
 
             return {
                 'success': True,

@@ -4,12 +4,46 @@ Auxiliary functions for billing and payment logging
 """
 
 import logging
-from datetime import datetime
+from datetime import datetime, date
+from decimal import Decimal
 from typing import Optional, Dict, Any
 from ..supabase_handler import get_supabase_handler
 
 
 logger = logging.getLogger(__name__)
+
+
+def _serialize_for_json(obj: Any) -> Any:
+    """
+    Convert object to JSON-serializable format.
+    
+    Handles:
+    - Decimal -> float
+    - datetime/date -> ISO string
+    - StripeObject -> dict
+    - Recursive conversion for nested structures
+    """
+    if obj is None:
+        return None
+    if isinstance(obj, (str, int, float, bool)):
+        return obj
+    if isinstance(obj, Decimal):
+        return float(obj)
+    if isinstance(obj, (datetime, date)):
+        return obj.isoformat()
+    if isinstance(obj, dict):
+        return {k: _serialize_for_json(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [_serialize_for_json(item) for item in obj]
+    if hasattr(obj, 'to_dict'):
+        try:
+            return _serialize_for_json(obj.to_dict())
+        except Exception:
+            pass
+    try:
+        return _serialize_for_json(dict(obj))
+    except Exception:
+        return str(obj)
 
 
 def save_webhook_log(event: Any) -> Dict[str, Any]:
@@ -53,13 +87,13 @@ def save_webhook_log(event: Any) -> Dict[str, Any]:
             data_object.get('invoice') if isinstance(data_object, dict) else None
         )
         
-        # Convert event to dict for JSON storage
+        # Convert event to dict for JSON storage (handle Decimal, datetime, etc.)
         if hasattr(event, 'to_dict'):
-            raw_payload = event.to_dict()
+            raw_payload = _serialize_for_json(event.to_dict())
         elif isinstance(event, dict):
-            raw_payload = event
+            raw_payload = _serialize_for_json(event)
         else:
-            raw_payload = {'id': stripe_event_id, 'type': event_type}
+            raw_payload = _serialize_for_json({'id': stripe_event_id, 'type': event_type})
         
         log_data = {
             'stripe_event_id': stripe_event_id,
@@ -102,6 +136,32 @@ def save_webhook_log(event: Any) -> Dict[str, Any]:
             'success': False,
             'error': str(e)
         }
+
+
+def is_webhook_processed(stripe_event_id: str) -> bool:
+    """
+    Check if a webhook event has already been processed
+    
+    Args:
+        stripe_event_id: Stripe event ID
+        
+    Returns:
+        True if already processed, False otherwise
+    """
+    try:
+        supabase = get_supabase_handler()
+        
+        response = supabase.admin_client.table('stripe_webhook_logs') \
+            .select('processed') \
+            .eq('stripe_event_id', stripe_event_id) \
+            .execute()
+        
+        if response.data and len(response.data) > 0:
+            return response.data[0].get('processed', False)
+        return False
+    except Exception as e:
+        logger.exception("Error checking webhook processed status", extra={'stripe_event_id': stripe_event_id})
+        return False
 
 
 def mark_webhook_processed(stripe_event_id: str) -> Dict[str, Any]:
@@ -235,7 +295,7 @@ def create_billing_audit_log(
             'stripe_event_id': stripe_event_id,
             'event': event,
             'description': description,
-            'metadata': metadata or {}
+            'metadata': _serialize_for_json(metadata or {})
         }
         
         response = supabase.admin_client.table('billing_audit_logs').insert(log_data).execute()
@@ -476,11 +536,9 @@ def upsert_payment_from_invoice(
         if status in ['uncollectible', 'void']:
             failed_at = datetime.now().isoformat()
         
-        # Build payment data with essential fields only
+        # Build payment data with essential fields only (stripe_customer_id and stripe_subscription_id not in payments table)
         payment_data = {
             'stripe_invoice_id': stripe_invoice_id,
-            'stripe_customer_id': stripe_customer_id,
-            'stripe_subscription_id': stripe_subscription_id,
             'stripe_payment_intent_id': str(stripe_payment_intent_id) if stripe_payment_intent_id else None,
             'amount': amount,
             'currency': currency,
@@ -591,4 +649,89 @@ def get_customer_billing_details(company_id: str) -> Dict[str, Any]:
             'error': str(e),
             'subscriptions': [],
             'payments': []
+        }
+
+
+def get_user_id_from_checkout_webhook(stripe_invoice_id: str = None, stripe_customer_id: str = None) -> Dict[str, Any]:
+    """
+    Fallback: Get user_id from checkout.session.completed webhook log
+    
+    Args:
+        stripe_invoice_id: Stripe invoice ID to match
+        stripe_customer_id: Stripe customer ID to match
+        
+    Returns:
+        Dictionary with success status, user_id, customer_id, subscription_id, and error if any
+    """
+    try:
+        supabase = get_supabase_handler()
+        
+        # Build query
+        query = supabase.admin_client.table('stripe_webhook_logs') \
+            .select('raw_payload') \
+            .eq('event_type', 'checkout.session.completed')
+        
+        if stripe_invoice_id:
+            query = query.eq('stripe_invoice_id', stripe_invoice_id)
+        elif stripe_customer_id:
+            query = query.eq('stripe_customer_id', stripe_customer_id)
+        else:
+            return {
+                'success': False,
+                'error': 'Either stripe_invoice_id or stripe_customer_id is required'
+            }
+        
+        response = query.order('created_at', desc=True).limit(1).execute()
+        
+        if not response.data or len(response.data) == 0:
+            return {
+                'success': False,
+                'error': 'No checkout.session.completed found'
+            }
+        
+        # Extract user_id from raw_payload
+        raw_payload = response.data[0].get('raw_payload', {})
+        if not raw_payload:
+            return {
+                'success': False,
+                'error': 'No raw_payload in webhook log'
+            }
+        
+        # Navigate to nested structure
+        data_object = raw_payload.get('data', {}).get('object', {})
+        metadata = data_object.get('metadata', {})
+        user_id = metadata.get('user_id')
+        customer_id = data_object.get('customer')
+        subscription_id = data_object.get('subscription')
+        
+        if not user_id:
+            return {
+                'success': False,
+                'error': 'No user_id in checkout metadata'
+            }
+        
+        logger.info(
+            'Found user_id from checkout webhook',
+            extra={
+                'user_id': user_id,
+                'customer_id': customer_id,
+                'subscription_id': subscription_id
+            }
+        )
+        
+        return {
+            'success': True,
+            'user_id': user_id,
+            'customer_id': customer_id,
+            'subscription_id': subscription_id
+        }
+        
+    except Exception as e:
+        logger.exception(
+            'Error getting user_id from checkout webhook',
+            extra={'stripe_invoice_id': stripe_invoice_id, 'stripe_customer_id': stripe_customer_id}
+        )
+        return {
+            'success': False,
+            'error': str(e)
         }
